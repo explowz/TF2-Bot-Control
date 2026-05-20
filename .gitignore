@@ -1,7 +1,7 @@
 # Files to ignore when considering what GIT should commit.
 
-# Extension build folder
-build/
+# Plugin build folder
+sourcemod/plugins/
 
 # Visual Studio
 *.suo
@@ -36,8 +36,3 @@ ipch
 obj*/
 !devtools/*.mak
 !utils/smdlexp/smdlexp.mak
-
-*extension/build/Release - tf2/bot-control.ext.2.tf2.dll
-
-extension/.vs/
-extension/build/

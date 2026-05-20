@@ -70,6 +70,12 @@
 				"windows"	"\x55\x8B\xEC\x51\x56\x8B\xF1\x57\x8B\x86\x2A\x2A\x2A\x2A\xC1\xE8\x12"
 				"linux"		"_ZN6CTFBot14ShouldAutoJumpEv"
 			}
+			"CTFReviveMarker::Create"
+			{
+				"library"	"server"
+				"windows"	"\x55\x8B\xEC\x83\xEC\x0C\x53\x57\x8B\x7D\x2A\x85\xFF"
+				"linux"		"_ZN15CTFReviveMarker6CreateEP9CTFPlayer"
+			}
 
 			/*--------------------------------------------------------------------
 			  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -183,6 +189,154 @@
 			"CTFBot::m_attributeFlags"	// Find from tf_bot_kick command definition
 			{
 				"windows"	"10168"
+			}
+		}
+		"Functions"
+		{
+			/*--------------------------------------------------------------------
+			  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+			  !!!!!!!!!!!!!!!!!!!!!!!!!! DHOOK DETOURS !!!!!!!!!!!!!!!!!!!!!!!!!
+			  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+			--------------------------------------------------------------------*/
+
+			"CTFBotMedicHeal::SelectPatient"	// "I'm now a squad leader! Going for the flag!"
+			{
+				"signature"	"CTFBotMedicHeal::SelectPatient"
+
+				"callconv"	"thiscall"
+
+				"return"	"cbaseentity"
+				"this"		"ignore"
+
+				"arguments"
+				{
+					me
+					{
+						"type"	"cbaseentity"
+					}
+					current
+					{
+						"type"	"cbaseentity"
+					}
+				}
+			}
+			"CWeaponMedigun::AllowedToHealTarget"		// "weapon_blocks_healing"
+			{
+				"signature"	"CWeaponMedigun::AllowedToHealTarget"
+
+				"callconv"	"thiscall"
+
+				"return"	"bool"
+				"this"		"entity"
+
+				"arguments"
+				{
+					pEntity
+					{
+						"type"	"cbaseentity"
+					}
+				}
+			}
+			"CTFReviveMarker::Create"	// "entity_revive_marker"
+			{
+				"signature"	"CTFReviveMarker::Create"
+
+				"callconv"	"thiscall"
+
+				"return"	"cbaseentity"
+				"this"		"entity"
+
+				"arguments"
+				{
+					pOwner
+					{
+						"type"	"cbaseentity"
+					}
+				}
+			}
+
+			/*--------------------------------------------------------------------
+			  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+			  !!!!!!!!!!!!!!!!!!!!!!!!!!!!! DHOOKS !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+			  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+			--------------------------------------------------------------------*/
+
+			"CTFPlayer::ShouldGib"
+			{
+				"offset"	"CTFPlayer::ShouldGib"
+
+				"hooktype"	"entity"
+
+				"return"	"bool"
+				"this"		"entity"
+
+				"arguments"
+				{
+					info
+					{
+						"type"	"objectptr"
+						"flags"	"byref"
+					}
+				}
+			}
+			"CBaseEntity::ShouldTransmit"
+			{
+				"offset"	"CBaseEntity::ShouldTransmit"
+
+				"hooktype"	"entity"
+
+				"return"	"int"
+				"this"		"entity"
+
+				"arguments"
+				{
+					pInfo
+					{
+						"type"	"objectptr"
+						"flags"	"byref"
+					}
+				}
+			}
+			"CTFPlayer::IsValidObserverTarget"
+			{
+				"offset"	"CTFPlayer::IsValidObserverTarget"
+
+				"hooktype"	"entity"
+
+				"return"	"bool"
+				"this"		"entity"
+
+				"arguments"
+				{
+					target
+					{
+						"type"	"cbaseentity"
+						"flags"	"byref"
+					}
+				}
+			}
+			"CFilterTFBotHasTag::PassesFilterImpl"
+			{
+				"offset"	"CFilterTFBotHasTag::PassesFilterImpl"
+
+				"hooktype"	"entity"
+
+				"return"	"bool"
+				"this"		"entity"
+
+				"arguments"
+				{
+					pCaller
+					{
+						"type"	"cbaseentity"
+						"flags"	"byref"
+					}
+					pEntity
+					{
+						"type"	"cbaseentity"
+						"flags"	"byref"
+					}
+				}
 			}
 		}
 	}

@@ -185,14 +185,15 @@ Handle g_hfnHasAttribute;
 #endif
 
 // DHooks
-Handle g_hfnIsValidObserverTarget;
-Handle g_hfnShouldGib;
-Handle g_hfnShouldTransmit;
-Handle g_hfnPassesFilterImpl;
+DynamicHook g_hfnIsValidObserverTarget;
+DynamicHook g_hfnShouldGib;
+DynamicHook g_hfnShouldTransmit;
+DynamicHook g_hfnPassesFilterImpl;
 
 // Detours
-Handle g_hfnSelectPatient;
-Handle g_hfnIsAllowedToHealTarget;
+DynamicDetour g_hfnSelectPatient;
+DynamicDetour g_hfnIsAllowedToHealTarget;
+// DynamicDetour g_hfnCreate;
 
 // Offsets
 #if defined( WIN32 )
@@ -276,6 +277,8 @@ public void OnPluginStart()
         SetFailState( "Failed to create SDKCall for CBaseEntity::WorldSpaceCenter offset." );
     }
 
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+
     // This call is used to set the deploy animation on the robots with the bomb
     StartPrepSDKCall( SDKCall_Player );
     PrepSDKCall_SetFromConf( Conf, SDKConf_Signature, "CTFPlayer::PlaySpecificSequence" );
@@ -285,6 +288,8 @@ public void OnPluginStart()
     {
         SetFailState( "Failed to create SDKCall for CTFPlayer::PlaySpecificSequence signature." );
     }
+
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
 
     // This call is used to remove an objects owner
     StartPrepSDKCall( SDKCall_Player );
@@ -296,6 +301,8 @@ public void OnPluginStart()
         SetFailState( "Failed To create SDKCall for CTFPlayer::RemoveObject signature." );
     }
 
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+
     // This call is used to (hopefully) fix wearable issues.
     StartPrepSDKCall( SDKCall_Player );
     PrepSDKCall_SetFromConf( Conf, SDKConf_Signature, "CTFPlayer::PostInventoryApplication" );
@@ -304,6 +311,8 @@ public void OnPluginStart()
     {
         SetFailState( "Failed To create SDKCall for CTFPlayer::PostInventoryApplication signature." );
     }
+
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
 
     // This call is used to make sentry busters behave nicely
     StartPrepSDKCall( SDKCall_Player );
@@ -316,6 +325,8 @@ public void OnPluginStart()
         SetFailState( "Failed to create SDKCall for CTFBot::SetMission signature." );
     }
 
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+
     // This call is used to get a bot's tag
     StartPrepSDKCall( SDKCall_Player );
     PrepSDKCall_SetFromConf( Conf, SDKConf_Signature, "CTFBot::HasTag" );
@@ -327,6 +338,8 @@ public void OnPluginStart()
         SetFailState( "Failed to create SDKCall for CTFBot::HasTag signature." );
     }
 
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+
     // This call will make a bot leave their squad
     StartPrepSDKCall( SDKCall_Player );
     PrepSDKCall_SetFromConf( Conf, SDKConf_Signature, "CTFBot::LeaveSquad" );
@@ -335,6 +348,8 @@ public void OnPluginStart()
     {
         SetFailState( "Failed to create SDKCall for CTFBot::LeaveSquad signature." );
     }
+
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
 
     // Used to determine whether we should auto jump
     StartPrepSDKCall( SDKCall_Player );
@@ -345,6 +360,8 @@ public void OnPluginStart()
     {
         SetFailState( "Failed to create SDKCall for CTFBot::ShouldAutoJump signature." );
     }
+
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
 
     // Used to get a bot's squad leader
 #if defined( WIN32 )
@@ -374,6 +391,8 @@ public void OnPluginStart()
         SetFailState( "Failed to create SDKCall for CTFBotSquad::GetLeader signature." );
     }
 
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+
     // This call will play a particle effect
     StartPrepSDKCall( SDKCall_Static );
     PrepSDKCall_SetFromConf( Conf, SDKConf_Signature, "DispatchParticleEffect" );
@@ -388,6 +407,8 @@ public void OnPluginStart()
         SetFailState( "Failed to create SDKCall for DispatchParticleEffect signature." );
     }
 
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+
     // This call gets the maximum clip 1 of a weapon
     StartPrepSDKCall( SDKCall_Entity );
     PrepSDKCall_SetFromConf( Conf, SDKConf_Virtual, "CTFWeaponBase::GetMaxClip1" );
@@ -397,6 +418,8 @@ public void OnPluginStart()
     {
         SetFailState( "Failed to create SDKCall for CTFWeaponBase::GetMaxClip1 offset." );
     }
+
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
 
     // This call forces a player to pick up the intel
     // FIXME: This just crashes the server no matter how much we wait after the bomb is dropped
@@ -409,6 +432,8 @@ public void OnPluginStart()
     {
         SetFailState( "Failed to create SDKCall for CCaptureFlag::PickUp offset." );
     }*/
+
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
 
     // This call forces a player to drop the intel
     StartPrepSDKCall( SDKCall_Entity );
@@ -423,6 +448,8 @@ public void OnPluginStart()
         SetFailState( "Failed to create SDKCall for CCaptureFlag::Drop offset." );
     }
 
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+
     // We use this to unzoom sniper bots when mirroring them
     StartPrepSDKCall( SDKCall_Entity );
     PrepSDKCall_SetFromConf( Conf, SDKConf_Virtual, "CTFSniperRifle::ZoomOut" );
@@ -431,6 +458,8 @@ public void OnPluginStart()
     {
         SetFailState( "Failed to create SDKCall for CTFSniperRifle::ZoomOut offset." );
     }
+
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
 
 #if !defined( WIN32 )
     StartPrepSDKCall( SDKCall_Player );
@@ -442,6 +471,8 @@ public void OnPluginStart()
         SetFailState( "Failed to create SDKCall for CTFPlayerShared::GetPercentInvisible signature." );
     }
 
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+
     StartPrepSDKCall( SDKCall_Player );
     PrepSDKCall_SetFromConf( Conf, SDKConf_Signature, "CTFPlayerShared::IsStealthed" );
     PrepSDKCall_SetReturnInfo( SDKType_Bool, SDKPass_Plain );
@@ -450,6 +481,8 @@ public void OnPluginStart()
     {
         SetFailState( "Failed to create SDKCall for CTFPlayerShared::IsStealthed signature." );
     }
+
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
 
     StartPrepSDKCall( SDKCall_Player );
     PrepSDKCall_SetFromConf( Conf, SDKConf_Signature, "CTFBot::HasWeaponRestriction" );
@@ -460,6 +493,8 @@ public void OnPluginStart()
         SetFailState( "Failed to create SDKCall for CTFBot::HasWeaponRestriction signature." );
     }
 
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+
     StartPrepSDKCall( SDKCall_Player );
     PrepSDKCall_SetFromConf( Conf, SDKConf_Signature, "CTFBot::IsInASquad" );
     PrepSDKCall_SetReturnInfo( SDKType_Bool, SDKPass_Plain );
@@ -468,6 +503,8 @@ public void OnPluginStart()
     {
         SetFailState( "Failed to create SDKCall for CTFBot::IsInASquad signature." );
     }
+
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
 
     StartPrepSDKCall( SDKCall_Player );
     PrepSDKCall_SetFromConf( Conf, SDKConf_Signature, "CTFBot::HasAttribute" );
@@ -485,77 +522,88 @@ public void OnPluginStart()
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     --------------------------------------------------------------------*/
 
-    g_hfnSelectPatient = DHookCreateDetour( Address_Null, CallConv_THISCALL, ReturnType_CBaseEntity, ThisPointer_Ignore );
+    g_hfnSelectPatient = DynamicDetour.FromConf( Conf, "CTFBotMedicHeal::SelectPatient" );
     if ( !g_hfnSelectPatient )
     {
-        SetFailState( "Failed to create detour for CTFBotMedicHeal::SelectPatient." );
-    }
-    if ( !DHookSetFromConf( g_hfnSelectPatient, Conf, SDKConf_Signature, "CTFBotMedicHeal::SelectPatient" ) )
-    {
-        SetFailState( "Failed to load CTFBotMedicHeal::SelectPatient signature from gamedata." );
-    }
-    DHookAddParam( g_hfnSelectPatient, HookParamType_CBaseEntity );   // CTFBot* me
-    DHookAddParam( g_hfnSelectPatient, HookParamType_CBaseEntity );   // CTFPlayer* current
-    if ( !DHookEnableDetour( g_hfnSelectPatient, false, CTFBotMedicHeal_SelectPatient ) )
-    {
-        SetFailState( "Failed to detour CTFBotMedicHeal::SelectPatient." );
-    }
-    if ( !DHookEnableDetour( g_hfnSelectPatient, true,  CTFBotMedicHeal_SelectPatient_Post ) )
-    {
-        SetFailState( "Failed to detour CTFBotMedicHeal::SelectPatient post." );
+        SetFailState( "Failed to create dynamic detour for CTFBotMedicHeal::SelectPatient." );
     }
 
-    g_hfnIsAllowedToHealTarget = DHookCreateDetour( Address_Null, CallConv_THISCALL, ReturnType_Bool, ThisPointer_CBaseEntity );
+    if ( !g_hfnSelectPatient.Enable( Hook_Pre, CTFBotMedicHeal_SelectPatient ) )
+    {
+        SetFailState( "Failed to enable CTFBotMedicHeal::SelectPatient dynamic detour." );
+    }
+
+    if ( !g_hfnSelectPatient.Enable( Hook_Post, CTFBotMedicHeal_SelectPatient_Post ) )
+    {
+        SetFailState( "Failed to enable CTFBotMedicHeal_SelectPatient_Post dynamic detour." );
+    }
+
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+
+    g_hfnIsAllowedToHealTarget = DynamicDetour.FromConf( Conf, "CWeaponMedigun::AllowedToHealTarget" );
     if ( !g_hfnIsAllowedToHealTarget )
     {
-        SetFailState( "Failed to setup detour for CWeaponMedigun::AllowedToHealTarget" );
-    }
-    if ( !DHookSetFromConf( g_hfnIsAllowedToHealTarget, Conf, SDKConf_Signature, "CWeaponMedigun::AllowedToHealTarget" ) )
-    {
-        SetFailState( "Failed to load CWeaponMedigun::AllowedToHealTarget signature from gamedata." );
-    }
-    DHookAddParam( g_hfnIsAllowedToHealTarget, HookParamType_CBaseEntity );   // CBaseEntity* pEntity
-    if ( !DHookEnableDetour( g_hfnIsAllowedToHealTarget, false, CWeaponMedigun_IsAllowedToHealTarget ) )
-    {
-        SetFailState( "[BotControl] Failed to detour CWeaponMedigun::AllowedToHealTarget." );
-    }
-    if ( !DHookEnableDetour( g_hfnIsAllowedToHealTarget, true,  CWeaponMedigun_IsAllowedToHealTarget_Post ) )
-    {
-        SetFailState( "[BotControl] Failed to detour CWeaponMedigun::AllowedToHealTarget_Post." );
+        SetFailState( "Failed to create dynamic detour for CWeaponMedigun::AllowedToHealTarget." );
     }
 
-    int iOffset = Conf.GetOffset( "CTFPlayer::ShouldGib" );
-    if ( iOffset == -1 )
+    if ( !g_hfnIsAllowedToHealTarget.Enable( Hook_Pre, CWeaponMedigun_IsAllowedToHealTarget ) )
     {
-        SetFailState( "Failed to get offset of CTFBot::ShouldGib" );
+        SetFailState( "Failed to enable CWeaponMedigun::AllowedToHealTarget dynamic detour." );
     }
-    g_hfnShouldGib = DHookCreate( iOffset, HookType_Entity, ReturnType_Bool, ThisPointer_CBaseEntity, CTFPlayer_ShouldGib );
-    DHookAddParam( g_hfnShouldGib, HookParamType_ObjectPtr, -1, DHookPass_ByRef );   // const CTakeDamageInfo& info
 
-    iOffset = Conf.GetOffset( "CBaseEntity::ShouldTransmit" );
-    if ( iOffset == -1 )
+    if ( !g_hfnIsAllowedToHealTarget.Enable( Hook_Post, CWeaponMedigun_IsAllowedToHealTarget_Post ) )
     {
-        SetFailState( "Failed to get offset of CBaseEntity::ShouldTransmit");
+        SetFailState( "Failed to enable CWeaponMedigun::AllowedToHealTarget_Post dynamic detour." );
     }
-    g_hfnShouldTransmit = DHookCreate( iOffset, HookType_Entity, ReturnType_Int, ThisPointer_CBaseEntity, CBaseEntity_ShouldTransmit );
-    DHookAddParam( g_hfnShouldTransmit, HookParamType_ObjectPtr );    // const CCheckTransmitInfo* pInfo
 
-    iOffset = Conf.GetOffset( "CTFPlayer::IsValidObserverTarget" );
-    if ( iOffset == -1 )
-    {
-        SetFailState( "Failed to get offset of CTFPlayer::IsValidObserverTarget" );
-    }
-    g_hfnIsValidObserverTarget = DHookCreate( iOffset, HookType_Entity, ReturnType_Bool, ThisPointer_CBaseEntity, CTFPlayer_IsValidObserverTarget );
-    DHookAddParam( g_hfnIsValidObserverTarget, HookParamType_CBaseEntity );   // CBaseEntity* target
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
 
-    iOffset = Conf.GetOffset( "CFilterTFBotHasTag::PassesFilterImpl" );
-    if ( iOffset == -1 )
+    /*g_hfnCreate = DynamicDetour.FromConf( Conf, "CTFReviveMarker::Create" );
+    if ( !g_hfnCreate )
     {
-        SetFailState( "Failed to get offset of CFilterTFBotHasTag::PassesFilterImpl" );
+        SetFailState( "Failed to create dynamic detour for CTFReviveMarker::Create." );
     }
-    g_hfnPassesFilterImpl = DHookCreate( iOffset, HookType_Entity, ReturnType_Bool, ThisPointer_CBaseEntity, CFilterTFBotHasTag_PassesFilterImpl );
-    DHookAddParam( g_hfnPassesFilterImpl, HookParamType_CBaseEntity );    // CBaseEntity* pCaller
-    DHookAddParam( g_hfnPassesFilterImpl, HookParamType_CBaseEntity );    // CBaseEntity* pEntity
+
+    if ( !g_hfnCreate.Enable( Hook_Pre, CTFReviveMarker_Create ) )
+    {
+        SetFailState( "Failed to enable CTFReviveMarker::Create dynamic detour." );
+    }*/
+
+    /*--------------------------------------------------------------------
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!! DHOOKS !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    --------------------------------------------------------------------*/
+
+    g_hfnShouldGib = DynamicHook.FromConf( Conf, "CTFPlayer::ShouldGib" );
+    if ( !g_hfnShouldGib )
+    {
+        SetFailState( "Failed to get create CTFPlayer::ShouldGib dynamic hook." );
+    }
+
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+
+    g_hfnShouldTransmit = DynamicHook.FromConf( Conf, "CBaseEntity::ShouldTransmit" );
+    if ( !g_hfnShouldTransmit )
+    {
+        SetFailState( "Failed to get create CBaseEntity::ShouldTransmit dynamic hook." );
+    }
+
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+
+    g_hfnIsValidObserverTarget = DynamicHook.FromConf( Conf, "CTFPlayer::IsValidObserverTarget" );
+    if ( !g_hfnIsValidObserverTarget )
+    {
+        SetFailState( "Failed to get create CTFPlayer::IsValidObserverTarget dynamic hook." );
+    }
+
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+
+    g_hfnPassesFilterImpl = DynamicHook.FromConf( Conf, "CFilterTFBotHasTag::PassesFilterImpl" );
+    if ( !g_hfnPassesFilterImpl )
+    {
+        SetFailState( "Failed to get create CFilterTFBotHasTag::PassesFilterImpl dynamic hook." );
+    }
 
     /*--------------------------------------------------------------------
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -598,8 +646,6 @@ public void OnPluginStart()
     HookEvent( "mvm_wave_complete", Event_ResetBots );
     HookEvent( "player_sapped_object", Event_SappedObject );
 
-    RegConsoleCmd( "sm_debugbot", Command_Debug );
-
     for ( int iClient = 1; iClient <= MaxClients; iClient++ )
     {
         if ( IsClientInGame( iClient ) )
@@ -607,9 +653,6 @@ public void OnPluginStart()
             OnClientPutInServer( iClient );
         }
     }
-
-    // Block announcer sound from being played to the invading team
-    AddNormalSoundHook( BlockAnnouncer );
 }
 
 /*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
@@ -654,6 +697,17 @@ public void OnPluginEnd()
     delete g_hfnZoomOut;
 }
 
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: OnMapStart
+
+  Summary:  Called when the map is loaded. This function disables
+            the plugin if the current map is not a Mann vs. Machine
+            map. It also precaches game sounds we emit throughout
+            this plugin.
+
+  Returns:  void
+              No return value.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
 public void OnMapStart()
 {
     if ( !TF2_PlayingMannVsMachine() )
@@ -680,6 +734,29 @@ public void OnMapStart()
     PrecacheScriptSound( "MVM.Robot_Teleporter_Deliver" );
 }
 
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: OnClientPutInServer
+
+  Summary:  Called when a client is entering the game.
+            Whether a client has a steamid is undefined until
+            OnClientAuthorized is called, which may occur either
+            before or after OnClientPutInServer. Similarly, use
+            OnClientPostAdminCheck() if you need to verify whether
+            connecting players are admins.
+            GetClientCount() will include clients as they are passed
+            through this function, as clients are already in game
+            at this point.
+
+            This function resets a player's global values and hooks
+            functions to its entity.
+
+
+  Args:     int iClient
+              Client index.
+
+  Returns:  void
+              No return value.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
 public void OnClientPutInServer( int iClient )
 {
     // TODO: Create two separate methodmaps TFPlayer and TFBot (inherits TFPlayer)
@@ -701,178 +778,73 @@ public void OnClientPutInServer( int iClient )
     g_bDeploying[ iClient ]               = false;
     g_flBombDeployTime[ iClient ]         = -1.0;
 
-    DHookEntity( g_hfnShouldGib, true, iClient );
-    DHookEntity( g_hfnIsValidObserverTarget, true, iClient );
+    g_hfnShouldGib.HookEntity( Hook_Post, iClient, CTFPlayer_ShouldGib );
+    g_hfnIsValidObserverTarget.HookEntity( Hook_Post, iClient, CTFPlayer_IsValidObserverTarget );
 
     SDKHook( iClient, SDKHook_SetTransmit, Hook_SpyTransmit );
     SDKHook( iClient, SDKHook_OnTakeDamageAlivePost, Player_OnTakeDamageAlivePost );
 }
 
-public Action Command_Debug( int iClient, int argc )
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: CTFReviveMarker_Create
+
+  Summary:  This function is used to block the creation of revive
+            markers for human invaders.
+
+            Original function signature:
+            `CTFReviveMarker *CTFReviveMarker::Create( CTFPlayer *pOwner )`
+
+  Args:     int iThis
+              CTFReviveMarker entity.
+            DHookReturn hReturn
+              Handle to the return value of the function.
+            DHookParam hParams
+              Handle to the parameters of the called function.
+
+  Returns:  MRESReturn
+              DHook return action.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
+// FIXME: Crashes the server
+/*public MRESReturn CTFReviveMarker_Create( int iThis, DHookReturn hReturn, DHookParam hParam )
 {
-    if ( !( 0 < iClient <= MaxClients ) || !IsClientInGame( iClient ) )
+    int iOwner = !hParam.IsNull( 1 ) ? hParam.Get( 1 ) : -1;
+    if ( 0 < iOwner <= MaxClients && IsClientInGame( iOwner ) && TF2_GetClientTeam( iOwner ) == TF_TEAM_PVE_INVADERS )
     {
-        return Plugin_Stop;
+        hReturn.Value = INVALID_ENT_REFERENCE;
+        return MRES_Supercede;
     }
 
-    int iTarget = iClient;
-    if ( TF2_GetClientTeam( iClient ) == TFTeam_Spectator )
-    {
-        int iObserverTarget = GetEntPropEnt( iClient, Prop_Data, "m_hObserverTarget" );
-        if ( 0 < iObserverTarget <= MaxClients && IsClientInGame( iObserverTarget ) )
-        {
-            iTarget = iObserverTarget;
-        }
-    }
-
-    PrintToConsole( iClient, "\n----- \"%N\" #%i (%i) --------", iTarget, GetClientUserId( iTarget ), iTarget );
-
-    PrintToConsole( iClient, "IsFakeClient = %s", IsFakeClient( iTarget ) ? "true" : "false" );
-
-    PrintToConsole( iClient, "g_bIsControlled = %s", g_bIsControlled[ iTarget ] ? "true" : "false" );
-    PrintToConsole( iClient, "g_iController = %i", GetClientOfUserId( g_iController[ iTarget ] ) );
-    PrintToConsole( iClient, "g_bIsSentryBuster = %s", g_bIsSentryBuster[ iTarget ] ? "true" : "false" );
-    PrintToConsole( iClient, "g_bSkipInventory = %i", g_bSkipInventory[ iTarget ] ? "true" : "false" );
-
-    PrintToConsole( iClient, "g_flCooldownEndTime = %f", g_flCooldownEndTime[ iTarget ] );
-    PrintToConsole( iClient, "g_flControlEndTime = %f", g_flControlEndTime[ iTarget ] );
-    PrintToConsole( iClient, "g_flSpawnTime = %f", g_flSpawnTime[ iTarget ] );
-
-    if ( IsFakeClient( iTarget ) )
-    {
-        Menu g_hMenuAttributes = new Menu( MenuAttributeHandler );
-        g_hMenuAttributes.SetTitle( "Bot Attributes\n ");
-        g_hMenuAttributes.AddItem( "0",  HasAttribute( iTarget, REMOVE_ON_DEATH )             ? "✅ REMOVE_ON_DEATH"             : "❌ REMOVE_ON_DEATH" );
-        g_hMenuAttributes.AddItem( "1",  HasAttribute( iTarget, AGGRESSIVE )                  ? "✅ AGGRESSIVE"                  : "❌ AGGRESSIVE" );
-        g_hMenuAttributes.AddItem( "2",  HasAttribute( iTarget, IS_NPC )                      ? "✅ IS_NPC"                      : "❌ IS_NPC" );
-        g_hMenuAttributes.AddItem( "3",  HasAttribute( iTarget, SUPPRESS_FIRE )               ? "✅ SUPPRESS_FIRE"               : "❌ SUPPRESS_FIRE" );
-        g_hMenuAttributes.AddItem( "4",  HasAttribute( iTarget, DISABLE_DODGE )               ? "✅ DISABLE_DODGE"               : "❌ DISABLEDODGE" );
-        g_hMenuAttributes.AddItem( "5",  HasAttribute( iTarget, BECOME_SPECTATOR_ON_DEATH )   ? "✅ BECOME_SPECTATOR_ON_DEATH"   : "❌ BECOME_SPECTATOR_ON_DEATH" );
-        g_hMenuAttributes.AddItem( "6",  HasAttribute( iTarget, QUOTA_MANANGED )              ? "✅ QUOTA_MANANGED"              : "❌ QUOTA_MANANGED" );
-        g_hMenuAttributes.AddItem( "7",  HasAttribute( iTarget, RETAIN_BUILDINGS )            ? "✅ RETAIN_BUILDINGS"            : "❌ RETAIN_BUILDINGS" );
-        g_hMenuAttributes.AddItem( "8",  HasAttribute( iTarget, SPAWN_WITH_FULL_CHARGE )      ? "✅ SPAWN_WITH_FULL_CHARGE"      : "❌ SPAWN_WITH_FULL_CHARGE" );
-        g_hMenuAttributes.AddItem( "9",  HasAttribute( iTarget, ALWAYS_CRIT )                 ? "✅ ALWAYS_CRIT"                 : "❌ ALWAYS_CRIT" );
-        g_hMenuAttributes.AddItem( "10", HasAttribute( iTarget, IGNORE_ENEMIES )              ? "✅ IGNORE_ENEMIES"              : "❌ IGNORE_ENEMIES" );
-        g_hMenuAttributes.AddItem( "11", HasAttribute( iTarget, HOLD_FIRE_UNTIL_FULL_RELOAD ) ? "✅ HOLD_FIRE_UNTIL_FULL_RELOAD" : "❌ HOLD_FIRE_UNTIL_FULL_RELOAD" );
-        g_hMenuAttributes.AddItem( "12", HasAttribute( iTarget, PRIORITIZE_DEFENSE )          ? "✅ PRIORITIZE_DEFENSE"          : "❌ PRIORITIZE_DEFENSE" );
-        g_hMenuAttributes.AddItem( "13", HasAttribute( iTarget, ALWAYS_FIRE_WEAPON )          ? "✅ ALWAYS_FIRE_WEAPON"          : "❌ ALWAYS_FIRE_WEAPON" );
-        g_hMenuAttributes.AddItem( "14", HasAttribute( iTarget, TELEPORT_TO_HINT )            ? "✅ TELEPORT_TO_HINT"            : "❌ TELEPORT_TO_HINT" );
-        g_hMenuAttributes.AddItem( "15", HasAttribute( iTarget, MINIBOSS )                    ? "✅ MINIBOSS"                    : "❌ MINIBOSS" );
-        g_hMenuAttributes.AddItem( "16", HasAttribute( iTarget, USE_BOSS_HEALTH_BAR )         ? "✅ USE_BOSS_HEALTH_BAR"         : "❌ USE_BOSS_HEALTH_BAR" );
-        g_hMenuAttributes.AddItem( "17", HasAttribute( iTarget, IGNORE_FLAG )                 ? "✅ IGNORE_FLAG"                 : "❌ IGNORE_FLAG" );
-        g_hMenuAttributes.AddItem( "18", HasAttribute( iTarget, AUTO_JUMP )                   ? "✅ AUTO_JUMP"                   : "❌ AUTO_JUMP" );
-        g_hMenuAttributes.AddItem( "19", HasAttribute( iTarget, AIR_CHARGE_ONLY )             ? "✅ AIR_CHARGE_ONLY"             : "❌ AIR_CHARGE_ONLY" );
-        g_hMenuAttributes.AddItem( "20", HasAttribute( iTarget, PREFER_VACCINATOR_BULLETS )   ? "✅ PREFER_VACCINATOR_BULLETS"   : "❌ PREFER_VACCINATOR_BULLETS" );
-        g_hMenuAttributes.AddItem( "21", HasAttribute( iTarget, PREFER_VACCINATOR_BLAST )     ? "✅ PREFER_VACCINATOR_BLAST"     : "❌ PREFER_VACCINATOR_BLAST" );
-        g_hMenuAttributes.AddItem( "22", HasAttribute( iTarget, PREFER_VACCINATOR_FIRE )      ? "✅ PREFER_VACCINATOR_FIRE"      : "❌ PREFER_VACCINATOR_FIRE" );
-        g_hMenuAttributes.AddItem( "23", HasAttribute( iTarget, BULLET_IMMUNE )               ? "✅ BULLET_IMMUNE"               : "❌ BULLET_IMMUNE" );
-        g_hMenuAttributes.AddItem( "24", HasAttribute( iTarget, BLAST_IMMUNE )                ? "✅ BLAST_IMMUNE"                : "❌ BLAST_IMMUNE" );
-        g_hMenuAttributes.AddItem( "25", HasAttribute( iTarget, FIRE_IMMUNE )                 ? "✅ FIRE_IMMUNE"                 : "❌ FIRE_IMMUNE" );
-        g_hMenuAttributes.AddItem( "26", HasAttribute( iTarget, PARACHUTE )                   ? "✅ PARACHUTE"                   : "❌ PARACHUTE" );
-        g_hMenuAttributes.AddItem( "27", HasAttribute( iTarget, PROJECTILE_SHIELD )           ? "✅ PROJECTILE_SHIELD"           : "❌ PROJECTILE_SHIELD" );
-        g_hMenuAttributes.Display( iClient, MENU_TIME_FOREVER );
-    }
-
-    PrintToConsole( iClient, "------------------------ END ------------------------\n" );
-
-    return Plugin_Handled;
-}
-
-public void MenuAttributeHandler( Menu m, MenuAction ma, int iParam1, int iParam2 )
-{
-    if ( ma == MenuAction_End )
-    {
-        delete m;
-    }
-}
+    return MRES_Ignored;
+}/*
 
 /*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
-  Function: BlockAnnouncer
+  Function: CFilterTFBotHasTag_PassesFilterImpl
 
-  Summary:  This hook function intercepts all sounds before they're
-            emitted to clients and blocks announcer sounds from
-            being played to the invading team.
+  Summary:  This function is an implementation of
+            `CFilterTFBotHasTag::PassesFilterImpl`, but for human
+            players.
 
-  Args:     int aiClients[ MAXPLAYERS ]
-              Array of clients to which the sound will be played.
-            int& nClients
-              Number of clients in the `aiClients` array.
-            char szSample[ PLATFORM_MAX_PATH ]
-              Path on disk to the sound that will be played
-              relative to the "sound" folder.
-            int& iEntity
-              Entity emitting the sound.
-            int& iChannel
-              Channel emitting the sound.
-            float& flVolume
-              Sound volume.
-            int& iLevel
-              Sound level (aka attenuation).
-            int& iPitch
-              Sound pitch.
-            int& iFlags.
-              Sound flags.
-            char szSoundEntry[ PLATFORM_MAX_PATH ]
-              Game sound entry name.
-            int& iSeed
-              Sound seed.
+            Original function signature:
+            `bool PassesFilterImpl( CBaseEntity *pCaller, CBaseEntity *pEntity )`
 
-  Returns:  Action
-              Plugin_Continue to allow the sound to be played,
-              Plugin_Stop to block it, Plugin_Changed when any
-              parameter has been modified.
+  Args:     int iThis
+              CFilterTFBotHasTag filter.
+            DHookReturn hReturn
+              Handle to the return value of the function.
+            DHookParam hParams
+              Handle to the parameters of the called function.
+
+  Returns:  MRESReturn
+              DHook return action.
 F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
-public Action BlockAnnouncer(
-    int    aiClients[ MAXPLAYERS ],
-    int&   nClients,
-    char   szSample[ PLATFORM_MAX_PATH ],
-    int&   iEntity,
-    int&   iChannel,
-    float& flVolume,
-    int&   iLevel,
-    int&   iPitch,
-    int&   iFlags,
-    char   szSoundEntry[ PLATFORM_MAX_PATH ],
-    int&   iSeed
-)
+public MRESReturn CFilterTFBotHasTag_PassesFilterImpl( int iThis, DHookReturn hReturn, DHookParam hParams )
 {
-    if (
-        StrContains( szSoundEntry, "Announcer." ) ||
-        StrContains( szSoundEntry, "MVM.AttackDefend." )
-        )
-    {
-        int n = 0;
-        for ( int i = 0; i < sizeof( aiClients ); i++ )
-        {
-            int iClient = aiClients[ i ];
-            if (
-                0 < iClient <= MaxClients &&
-                IsClientInGame( iClient ) &&
-                TF2_GetClientTeam( iClient ) != TF_TEAM_PVE_INVADERS
-                )
-            {
-                aiClients[ n++ ] = iClient;
-            }
-        }
-
-        if ( n != nClients )
-        {
-            nClients = n;
-            return Plugin_Changed;
-        }
-    }
-
-    return Plugin_Continue;
-}
-
-public MRESReturn CFilterTFBotHasTag_PassesFilterImpl( int iThis, Handle hReturn, Handle hParams )
-{
-    if ( DHookIsNullParam( hParams, 1 ) || DHookIsNullParam( hParams, 2 ) )
+    if ( hParams.IsNull( 1 ) || hParams.IsNull( 2 ) )
     {
         return MRES_Ignored;
     }
 
-    int iCaller = DHookGetParam( hParams, 2 );
+    int iCaller = hParams.Get( 2 );
     if ( !( 0 < iCaller <= MaxClients ) || !IsClientInGame( iCaller ) || IsFakeClient( iCaller ) )
     {
         return MRES_Ignored;
@@ -880,7 +852,7 @@ public MRESReturn CFilterTFBotHasTag_PassesFilterImpl( int iThis, Handle hReturn
 
     if ( !IsPlayerAlive( iCaller ) )
     {
-        DHookSetReturn( hReturn, false );
+        hReturn.Value = false;
         return MRES_Supercede;
     }
 
@@ -896,10 +868,11 @@ public MRESReturn CFilterTFBotHasTag_PassesFilterImpl( int iThis, Handle hReturn
         return MRES_Ignored;
     }
 
+    // This is plural, but it's actually just one tag
     char iszTags[ PLATFORM_MAX_PATH ];
     GetEntPropString( iThis, Prop_Data, "m_iszTags", iszTags, PLATFORM_MAX_PATH );
     bool bNegated = view_as< bool >( GetEntProp( iThis, Prop_Data, "m_bNegated" ) );
-    // bool bRequireAllTags = view_as< bool >( GetEntProp( iFilter, Prop_Data, "m_bRequireAllTags" ) );    // Don't know of a map that uses this
+    // bool bRequireAllTags = view_as< bool >( GetEntProp( iThis, Prop_Data, "m_bRequireAllTags" ) );    // Don't know of a map that uses this
 
     bool bHasTag = TF2_HasTag( iBot, iszTags );
     if ( bNegated )
@@ -923,40 +896,75 @@ public MRESReturn CFilterTFBotHasTag_PassesFilterImpl( int iThis, Handle hReturn
         bHasTag = !bHasTag;
     }
 
-    // PrintToServer( "Filter %i on entity %s asks: HasTag %N %s ? %s", iFilter, szClassName, iBot, iszTags, bHasTag ? "Yes" : "No" );
+    // PrintToServer( "Filter %i on entity %s asks: HasTag %N %s ? %s", iThis, szClassName, iBot, iszTags, bHasTag ? "Yes" : "No" );
 
-    DHookSetReturn( hReturn, bHasTag );
+    hReturn.Value = bHasTag;
     return MRES_Supercede;
 }
 
-public MRESReturn CTFPlayer_IsValidObserverTarget( int iThis, Handle hReturn, Handle hParams )
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: CTFPlayer_IsValidObserverTarget
+
+  Summary:  This function blocks players from spectating controlled
+            bots.
+
+            Original function signature:
+            `bool CTFPlayer::IsValidObserverTarget( CBaseEntity * target )`
+
+  Args:     int iThis
+              Calling CTFPlayer entity.
+            DHookReturn hReturn
+              Handle to the return value of the function.
+            DHookParam hParams
+              Handle to the parameters of the called function.
+
+  Returns:  MRESReturn
+              DHook return action.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
+public MRESReturn CTFPlayer_IsValidObserverTarget( int iThis, DHookReturn hReturn, DHookParam hParams )
 {
-    if ( DHookIsNullParam( hParams, 1 ) )
+    if ( hParams.IsNull( 1 ) )
     {
         return MRES_Ignored;
     }
 
-    int iTarget = DHookGetParam( hParams, 1 );
-
-    // Valid
+    int iTarget = hParams.Get( 1 );
     if ( !( 0 < iTarget <= MaxClients ) || !IsClientInGame( iThis ) || !IsClientInGame( iTarget ) )
     {
         return MRES_Ignored;
     }
 
-    // We only care about spectating bots that are controlled
     if ( !IsFakeClient( iTarget ) || !g_bIsControlled[ iTarget ] )
     {
         return MRES_Ignored;
     }
 
-    DHookSetReturn( hReturn, false );
+    hReturn.Value = false;
     return MRES_Supercede;
 }
 
-public MRESReturn CTFPlayer_ShouldGib( int iThis, Handle hReturn, Handle hParams )
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: CTFPlayer_ShouldGib
+
+  Summary:  This function implements robots' gibbing logic for human
+            invading players.
+
+            Original function signature:
+            `bool CTFPlayer::ShouldGib( const CTakeDamageInfo &info )`
+
+  Args:     int iThis
+              Calling CTFPlayer entity.
+            DHookReturn hReturn
+              Handle to the return value of the function.
+            DHookParam hParams
+              Handle to the parameters of the called function.
+
+  Returns:  MRESReturn
+              DHook return action.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
+public MRESReturn CTFPlayer_ShouldGib( int iThis, DHookReturn hReturn, DHookParam hParams )
 {
-    if ( DHookIsNullParam( hParams, 1 ) || TF2_GetClientTeam( iThis ) != TF_TEAM_PVE_INVADERS )
+    if ( hParams.IsNull( 1 ) || TF2_GetClientTeam( iThis ) != TF_TEAM_PVE_INVADERS )
     {
         return MRES_Ignored;
     }
@@ -966,7 +974,7 @@ public MRESReturn CTFPlayer_ShouldGib( int iThis, Handle hReturn, Handle hParams
          GetEntPropFloat( iThis, Prop_Send, "m_flModelScale" ) > 1.0
         )
     {
-        DHookSetReturn( hReturn, true );
+        hReturn.Value = true;
         return MRES_Supercede;
     }
 
@@ -974,7 +982,7 @@ public MRESReturn CTFPlayer_ShouldGib( int iThis, Handle hReturn, Handle hParams
     {
         case TFClass_Sniper, TFClass_Medic, TFClass_Spy, TFClass_Engineer:
         {
-            DHookSetReturn( hReturn, false );
+            hReturn.Value = false;
             return MRES_Supercede;
         }
 
@@ -985,24 +993,56 @@ public MRESReturn CTFPlayer_ShouldGib( int iThis, Handle hReturn, Handle hParams
     }
 }
 
-public MRESReturn CBaseEntity_ShouldTransmit( int iThis, Handle hReturn, Handle hParams )
-{
-    if ( IsValidEntity( iThis ) )
-    {
-        bool bNotPlaced = ( view_as< bool >( GetEntProp( iThis, Prop_Send, "m_bCarried" ) ) ||
-                          view_as< bool >( GetEntProp( iThis, Prop_Send, "m_bPlacing") ) );
-        if ( bNotPlaced )   // Let game decide
-        {
-            return MRES_Ignored;
-        }
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: CBaseEntity_ShouldTransmit
 
-        DHookSetReturn( hReturn, FL_EDICT_ALWAYS );
-        return MRES_Supercede;
+  Summary:  Original function signature:
+            `int CBaseEntity::ShouldTransmit( const CCheckTransmitInfo *pInfo )`
+
+  Args:     int iThis
+              Calling CBaseEntity entity.
+            DHookReturn hReturn
+              Handle to the return value of the function.
+            DHookParam hParams
+              Handle to the parameters of the called function.
+
+  Returns:  MRESReturn
+              DHook return action.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
+public MRESReturn CBaseEntity_ShouldTransmit( int iThis, DHookReturn hReturn, DHookParam hParams )
+{
+    if ( !IsValidEntity( iThis ) )
+    {
+        return MRES_Ignored;
     }
 
-    return MRES_Ignored;
+    bool bNotPlaced = (
+                       view_as< bool >( GetEntProp( iThis, Prop_Send, "m_bCarried" ) ) ||
+                       view_as< bool >( GetEntProp( iThis, Prop_Send, "m_bPlacing") )
+                      );
+    if ( bNotPlaced )
+    {
+        // Let game decide
+        return MRES_Ignored;
+    }
+
+    hReturn.Value = FL_EDICT_ALWAYS;
+    return MRES_Supercede;
 }
 
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: OnClientDisconnect
+
+  Summary:  Called when a client is disconnecting from the server.
+            This function restores an invader bot if the controlling
+            player disconnects.
+
+  Args:     int iClient
+              Disconnecting client index.
+
+  Returns:  void
+              No return value.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
 public void OnClientDisconnect( int iClient )
 {
     if ( !( 0 < iClient <= MaxClients ) || !IsClientInGame( iClient ) )
@@ -1013,56 +1053,95 @@ public void OnClientDisconnect( int iClient )
     TF2_RestoreBot( iClient );
 }
 
-public void OnEntityCreated( int iEntity, const char[] szClassName )
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: OnEntityCreated
+
+  Summary:  This function is called when an entity is created. It
+            hooks functions onto specific entities and blocks
+            removes ragdolls if they're from a human invader.
+
+  Args:     int iEntity
+              Entity index.
+            const char[] szClassname
+              String representing the entity's class.
+
+  Returns:  void
+              No return value.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
+public void OnEntityCreated( int iEntity, const char[] szClassname )
 {
-    if ( StrEqual( szClassName, "item_currencypack_custom" ) )
+    if ( StrEqual( szClassname, "item_currencypack_custom" ) )
     {
         SDKHook( iEntity, SDKHook_SpawnPost, OnCurrencySpawnPost );
     }
-    else if ( g_bBlockRagdoll && StrEqual( szClassName, "tf_ragdoll" ) )
+    else if ( g_bBlockRagdoll && StrEqual( szClassname, "tf_ragdoll" ) )
     {
-        AcceptEntityInput( iEntity, "Kill" );
+        RemoveEntity( iEntity );
         g_bBlockRagdoll = false;
     }
-    else if ( StrEqual( szClassName, "filter_tf_bot_has_tag" ) )
+    else if ( StrEqual( szClassname, "filter_tf_bot_has_tag" ) )
     {
         SDKHook( iEntity, SDKHook_SpawnPost, OnFilterSpawnPos );
     }
-    else if ( StrEqual( szClassName, "entity_revive_marker" ) )
+    else if ( StrEqual( szClassname, "entity_revive_marker" ) )
     {
         SDKHook( iEntity, SDKHook_SpawnPost, OnReviveMarkerSpawnPost );
     }
-    else if ( StrEqual( szClassName, "obj_teleporter" ) )
+    else if ( StrEqual( szClassname, "obj_teleporter" ) )
     {
         SDKHook( iEntity, SDKHook_SetTransmit, Hook_TeleporterTransmit );
     }
-    else if( StrEqual( szClassName, "func_respawnroom" ) )
+    else if( StrEqual( szClassname, "func_respawnroom" ) )
     {
         SDKHook( iEntity, SDKHook_StartTouch, OnSpawnStartTouch );
         SDKHook( iEntity, SDKHook_EndTouch, OnSpawnEndTouch );
     }
-    else if ( StrEqual( szClassName, "func_capturezone" ) )
+    else if ( StrEqual( szClassname, "func_capturezone" ) )
     {
         SDKHook( iEntity, SDKHook_StartTouch, OnHatchStartTouch );
         SDKHook( iEntity, SDKHook_EndTouch, OnHatchEndTouch );
     }
-    else if ( StrEqual( szClassName, "item_teamflag" ) )
+    else if ( StrEqual( szClassname, "item_teamflag" ) )
     {
         SDKHook( iEntity, SDKHook_StartTouch, OnFlagTouch );
         SDKHook( iEntity, SDKHook_Touch, OnFlagTouch );
     }
 }
 
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: OnFilterSpawnPos
+
+  Summary:  This function hooks the `PassesFilterImpl` function
+            on an entity after it has spawned.
+
+  Args:     int iEntity
+              Entity index.
+
+  Returns:  void
+              No return value.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
 public void OnFilterSpawnPos( int iEntity )
 {
-    DHookEntity( g_hfnPassesFilterImpl, true, iEntity );
+    g_hfnPassesFilterImpl.HookEntity( Hook_Post, iEntity, CFilterTFBotHasTag_PassesFilterImpl );
 }
 
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: OnReviveMarkerSpawnPost
+
+  Summary:  This function removes revive markers dropped by human
+            invaders as soon as they spawn.
+
+  Args:     int iEntity
+              Revive marker entity index.
+
+  Returns:  void
+              No return value.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
 public void OnReviveMarkerSpawnPost( int iEntity )
 {
     if ( view_as< TFTeam >( GetEntProp( iEntity, Prop_Send, "m_iTeamNum" ) ) == TF_TEAM_PVE_INVADERS )
     {
-        // Remove the marker if it's from a robot player
+        // Remove the marker if it's from an invading player
         RemoveEntityNextFrame( iEntity );
     }
 }
@@ -1083,7 +1162,7 @@ void Frame_SentryVision_Create( int iRef )
     }
 
     // Make the sentry always transmit
-    DHookEntity( g_hfnShouldTransmit, true, iSentry );
+    g_hfnShouldTransmit.HookEntity( Hook_Post, iSentry, CBaseEntity_ShouldTransmit );
 
     float flModelScale = GetEntPropFloat( iSentry, Prop_Send, "m_flModelScale" );
     CopyEntProp( iSentry, iSentryGlow, Prop_Send, "m_nModelIndex" );
@@ -1173,7 +1252,7 @@ public Action SentryVision_OnThink( int iSentryGlow, int iClient )
             // Unparent me from my old parent.
             AcceptEntityInput( iSentryGlow, "ClearParent" );
 
-            float vecAbsOriginParent[3];
+            float vecAbsOriginParent[ 3 ];
             GetEntPropVector( moveparent, Prop_Data, "m_vecAbsOrigin", vecAbsOriginParent );
             TeleportEntity( iSentryGlow, vecAbsOriginParent, NULL_VECTOR, NULL_VECTOR );
 
@@ -1880,12 +1959,13 @@ stock void TF2_InstructPlayer( int iClient )
     int iBot = GetClientOfUserId( g_iPlayersBot[ iClient ] );
     if ( iBot == 0 )
     {
+        LogServer( "Cannot instruct %N because they are not controling a bot." );
         return;
     }
 
     if ( TF2_HasBomb( iClient ) )
     {
-        LogServer( "%N has the bomb. Instructing him to deploy it...", iClient );
+        LogServer( "%N has the bomb. Instructing them to deploy it...", iClient );
 
         TF2_ShowPositionalAnnotationToClient(
             iClient,
@@ -1898,7 +1978,7 @@ stock void TF2_InstructPlayer( int iClient )
     }
     else
     {
-        LogServer( "%N does't have the bomb. Instructing him to do something else...", iClient );
+        LogServer( "%N does't have the bomb. Instructing them to do something else...", iClient );
 
         int iLeader = TF2_GetBotSquadLeader( iBot );
         if ( 0 < iLeader <= MaxClients && IsClientInGame( iLeader ) && IsPlayerAlive( iLeader ) && iLeader != iClient )
@@ -2328,6 +2408,26 @@ public void OnObjectThink( int iEnt )
     }
 }
 
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: Listener_Build
+
+  Summary:  This hook function prevents human invader engineers
+            from building teleporter entrances or from building
+            any buildings at all depending on if the bot has an
+            existing `m_teleportWhereName` and if the map has a
+            `bot_hint_teleporter_exit` entity.
+
+  Args:     int iClient
+              Index of client that initiated a "build" command.
+            char[] szCommand
+              Command name, lowercase. To get name as typed by
+              the client, use GetCmdArg() and set `argnum` to `0`.
+            int argc
+              Argument count.
+
+  Returns:  MyReturnType
+              Description.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
 public Action Listener_Build( int iClient, char[] szCommand, int argc )
 {
     // Must be alive, in the game, and controlling a bot
@@ -2348,12 +2448,8 @@ public Action Listener_Build( int iClient, char[] szCommand, int argc )
         return Plugin_Continue;
     }
 
-    char szArg1[ 8 ], szArg2[ 8 ];
-    GetCmdArg( 1, szArg1, sizeof( szArg1 ) );
-    GetCmdArg( 2, szArg2, sizeof( szArg2 ) );
-
-    TFObjectType eObjectType = view_as< TFObjectType >( StringToInt( szArg1 ) );
-    TFObjectMode eObjectMode = view_as< TFObjectMode >( StringToInt( szArg2 ) );
+    TFObjectType eObjectType = view_as< TFObjectType >( GetCmdArgInt( 1 ) );
+    TFObjectMode eObjectMode = view_as< TFObjectMode >( GetCmdArgInt( 2 ) );
 
     // Don't allow building more than 1 of each object
     if ( TF2_GetObjectCount( iClient, eObjectType ) >= 1 )
@@ -2369,7 +2465,7 @@ public Action Listener_Build( int iClient, char[] szCommand, int argc )
 
     // Don't allow building any teleporters at all
     // if the engineer doesn't have a TeleportWhere location
-    if ( eObjectType == TFObject_Teleporter && !IsAllowedToBuildTeleporter( iClient ) )
+    if ( eObjectType == TFObject_Teleporter && !CanBuildTeleporterExit( iClient ) )
     {
         return Plugin_Handled;
     }
@@ -2377,7 +2473,23 @@ public Action Listener_Build( int iClient, char[] szCommand, int argc )
     return Plugin_Continue;
 }
 
-stock bool IsAllowedToBuildTeleporter( int iClient )
+/*F+F+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+  Function: IsAllowedToBuildTeleporter
+
+  Summary:  This function determines if a human invader engineer is
+            allowed to build a teleporter exit. This is determined
+            from the controlled bot's `m_teleportWhereName` member
+            variable and if the map has a "bot_hint_teleporter_exit"
+            entity.
+
+  Args:     int iClient
+              Human client index.
+
+  Returns:  bool
+              `true` if the client can build a teleporter exit.
+              `false` otherwise.
+-----------------------------------------------------------------F-F*/
+stock bool CanBuildTeleporterExit( int iClient )
 {
     int iBot = GetClientOfUserId( g_iPlayersBot[ iClient ] );
     if ( iBot <= 0 )
@@ -2391,16 +2503,15 @@ stock bool IsAllowedToBuildTeleporter( int iClient )
 
 int g_iLastHealer = -1;
 
-public MRESReturn CTFBotMedicHeal_SelectPatient( Handle hReturn, Handle hParams )
+public MRESReturn CTFBotMedicHeal_SelectPatient( DHookReturn hReturn, DHookParam hParams )
 {
-    g_iLastHealer = !DHookIsNullParam( hParams, 1 ) ? DHookGetParam( hParams, 1 ) : -1;
-
+    g_iLastHealer = !hParams.IsNull( 1 ) ? hParams.Get( 1 ) : -1;
     return MRES_Ignored;
 }
 
-public MRESReturn CTFBotMedicHeal_SelectPatient_Post( Handle hReturn, Handle hParams )
+public MRESReturn CTFBotMedicHeal_SelectPatient_Post( DHookReturn hReturn, DHookParam hParams )
 {
-    int iPatient = DHookGetReturn( hReturn );
+    int iPatient = hReturn.Value;
 
     if ( g_iLastHealer != -1 )
     {
@@ -2427,32 +2538,32 @@ public MRESReturn CTFBotMedicHeal_SelectPatient_Post( Handle hReturn, Handle hPa
         return MRES_Ignored;
     }
 
-    DHookSetReturn( hReturn, iPatient );
+    hReturn.Value = iPatient;
     return MRES_Supercede;
 }
 
 int g_iLastMedigun       = -1;
 int g_iLastMedigunTarget = -1;
 
-public MRESReturn CWeaponMedigun_IsAllowedToHealTarget( int iThis, Handle hReturn, Handle hParams )
+public MRESReturn CWeaponMedigun_IsAllowedToHealTarget( int iThis, DHookReturn hReturn, DHookParam hParams )
 {
     g_iLastMedigun       = iThis;
-    g_iLastMedigunTarget = !DHookIsNullParam( hParams, 1 ) ? DHookGetParam( hParams, 1 ) : -1;
+    g_iLastMedigunTarget = !hParams.IsNull( 1 ) ? hParams.Get( 1 ) : -1;
 
     return MRES_Ignored;
 }
 
-public MRESReturn CWeaponMedigun_IsAllowedToHealTarget_Post( int iThis, Handle hReturn, Handle hParams )
+public MRESReturn CWeaponMedigun_IsAllowedToHealTarget_Post( int iThis, DHookReturn hReturn, DHookParam hParams )
 {
     // Save the original result
-    bool bResult = DHookGetReturn( hReturn );
+    bool bResult = hReturn.Value;
 
     int iOwner = TF2_GetEntityOwner( g_iLastMedigun );
 
     // Controlled bots aren't allowed to heal
     if ( IsFakeClient( iOwner ) && g_bIsControlled[ iOwner ] )
     {
-        DHookSetReturn( hReturn, false );
+        hReturn.Value = false;
         return MRES_Supercede;
     }
 
@@ -2473,7 +2584,7 @@ public MRESReturn CWeaponMedigun_IsAllowedToHealTarget_Post( int iThis, Handle h
 
     // PrintToServer("CWeaponMedigun_IsAllowedToHealTarget_Post %i %i", g_iLastMedigunTarget, bOriginalResult);
 
-    DHookSetReturn( hReturn, bResult );
+    hReturn.Value = bResult;
     return MRES_Supercede;
 }
 
@@ -2757,6 +2868,7 @@ stock void TF2_ClearBot( int iClient, bool bKillBot )
     }
 
     SetEntProp( iClient, Prop_Send, "m_bIsABot", false );
+    SetEntProp( iClient, Prop_Send, "m_nBotSkill", -1 );
     SetEntProp( iClient, Prop_Send, "m_bIsMiniBoss", false );
 
     SetVariantString( "" );
@@ -2862,7 +2974,8 @@ stock void TF2_MirrorRobot( int iRobot, int iClient )
     // Get & Set some props
     CopyEntPropFloat( iRobot, iClient, Prop_Send, "m_flRageMeter" );
     CopyEntProp( iRobot, iClient, Prop_Send, "m_nNumHealers" );
-    CopyEntProp( iRobot, iClient, Prop_Send, "m_bIsABot" ); // Isn't this always true?
+    SetEntProp( iClient, Prop_Send, "m_bIsABot", true );
+    CopyEntProp( iRobot, iClient, Prop_Send, "m_nBotSkill" );   // Set's the robot's eye glow color
     CopyEntProp( iRobot, iClient, Prop_Send, "m_bIsMiniBoss" );
     // This can be either `BLOOD_COLOR_MECH` or `BLOOD_COLOR_RED` depending on
     // whether Halloween mode is on or off, so we can't hardcode it.
@@ -3031,7 +3144,7 @@ public Action Timer_ReplaceWeapons( Handle hTimer, int iUserId )
 
     if ( TF2_HasBomb( iBot ) )
     {
-        LogServer( "%N has the bomb. Making him drop it...", iBot );
+        LogServer( "%N has the bomb. Making them drop it...", iBot );
         int iBomb = TF2_DropBomb( iBot );
         if ( IsValidEntity( iBomb ) )
         {
@@ -3039,7 +3152,7 @@ public Action Timer_ReplaceWeapons( Handle hTimer, int iUserId )
             float vecOrigin[ 3 ];
             GetClientAbsOrigin( iPlayer, vecOrigin );
             TeleportEntity( iBomb, vecOrigin );
-            LogServer( "Teleported bomb to %N's position. He should now have it.", iPlayer );
+            LogServer( "Teleported bomb to %N's position. They should now have it.", iPlayer );
 
             // Copy bomb carrier upgrade level
             int iResource = FindEntityByClassname( -1, "tf_objective_resource" );
