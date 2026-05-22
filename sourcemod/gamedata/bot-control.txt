@@ -71,6 +71,12 @@
 				"windows"	"\x55\x8B\xEC\x83\xEC\x0C\x53\x57\x8B\x7D\x2A\x85\xFF"
 				"linux"		"@_ZN15CTFReviveMarker6CreateEP9CTFPlayer"
 			}
+			"CTFPlayer::CreateRagdollEntity"
+			{
+				"library"	"server"
+				"windows"	"\x55\x8B\xEC\x53\x56\x57\x8B\xF9\x8B\x8F\x2A\x2A\x2A\x2A\x85\xC9\x74\x2A\xBA\xFF\x1F\x00\x00"
+				"linux"		"@_ZN9CTFPlayer19CreateRagdollEntityEbbbbbbbbib"
+			}
 
 			/*--------------------------------------------------------------------
 			  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -168,11 +174,6 @@
 				"windows"	"491"
 				"linux"		"498"
 			}
-			"CTFPlayer::CreateRagdollEntity"
-			{
-				"windows"	"437"
-				"linux"		"438"
-			}
 			"CTFBot::m_squad"	// Find from `CTFBot::LeaveSquad`
 			{
 				"windows"	"10192"
@@ -265,36 +266,11 @@
 					}
 				}
 			}
-
-			/*--------------------------------------------------------------------
-			  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-			  !!!!!!!!!!!!!!!!!!!!!!!!!!!!! DHOOKS !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-			  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-			--------------------------------------------------------------------*/
-
-			"CTFPlayer::ShouldGib"
+			"CTFPlayer::CreateRagdollEntity"	// "tf_ragdoll"
 			{
-				"offset"	"CTFPlayer::ShouldGib"
+				"signature"	"CTFPlayer::CreateRagdollEntity"
 
-				"hooktype"	"entity"
-
-				"return"	"bool"
-				"this"		"entity"
-
-				"arguments"
-				{
-					info
-					{
-						"type"	"objectptr"
-						"flags"	"byref"
-					}
-				}
-			}
-			"CTFPlayer::CreateRagdollEntity"
-			{
-				"offset"	"CTFPlayer::CreateRagdollEntity"
-
-				"hooktype"	"entity"
+				"callconv"	"thiscall"
 
 				"return"	"void"
 				"this"		"entity"
@@ -350,6 +326,31 @@
 					{
 						"type"	"bool"
 						"flags"	"byval"
+					}
+				}
+			}
+
+			/*--------------------------------------------------------------------
+			  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+			  !!!!!!!!!!!!!!!!!!!!!!!!!!!!! DHOOKS !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+			  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+			--------------------------------------------------------------------*/
+
+			"CTFPlayer::ShouldGib"
+			{
+				"offset"	"CTFPlayer::ShouldGib"
+
+				"hooktype"	"entity"
+
+				"return"	"bool"
+				"this"		"entity"
+
+				"arguments"
+				{
+					info
+					{
+						"type"	"objectptr"
+						"flags"	"byref"
 					}
 				}
 			}
