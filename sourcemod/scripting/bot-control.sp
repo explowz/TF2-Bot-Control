@@ -30,6 +30,7 @@
 #include <stocksoup/log_server>
 
 #pragma newdecls required
+#pragma semicolon 1
 
 public Plugin myinfo =
 {
@@ -187,13 +188,14 @@ Handle g_hfnHasAttribute;
 // DHooks
 DynamicHook g_hfnIsValidObserverTarget;
 DynamicHook g_hfnShouldGib;
+// DynamicHook g_hfnCreateRagdollEntity;
 DynamicHook g_hfnShouldTransmit;
 DynamicHook g_hfnPassesFilterImpl;
 
 // Detours
 DynamicDetour g_hfnSelectPatient;
 DynamicDetour g_hfnIsAllowedToHealTarget;
-// DynamicDetour g_hfnCreate;
+DynamicDetour g_hfnCreate;
 
 // Offsets
 #if defined( WIN32 )
@@ -212,6 +214,7 @@ float g_flNextInstructionTime[ MAXPLAYERS + 1 ];
 bool  g_bControllingBot[ MAXPLAYERS + 1 ];
 bool  g_bReloadingBarrage[ MAXPLAYERS + 1 ];
 bool  g_bSkipInventory[ MAXPLAYERS + 1 ];
+// int   g_iBlockRagdoll[ MAXPLAYERS + 1 ] = { INVALID_HOOK_ID, ... };
 bool  g_bBlockRagdoll;    // Stolen from Stop that Tank
 
 // Controlled bot data
@@ -227,6 +230,8 @@ float g_flSpawnTime[ MAXPLAYERS + 1 ];
 int   g_iFlagCarrierUpgradeLevel[ MAXPLAYERS + 1 ];
 float g_flBombDeployTime[ MAXPLAYERS + 1 ];
 float g_flNextBombUpgradeTime[ MAXPLAYERS + 1 ];
+
+#define ResetGlobals    OnClientPutInServer
 
 /*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
   Function: OnPluginStart
@@ -558,7 +563,7 @@ public void OnPluginStart()
 
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
 
-    /*g_hfnCreate = DynamicDetour.FromConf( Conf, "CTFReviveMarker::Create" );
+    g_hfnCreate = DynamicDetour.FromConf( Conf, "CTFReviveMarker::Create" );
     if ( !g_hfnCreate )
     {
         SetFailState( "Failed to create dynamic detour for CTFReviveMarker::Create." );
@@ -567,7 +572,7 @@ public void OnPluginStart()
     if ( !g_hfnCreate.Enable( Hook_Pre, CTFReviveMarker_Create ) )
     {
         SetFailState( "Failed to enable CTFReviveMarker::Create dynamic detour." );
-    }*/
+    }
 
     /*--------------------------------------------------------------------
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -580,6 +585,14 @@ public void OnPluginStart()
     {
         SetFailState( "Failed to get create CTFPlayer::ShouldGib dynamic hook." );
     }
+
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+
+    /*g_hfnCreateRagdollEntity = DynamicHook.FromConf( Conf, "CTFPlayer::CreateRagdollEntity" );
+    if ( !g_hfnCreateRagdollEntity )
+    {
+        SetFailState( "Failed to get create CTFPlayer::CreateRagdollEntity dynamic hook." );
+    }*/
 
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
 
@@ -637,20 +650,20 @@ public void OnPluginStart()
     AddCommandListener( Listener_Block, "explode" );
     AddCommandListener( Listener_Build, "build" );
 
-    HookEvent( "teamplay_flag_event", Event_FlagEvent );
+    HookEvent( "teamplay_flag_event", Event_FlagEvent, EventHookMode_Post );
     HookEvent( "player_team", Event_PlayerTeam, EventHookMode_Pre );
     HookEvent( "player_death", Event_PlayerDeath, EventHookMode_Pre );
-    HookEvent( "player_spawn", Event_PlayerSpawn );
-    HookEvent( "player_builtobject",Event_BuildObject );
-    HookEvent( "teamplay_round_start", Event_ResetBots );
-    HookEvent( "mvm_wave_complete", Event_ResetBots );
-    HookEvent( "player_sapped_object", Event_SappedObject );
+    HookEvent( "player_spawn", Event_PlayerSpawn, EventHookMode_Post );
+    HookEvent( "player_builtobject",Event_BuildObject, EventHookMode_Post );
+    HookEvent( "teamplay_round_start", Event_ResetBots, EventHookMode_Post );
+    HookEvent( "mvm_wave_complete", Event_ResetBots, EventHookMode_Post );
+    HookEvent( "player_sapped_object", Event_SappedObject, EventHookMode_Post );
 
     for ( int iClient = 1; iClient <= MaxClients; iClient++ )
     {
         if ( IsClientInGame( iClient ) )
         {
-            OnClientPutInServer( iClient );
+            ResetGlobals( iClient );
         }
     }
 }
@@ -676,7 +689,10 @@ public void OnPluginEnd()
     delete g_hHudInfo;
     delete g_hHudReload;
 
+    delete g_hfnCreate;
+    // delete g_hfnCreateRagdollEntity;
     delete g_hfnDispatchParticleEffect;
+    delete g_hfnDrop;
     delete g_hfnGetMaxClip1;
     delete g_hfnGetLeader;
     delete g_hfnHasTag;
@@ -710,12 +726,12 @@ public void OnPluginEnd()
 F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
 public void OnMapStart()
 {
-    if ( !TF2_PlayingMannVsMachine() )
+    if ( !IsMannVsMachineMode() )
     {
 #if defined( STEAMWORKS_SUPPORT )
         SteamWorks_SetGameDescription( "Team Fortress 2" );
 #endif
-        SetFailState( " Disabling for non Mann vs. Machine map." );
+        SetFailState( "Disabling for non Mann vs. Machine map." );
     }
 
 #if defined( STEAMWORKS_SUPPORT )
@@ -750,7 +766,6 @@ public void OnMapStart()
             This function resets a player's global values and hooks
             functions to its entity.
 
-
   Args:     int iClient
               Client index.
 
@@ -759,7 +774,6 @@ public void OnMapStart()
 F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
 public void OnClientPutInServer( int iClient )
 {
-    // TODO: Create two separate methodmaps TFPlayer and TFBot (inherits TFPlayer)
     g_iPlayersBot[ iClient ]     = -1;
     g_bControllingBot[ iClient ] = false;
     g_bIsControlled[ iClient ]   = false;
@@ -778,11 +792,18 @@ public void OnClientPutInServer( int iClient )
     g_bDeploying[ iClient ]               = false;
     g_flBombDeployTime[ iClient ]         = -1.0;
 
-    g_hfnShouldGib.HookEntity( Hook_Post, iClient, CTFPlayer_ShouldGib );
-    g_hfnIsValidObserverTarget.HookEntity( Hook_Post, iClient, CTFPlayer_IsValidObserverTarget );
+    if ( IsFakeClient( iClient ) )
+    {
+        g_hfnIsValidObserverTarget.HookEntity( Hook_Post, iClient, CTFPlayer_IsValidObserverTarget );
+    }
+    else
+    {
+        // Mimic gibbing logic for human invaders
+        g_hfnShouldGib.HookEntity( Hook_Post, iClient, CTFPlayer_ShouldGib );
 
-    SDKHook( iClient, SDKHook_SetTransmit, Hook_SpyTransmit );
-    SDKHook( iClient, SDKHook_OnTakeDamageAlivePost, Player_OnTakeDamageAlivePost );
+        SDKHook( iClient, SDKHook_SetTransmit, Hook_SpyTransmit );
+        SDKHook( iClient, SDKHook_OnTakeDamageAlivePost, Player_OnTakeDamageAlivePost );
+    }
 }
 
 /*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
@@ -794,9 +815,7 @@ public void OnClientPutInServer( int iClient )
             Original function signature:
             `CTFReviveMarker *CTFReviveMarker::Create( CTFPlayer *pOwner )`
 
-  Args:     int iThis
-              CTFReviveMarker entity.
-            DHookReturn hReturn
+  Args:     DHookReturn hReturn
               Handle to the return value of the function.
             DHookParam hParams
               Handle to the parameters of the called function.
@@ -804,18 +823,20 @@ public void OnClientPutInServer( int iClient )
   Returns:  MRESReturn
               DHook return action.
 F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
-// FIXME: Crashes the server
-/*public MRESReturn CTFReviveMarker_Create( int iThis, DHookReturn hReturn, DHookParam hParam )
+public MRESReturn CTFReviveMarker_Create( DHookReturn hReturn, DHookParam hParams )
 {
-    int iOwner = !hParam.IsNull( 1 ) ? hParam.Get( 1 ) : -1;
-    if ( 0 < iOwner <= MaxClients && IsClientInGame( iOwner ) && TF2_GetClientTeam( iOwner ) == TF_TEAM_PVE_INVADERS )
+    if ( !hParams.IsNull( 1 ) )
     {
-        hReturn.Value = INVALID_ENT_REFERENCE;
-        return MRES_Supercede;
+        int iOwner = hParams.Get( 1 );
+        if ( TF2_GetClientTeam( iOwner ) == TF_TEAM_PVE_INVADERS )
+        {
+            hReturn.Value = INVALID_ENT_REFERENCE;
+            return MRES_Supercede;
+        }
     }
 
     return MRES_Ignored;
-}/*
+}
 
 /*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
   Function: CFilterTFBotHasTag_PassesFilterImpl
@@ -827,8 +848,8 @@ F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
             Original function signature:
             `bool PassesFilterImpl( CBaseEntity *pCaller, CBaseEntity *pEntity )`
 
-  Args:     int iThis
-              CFilterTFBotHasTag filter.
+  Args:     Address pThis
+              Pointer to the calling CFilterTFBotHasTag entity.
             DHookReturn hReturn
               Handle to the return value of the function.
             DHookParam hParams
@@ -837,7 +858,7 @@ F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
   Returns:  MRESReturn
               DHook return action.
 F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
-public MRESReturn CFilterTFBotHasTag_PassesFilterImpl( int iThis, DHookReturn hReturn, DHookParam hParams )
+public MRESReturn CFilterTFBotHasTag_PassesFilterImpl( Address pThis, DHookReturn hReturn, DHookParam hParams )
 {
     if ( hParams.IsNull( 1 ) || hParams.IsNull( 2 ) )
     {
@@ -870,8 +891,8 @@ public MRESReturn CFilterTFBotHasTag_PassesFilterImpl( int iThis, DHookReturn hR
 
     // This is plural, but it's actually just one tag
     char iszTags[ PLATFORM_MAX_PATH ];
-    GetEntPropString( iThis, Prop_Data, "m_iszTags", iszTags, PLATFORM_MAX_PATH );
-    bool bNegated = view_as< bool >( GetEntProp( iThis, Prop_Data, "m_bNegated" ) );
+    GetEntPropString( pThis, Prop_Data, "m_iszTags", iszTags, PLATFORM_MAX_PATH );
+    bool bNegated = view_as< bool >( GetEntProp( pThis, Prop_Data, "m_bNegated" ) );
     // bool bRequireAllTags = view_as< bool >( GetEntProp( iThis, Prop_Data, "m_bRequireAllTags" ) );    // Don't know of a map that uses this
 
     bool bHasTag = TF2_HasTag( iBot, iszTags );
@@ -880,7 +901,7 @@ public MRESReturn CFilterTFBotHasTag_PassesFilterImpl( int iThis, DHookReturn hR
         bHasTag = !bHasTag;
     }
 
-    int  iEntity = DHookGetParam( hParams, 1 );
+    int  iEntity = hParams.Get( 1 );
     char szClassname[ 64 ];
     GetEntityClassname( iEntity, szClassname, sizeof( szClassname ) );
 
@@ -911,8 +932,8 @@ public MRESReturn CFilterTFBotHasTag_PassesFilterImpl( int iThis, DHookReturn hR
             Original function signature:
             `bool CTFPlayer::IsValidObserverTarget( CBaseEntity * target )`
 
-  Args:     int iThis
-              Calling CTFPlayer entity.
+  Args:     Address pThis
+              Pointer to the calling CTFPlayer entity.
             DHookReturn hReturn
               Handle to the return value of the function.
             DHookParam hParams
@@ -921,7 +942,7 @@ public MRESReturn CFilterTFBotHasTag_PassesFilterImpl( int iThis, DHookReturn hR
   Returns:  MRESReturn
               DHook return action.
 F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
-public MRESReturn CTFPlayer_IsValidObserverTarget( int iThis, DHookReturn hReturn, DHookParam hParams )
+public MRESReturn CTFPlayer_IsValidObserverTarget( Address pThis, DHookReturn hReturn, DHookParam hParams )
 {
     if ( hParams.IsNull( 1 ) )
     {
@@ -929,12 +950,12 @@ public MRESReturn CTFPlayer_IsValidObserverTarget( int iThis, DHookReturn hRetur
     }
 
     int iTarget = hParams.Get( 1 );
-    if ( !( 0 < iTarget <= MaxClients ) || !IsClientInGame( iThis ) || !IsClientInGame( iTarget ) )
+    if ( !( 0 < iTarget <= MaxClients ) || !IsClientInGame( pThis ) || !IsClientInGame( iTarget ) )
     {
         return MRES_Ignored;
     }
 
-    if ( !IsFakeClient( iTarget ) || !g_bIsControlled[ iTarget ] )
+    if ( !g_bIsControlled[ iTarget ] )
     {
         return MRES_Ignored;
     }
@@ -952,7 +973,7 @@ public MRESReturn CTFPlayer_IsValidObserverTarget( int iThis, DHookReturn hRetur
             Original function signature:
             `bool CTFPlayer::ShouldGib( const CTakeDamageInfo &info )`
 
-  Args:     int iThis
+  Args:     Address pThis
               Calling CTFPlayer entity.
             DHookReturn hReturn
               Handle to the return value of the function.
@@ -962,23 +983,23 @@ public MRESReturn CTFPlayer_IsValidObserverTarget( int iThis, DHookReturn hRetur
   Returns:  MRESReturn
               DHook return action.
 F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
-public MRESReturn CTFPlayer_ShouldGib( int iThis, DHookReturn hReturn, DHookParam hParams )
+public MRESReturn CTFPlayer_ShouldGib( Address pThis, DHookReturn hReturn, DHookParam hParams )
 {
-    if ( hParams.IsNull( 1 ) || TF2_GetClientTeam( iThis ) != TF_TEAM_PVE_INVADERS )
+    if ( TF2_GetClientTeam( pThis ) != TF_TEAM_PVE_INVADERS )
     {
         return MRES_Ignored;
     }
 
     if (
-         GetEntProp( iThis, Prop_Send, "m_bIsMiniBoss" ) ||
-         GetEntPropFloat( iThis, Prop_Send, "m_flModelScale" ) > 1.0
+         GetEntProp( pThis, Prop_Send, "m_bIsMiniBoss" ) ||
+         GetEntPropFloat( pThis, Prop_Send, "m_flModelScale" ) > 1.0
         )
     {
         hReturn.Value = true;
         return MRES_Supercede;
     }
 
-    switch ( TF2_GetPlayerClass( iThis ) )
+    switch ( TF2_GetPlayerClass( pThis ) )
     {
         case TFClass_Sniper, TFClass_Medic, TFClass_Spy, TFClass_Engineer:
         {
@@ -993,14 +1014,19 @@ public MRESReturn CTFPlayer_ShouldGib( int iThis, DHookReturn hReturn, DHookPara
     }
 }
 
+public MRESReturn CTFPlayer_CreateRagdollEntity( Address pThis, DHookParam hParams )
+{
+    return MRES_Supercede;
+}
+
 /*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
   Function: CBaseEntity_ShouldTransmit
 
   Summary:  Original function signature:
             `int CBaseEntity::ShouldTransmit( const CCheckTransmitInfo *pInfo )`
 
-  Args:     int iThis
-              Calling CBaseEntity entity.
+  Args:     Address pThis
+              Pointer to calling CBaseEntity entity.
             DHookReturn hReturn
               Handle to the return value of the function.
             DHookParam hParams
@@ -1009,16 +1035,16 @@ public MRESReturn CTFPlayer_ShouldGib( int iThis, DHookReturn hReturn, DHookPara
   Returns:  MRESReturn
               DHook return action.
 F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
-public MRESReturn CBaseEntity_ShouldTransmit( int iThis, DHookReturn hReturn, DHookParam hParams )
+public MRESReturn CBaseEntity_ShouldTransmit( Address pThis, DHookReturn hReturn, DHookParam hParams )
 {
-    if ( !IsValidEntity( iThis ) )
+    if ( !IsValidEntity( pThis ) )
     {
         return MRES_Ignored;
     }
 
     bool bNotPlaced = (
-                       view_as< bool >( GetEntProp( iThis, Prop_Send, "m_bCarried" ) ) ||
-                       view_as< bool >( GetEntProp( iThis, Prop_Send, "m_bPlacing") )
+                       view_as< bool >( GetEntProp( pThis, Prop_Send, "m_bCarried" ) ) ||
+                       view_as< bool >( GetEntProp( pThis, Prop_Send, "m_bPlacing") )
                       );
     if ( bNotPlaced )
     {
@@ -1058,7 +1084,8 @@ public void OnClientDisconnect( int iClient )
 
   Summary:  This function is called when an entity is created. It
             hooks functions onto specific entities and blocks
-            removes ragdolls if they're from a human invader.
+            entities from being created if they're from a human
+            invader.
 
   Args:     int iEntity
               Entity index.
@@ -1082,10 +1109,6 @@ public void OnEntityCreated( int iEntity, const char[] szClassname )
     else if ( StrEqual( szClassname, "filter_tf_bot_has_tag" ) )
     {
         SDKHook( iEntity, SDKHook_SpawnPost, OnFilterSpawnPos );
-    }
-    else if ( StrEqual( szClassname, "entity_revive_marker" ) )
-    {
-        SDKHook( iEntity, SDKHook_SpawnPost, OnReviveMarkerSpawnPost );
     }
     else if ( StrEqual( szClassname, "obj_teleporter" ) )
     {
@@ -1125,27 +1148,6 @@ public void OnFilterSpawnPos( int iEntity )
     g_hfnPassesFilterImpl.HookEntity( Hook_Post, iEntity, CFilterTFBotHasTag_PassesFilterImpl );
 }
 
-/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
-  Function: OnReviveMarkerSpawnPost
-
-  Summary:  This function removes revive markers dropped by human
-            invaders as soon as they spawn.
-
-  Args:     int iEntity
-              Revive marker entity index.
-
-  Returns:  void
-              No return value.
-F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
-public void OnReviveMarkerSpawnPost( int iEntity )
-{
-    if ( view_as< TFTeam >( GetEntProp( iEntity, Prop_Send, "m_iTeamNum" ) ) == TF_TEAM_PVE_INVADERS )
-    {
-        // Remove the marker if it's from an invading player
-        RemoveEntityNextFrame( iEntity );
-    }
-}
-
 void Frame_SentryVision_Create( int iRef )
 {
     int iSentry = EntRefToEntIndex( iRef );
@@ -1179,15 +1181,15 @@ void Frame_SentryVision_Create( int iRef )
     SetEntProp( iSentryGlow, Prop_Send, "m_bGlowEnabled", true );
     SetEntPropFloat( iSentryGlow, Prop_Send, "m_flModelScale", flModelScale );
     SetEntProp(
-        iSentryGlow,
-        Prop_Send,
-        "m_fEffects",
-        GetEntProp( iSentryGlow, Prop_Send, "m_fEffects" ) |
-            EF_BONEMERGE |
-            EF_BONEMERGE_FASTCULL |
-            EF_NOSHADOW |
-            EF_NORECEIVESHADOW
-    );
+               iSentryGlow,
+               Prop_Send,
+               "m_fEffects",
+               GetEntProp( iSentryGlow, Prop_Send, "m_fEffects" ) |
+                   EF_BONEMERGE |
+                   EF_BONEMERGE_FASTCULL |
+                   EF_NOSHADOW |
+                   EF_NORECEIVESHADOW
+              );
 
     SetVariantString( "!activator" );
     AcceptEntityInput( iSentryGlow, "SetParent", iSentry );
@@ -1202,7 +1204,7 @@ public Action SentryVision_OnThink( int iSentryGlow, int iClient )
     {
         // Safe check to know if I'm parented to the sentry and NOT carried! We don't want to put the glow on the blueprint!
         bool bNotPlaced = ( view_as< bool >( GetEntProp( moveparent, Prop_Send, "m_bCarried" ) ) ||
-                          view_as< bool >( GetEntProp( moveparent, Prop_Send, "m_bPlacing" ) ) );
+                            view_as< bool >( GetEntProp( moveparent, Prop_Send, "m_bPlacing" ) ) );
         if ( bNotPlaced )   // The sentry is carried, set my parent to the engie!
         {
             moveparent = TF2_GetObjectBuilder( moveparent );
@@ -1496,7 +1498,7 @@ public void OnSpawnEndTouch( int iRespawnRoom, int iEntity )
 {
     TFTeam eTeam = view_as< TFTeam >( GetEntProp( iRespawnRoom, Prop_Send, "m_iTeamNum" ) );
     if (
-        eTeam != TF_TEAM_PVE_INVADERS        ||
+        eTeam != TF_TEAM_PVE_INVADERS         ||
         !( 0 < iEntity <= MaxClients )        ||
         TF2_GetClientTeam( iEntity ) != eTeam ||
         IsFakeClient( iEntity )
@@ -1621,9 +1623,9 @@ public Action OnPlayerRunCmd(
         {
             if ( TF2_IsPlayerInCondition( iClient, TFCond_UberchargedHidden ) && TF2_IsPlayerInCondition( iClient, TFCond_ImmuneToPushback ) )
             {
-                if ( !( TF2_GetPlayerClass( iClient ) == TFClass_Medic && GetPlayerWeaponSlot( iClient, TFWeaponSlot_Secondary ) == iActiveWeapon ) )
+                // Allow medic to heal in spawn if they have their medigun out
+                if ( TF2_GetPlayerClass( iClient ) != TFClass_Medic && GetPlayerWeaponSlot( iClient, TFWeaponSlot_Secondary ) != iActiveWeapon )
                 {
-                    //Allow medic to heal in spawn if they have their medigun out.
                     SetEntPropFloat( iClient, Prop_Send, "m_flStealthNoAttackExpire", GetGameTime() + 0.5 );
                 }
 
@@ -2287,6 +2289,7 @@ public Action Event_PlayerDeath( Event hEvent, const char[] szName, bool bDontBr
     if ( IsFakeClient( iClient ) && g_bIsControlled[ iClient ] )
     {
         bDontBroadcast  = true;
+        // g_iBlockRagdoll[ iClient ] = g_hfnCreateRagdollEntity.HookEntity( Hook_Pre, iClient, CTFPlayer_CreateRagdollEntity );
         g_bBlockRagdoll = true;
 
         Result = Plugin_Changed;
@@ -2329,11 +2332,11 @@ public Action Event_PlayerTeam( Event hEvent, const char[] szName, bool bDontBro
 
     if ( eTeam == TFTeam_Spectator )
     {
-        if( g_bControllingBot[ iClient ] )
+        if ( g_bControllingBot[ iClient ] )
         {
             TF2_RestoreBot( iClient );
             TF2_ChangeClientTeam( iClient, TFTeam_Spectator );
-            TF2_RespawnPlayer( iClient );   //No gibs/ragdoll
+            TF2_RespawnPlayer( iClient );   // No gibs/ragdoll
 
             g_flCooldownEndTime[ iClient ] = GetGameTime() + 10.0;
         }
@@ -2545,15 +2548,15 @@ public MRESReturn CTFBotMedicHeal_SelectPatient_Post( DHookReturn hReturn, DHook
 int g_iLastMedigun       = -1;
 int g_iLastMedigunTarget = -1;
 
-public MRESReturn CWeaponMedigun_IsAllowedToHealTarget( int iThis, DHookReturn hReturn, DHookParam hParams )
+public MRESReturn CWeaponMedigun_IsAllowedToHealTarget( Address pThis, DHookReturn hReturn, DHookParam hParams )
 {
-    g_iLastMedigun       = iThis;
+    g_iLastMedigun       = pThis;
     g_iLastMedigunTarget = !hParams.IsNull( 1 ) ? hParams.Get( 1 ) : -1;
 
     return MRES_Ignored;
 }
 
-public MRESReturn CWeaponMedigun_IsAllowedToHealTarget_Post( int iThis, DHookReturn hReturn, DHookParam hParams )
+public MRESReturn CWeaponMedigun_IsAllowedToHealTarget_Post( Address pThis, DHookReturn hReturn, DHookParam hParams )
 {
     // Save the original result
     bool bResult = hReturn.Value;
@@ -2646,7 +2649,7 @@ public Action Listener_Voice( int iClient, char[] szCommand, int argc )
             else
             {
                 float flCooldown = g_flCooldownEndTime[ iClient ] - GetGameTime();
-                PrintColoredChat(iClient, COLOR_RED ... "Cannot play as a bot for %.0f more seconds", flCooldown);
+                PrintColoredChat( iClient, COLOR_RED ... "Cannot play as a bot for %.0f more seconds", flCooldown );
             }
         }
     }
@@ -2678,12 +2681,6 @@ public Action Hook_SpyTransmit( int iEntity, int iOther )
     }
 
     if ( !IsClientInGame( iOther ) )
-    {
-        return Plugin_Continue;
-    }
-
-    // Ignore bots
-    if ( IsFakeClient( iOther ) )
     {
         return Plugin_Continue;
     }
@@ -2793,8 +2790,8 @@ stock void TF2_RestoreBot( int iClient )
         // Copy medigun data
         if ( TF2_GetPlayerClass( iBot ) == TFClass_Medic )
         {
-            int iPlayerMedigun = GetPlayerWeaponSlot( iClient, view_as< int >( TFWeaponSlot_Secondary ) );
-            int iBotMedigun    = GetPlayerWeaponSlot( iBot, view_as< int >( TFWeaponSlot_Secondary ) );
+            int iPlayerMedigun = GetPlayerWeaponSlot( iClient, TFWeaponSlot_Secondary );
+            int iBotMedigun    = GetPlayerWeaponSlot( iBot, TFWeaponSlot_Secondary );
             if (
                 IsValidEntity( iPlayerMedigun ) && IsValidEntity( iBotMedigun ) &&
                 EntityClassEquals( iPlayerMedigun, "tf_weapon_medigun" )        &&
@@ -2815,8 +2812,9 @@ stock void TF2_RestoreBot( int iClient )
         TeleportEntity( iBot, vecOrigin, angEyeAngles, vecVelocity );
         SetEntityMoveType( iBot, MOVETYPE_WALK );
 
-        OnClientPutInServer( iBot );
+        ResetGlobals( iBot );
 
+        // g_iBlockRagdoll[ iBot ] = g_hfnCreateRagdollEntity.HookEntity( Hook_Pre, iClient, CTFPlayer_CreateRagdollEntity );
         g_bBlockRagdoll       = true;
         g_flSpawnTime[ iBot ] = GetGameTime();
     }
@@ -2877,7 +2875,7 @@ stock void TF2_ClearBot( int iClient, bool bKillBot )
     TF2Attrib_RemoveAll( iClient );
     TF2Attrib_ClearCache( iClient );
 
-    OnClientPutInServer( iClient );
+    ResetGlobals( iClient );
 }
 
 stock void TF2_KillBot( int iClient, int iAttacker = -1 )
@@ -2917,7 +2915,7 @@ stock void TF2_KillBot( int iClient, int iAttacker = -1 )
     g_bIsControlled[ iBot ] = false;
     g_iController[ iBot ]   = -1;
 
-    OnClientPutInServer( iBot );
+    ResetGlobals( iBot );
 }
 
 stock void TF2_MirrorRobot( int iRobot, int iClient )
@@ -2975,7 +2973,7 @@ stock void TF2_MirrorRobot( int iRobot, int iClient )
     CopyEntPropFloat( iRobot, iClient, Prop_Send, "m_flRageMeter" );
     CopyEntProp( iRobot, iClient, Prop_Send, "m_nNumHealers" );
     SetEntProp( iClient, Prop_Send, "m_bIsABot", true );
-    CopyEntProp( iRobot, iClient, Prop_Send, "m_nBotSkill" );   // Set's the robot's eye glow color
+    CopyEntProp( iRobot, iClient, Prop_Send, "m_nBotSkill" );   // Sets the robot's eye glow color
     CopyEntProp( iRobot, iClient, Prop_Send, "m_bIsMiniBoss" );
     // This can be either `BLOOD_COLOR_MECH` or `BLOOD_COLOR_RED` depending on
     // whether Halloween mode is on or off, so we can't hardcode it.
@@ -3789,7 +3787,7 @@ stock void AddParticle( int iBuilding, const char[] szEffectName )
     AcceptEntityInput( iParticle, "start" );
 }
 
-stock bool TF2_PlayingMannVsMachine()
+stock bool IsMannVsMachineMode()
 {
     return view_as< bool >( GameRules_GetProp( "m_bPlayingMannVsMachine" ) );
 }

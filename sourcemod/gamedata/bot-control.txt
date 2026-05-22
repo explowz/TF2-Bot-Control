@@ -168,6 +168,11 @@
 				"windows"	"491"
 				"linux"		"498"
 			}
+			"CTFPlayer::CreateRagdollEntity"
+			{
+				"windows"	"437"
+				"linux"		"438"
+			}
 			"CTFBot::m_squad"	// Find from `CTFBot::LeaveSquad`
 			{
 				"windows"	"10192"
@@ -248,10 +253,9 @@
 			{
 				"signature"	"CTFReviveMarker::Create"
 
-				"callconv"	"thiscall"
+				"callconv"	"cdecl"
 
 				"return"	"cbaseentity"
-				"this"		"entity"
 
 				"arguments"
 				{
@@ -283,6 +287,69 @@
 					{
 						"type"	"objectptr"
 						"flags"	"byref"
+					}
+				}
+			}
+			"CTFPlayer::CreateRagdollEntity"
+			{
+				"offset"	"CTFPlayer::CreateRagdollEntity"
+
+				"hooktype"	"entity"
+
+				"return"	"void"
+				"this"		"entity"
+
+				"arguments"
+				{
+					bGib
+					{
+						"type"	"bool"
+						"flags"	"byval"
+					}
+					bBurning
+					{
+						"type"	"bool"
+						"flags"	"byval"
+					}
+					bElectrocuted
+					{
+						"type"	"bool"
+						"flags"	"byval"
+					}
+					bOnGround
+					{
+						"type"	"bool"
+						"flags"	"byval"
+					}
+					bCloakedCorpse
+					{
+						"type"	"bool"
+						"flags"	"byval"
+					}
+					bGoldRagdoll
+					{
+						"type"	"bool"
+						"flags"	"byval"
+					}
+					bIceRagdoll
+					{
+						"type"	"bool"
+						"flags"	"byval"
+					}
+					bBecomeAsh
+					{
+						"type"	"bool"
+						"flags"	"byval"
+					}
+					iDamageCustom
+					{
+						"type"	"int"
+						"flags" "byval"
+					}
+					bCritOnHardHit
+					{
+						"type"	"bool"
+						"flags"	"byval"
 					}
 				}
 			}
