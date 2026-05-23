@@ -59,19 +59,19 @@
 				"windows"	"\x55\x8B\xEC\x83\xEC\x3C\x53\x8B\xD9\x56\x57"
 				"linux"		"@_ZN9CTFPlayer24PostInventoryApplicationEv"
 			}
-			"CTFBot::ShouldAutoJump"
+			"CTFBot::ShouldAutoJump"	// Find from `CTFBotMainAction::Update` with string "CTFBotMainAction::Update"
 			{
 				"library"	"server"
 				"windows"	"\x55\x8B\xEC\x51\x56\x8B\xF1\x57\x8B\x86\x2A\x2A\x2A\x2A\xC1\xE8\x12"
 				"linux"		"@_ZN6CTFBot14ShouldAutoJumpEv"
 			}
-			"CTFReviveMarker::Create"
+			"CTFReviveMarker::Create"	// "entity_revive_marker"
 			{
 				"library"	"server"
 				"windows"	"\x55\x8B\xEC\x83\xEC\x0C\x53\x57\x8B\x7D\x2A\x85\xFF"
 				"linux"		"@_ZN15CTFReviveMarker6CreateEP9CTFPlayer"
 			}
-			"CTFPlayer::CreateRagdollEntity"
+			"CTFPlayer::CreateRagdollEntity"	// "tf_ragdoll"
 			{
 				"library"	"server"
 				"windows"	"\x55\x8B\xEC\x53\x56\x57\x8B\xF9\x8B\x8F\x2A\x2A\x2A\x2A\x85\xC9\x74\x2A\xBA\xFF\x1F\x00\x00"
@@ -151,7 +151,7 @@
 			}
 			"CTFPlayer::IsValidObserverTarget"
 			{
-				"windows"	"391"
+				"windows"	"392"
 				"linux"		"393"
 			}
 			"CTFWeaponBase::GetMaxClip1"
@@ -161,8 +161,8 @@
 			}
 			"CCaptureFlag::PickUp"
 			{
-				"windows"	"270"
-				"linux"		"262"
+				"windows"	"232"
+				"linux"		"270"
 			}
 			"CCaptureFlag::Drop"
 			{
@@ -212,7 +212,7 @@
 			  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 			--------------------------------------------------------------------*/
 
-			"CTFBotMedicHeal::SelectPatient"	// "I'm now a squad leader! Going for the flag!"
+			"CTFBotMedicHeal::SelectPatient"
 			{
 				"signature"	"CTFBotMedicHeal::SelectPatient"
 
@@ -233,7 +233,7 @@
 					}
 				}
 			}
-			"CWeaponMedigun::AllowedToHealTarget"		// "weapon_blocks_healing"
+			"CWeaponMedigun::AllowedToHealTarget"
 			{
 				"signature"	"CWeaponMedigun::AllowedToHealTarget"
 
@@ -250,7 +250,7 @@
 					}
 				}
 			}
-			"CTFReviveMarker::Create"	// "entity_revive_marker"
+			"CTFReviveMarker::Create"
 			{
 				"signature"	"CTFReviveMarker::Create"
 
@@ -266,7 +266,7 @@
 					}
 				}
 			}
-			"CTFPlayer::CreateRagdollEntity"	// "tf_ragdoll"
+			"CTFPlayer::CreateRagdollEntity"
 			{
 				"signature"	"CTFPlayer::CreateRagdollEntity"
 
