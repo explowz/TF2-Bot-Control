@@ -1387,6 +1387,7 @@ public Action OnHatchStartTouch( int iEntity, int iClient )
     {
         TF2_RemoveCondition( iClient, TFCond_Charging );
     }
+    
     if ( TF2_IsPlayerInCondition( iClient, TFCond_Taunting ) )
     {
         TF2_RemoveCondition( iClient, TFCond_Taunting );
@@ -1405,6 +1406,7 @@ public Action OnHatchStartTouch( int iEntity, int iClient )
 
     // Stop the player from sliding around
     TeleportEntity( iClient, NULL_VECTOR, NULL_VECTOR, { 0.0, 0.0, 0.0 } );
+    TF2_AddCondition( iClient, TFCond_FreezeInput );
 
     SDKCall( g_hfnPlaySpecificSequence, iClient, "primary_deploybomb" );
     RequestFrame( DisableDeployBombAnimation, GetClientUserId( iClient ) );
@@ -1467,6 +1469,8 @@ public void OnHatchEndTouch( int iEntity, int iClient )
     {
         return;
     }
+
+    TF2_RemoveCondition( iClient, TFCond_FreezeInput );
 
     SetVariantString( "1" );
     AcceptEntityInput( iClient, "SetCustomModelRotates" );
@@ -2289,13 +2293,13 @@ public Action Event_PlayerDeath( Event hEvent, const char[] szName, bool bDontBr
 
     int iClient = GetClientOfUserId( hEvent.GetInt( "userid" ) );
 
-    g_abIsControlled[ iClient ] = false;
     g_aiController[ iClient ]   = -1;
 
     if ( IsFakeClient( iClient ) && g_abIsControlled[ iClient ] )
     {
         bDontBroadcast              = true;
         g_abBlockRagdoll[ iClient ] = true;
+        g_abIsControlled[ iClient ] = false;
 
         Result = Plugin_Changed;
     }
@@ -2626,7 +2630,7 @@ public Action Listener_Block( int iClient, char[] szCommand, int argc )
         else if ( g_abIsSentryBuster[ iClient ] && GetEntPropEnt( iClient, Prop_Data, "m_hGroundEntity" ) != -1 )
         {
             TF2_RestoreBot( iClient );
-            TF2_RespawnPlayer( iClient );   //No gibs/ragdoll
+            TF2_RespawnPlayer( iClient );   // No gibs/ragdoll
             TF2_ChangeClientTeam( iClient, TFTeam_Spectator );
 
             g_aflCooldownEndTime[ iClient ] = GetGameTime() + 10.0;
@@ -2811,7 +2815,6 @@ stock void TF2_RestoreBot( int iClient )
                 CopyEntProp( iPlayerMedigun, iBotMedigun, Prop_Send, "m_bChargeRelease" );
             }
         }
-
         TF2_MirrorConditions( iClient, iBot );
 
         TeleportEntity( iBot, vecOrigin, angEyeAngles, vecVelocity );
@@ -2820,7 +2823,7 @@ stock void TF2_RestoreBot( int iClient )
         ResetGlobals( iBot );
 
         g_abBlockRagdoll[ iBot ] = true;
-        g_aflSpawnTime[ iBot ]    = GetGameTime();
+        g_aflSpawnTime[ iBot ]   = GetGameTime();
     }
 
     TF2_ClearBot( iClient, false );
@@ -2857,7 +2860,6 @@ void TF2_MirrorConditions( int iTarget, int iRecipient )
 
 stock void TF2_ClearBot( int iClient, bool bKillBot )
 {
-    SetEntityFlags( iClient, GetEntityFlags( iClient ) & ~FL_FAKECLIENT );
     TF2_StopSounds( iClient );
     if ( TF2_HasBomb( iClient ) )
     {
@@ -2977,7 +2979,7 @@ stock void TF2_MirrorRobot( int iRobot, int iClient )
     CopyEntPropFloat( iRobot, iClient, Prop_Send, "m_flRageMeter" );
     CopyEntProp( iRobot, iClient, Prop_Send, "m_nNumHealers" );
     SetEntProp( iClient, Prop_Send, "m_bIsABot", true );
-    CopyEntProp( iRobot, iClient, Prop_Send, "m_nBotSkill" );   // Sets the robot's eye glow color
+    CopyEntProp( iRobot, iClient, Prop_Send, "m_nBotSkill" );   // Sets the robot eye glow color
     CopyEntProp( iRobot, iClient, Prop_Send, "m_bIsMiniBoss" );
     // This can be either `BLOOD_COLOR_MECH` or `BLOOD_COLOR_RED` depending on
     // whether Halloween mode is on or off, so we can't hardcode it.
@@ -3478,27 +3480,6 @@ stock float[] WorldSpaceCenter( int iEntity )
     float vecOrigin[ 3 ];
     SDKCall( g_hfnWorldSpaceCenter, iEntity, vecOrigin );
     return vecOrigin;
-}
-
-public void Frame_TF2_PickupBomb( DataPack dp )
-{
-    dp.Reset();
-    int iFlag   = EntRefToEntIndex( dp.ReadCell() );
-    int iClient = GetClientOfUserId( dp.ReadCell() );
-
-    if ( !IsPlayerAlive( iClient ) )
-    {
-        return;
-    }
-
-    if ( IsValidEntity( iFlag ) && GetEntPropEnt( iFlag, Prop_Send, "moveparent" ) == iClient && 0 < iClient <= MaxClients )
-    {
-        SetEntPropEnt( iClient, Prop_Send, "m_hItem", iFlag );
-        if ( !IsFakeClient( iClient ) )
-        {
-            SetEntityFlags( iClient, GetEntityFlags( iClient ) | FL_FAKECLIENT );
-        }
-    }
 }
 
 stock void TF2_RobotsWin()
