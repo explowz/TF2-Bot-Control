@@ -220,10 +220,11 @@ bool  g_abBlockRagdoll[ MAXPLAYERS + 1 ];
 bool g_abIsControlled[ MAXPLAYERS + 1 ];
 int  g_aiController[ MAXPLAYERS + 1 ];
 
-// Bot data
+// Player data
 bool  g_abIsSentryBuster[ MAXPLAYERS + 1 ];
 bool  g_abDeploying[ MAXPLAYERS + 1 ];
 float g_aflSpawnTime[ MAXPLAYERS + 1 ];
+bool  g_abPendingSpawnProtectionRemoval[ MAXPLAYERS + 1 ];
 
 // Bomb data
 int   g_aiFlagCarrierUpgradeLevel[ MAXPLAYERS + 1 ];
@@ -786,9 +787,10 @@ public void OnClientPutInServer( int iClient )
     g_abSkipInventory[ iClient ]  = false;
     g_abBlockRagdoll[ iClient ]   = false;
 
-    g_aflCooldownEndTime[ iClient ] = -1.0;
-    g_aflControlEndTime[ iClient ]  = -1.0;
-    g_aflSpawnTime[ iClient ]       = -1.0;
+    g_aflCooldownEndTime[ iClient ]              = -1.0;
+    g_aflControlEndTime[ iClient ]               = -1.0;
+    g_aflSpawnTime[ iClient ]                    = -1.0;
+    g_abPendingSpawnProtectionRemoval[ iClient ] = false;
 
     g_abReloadingBarrage[ iClient ] = false;
 
@@ -1082,7 +1084,11 @@ public MRESReturn CBaseEntity_ShouldTransmit( Address pThis, DHookReturn hReturn
 F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
 public void OnClientDisconnect( int iClient )
 {
-    if ( !( 0 < iClient <= MaxClients ) || !IsClientInGame( iClient ) )
+    if (
+        !( 0 < iClient <= MaxClients ) ||
+        !IsClientInGame( iClient )     ||
+        IsFakeClient( iClient )
+        )
     {
         return;
     }
@@ -1387,7 +1393,7 @@ public Action OnHatchStartTouch( int iEntity, int iClient )
     {
         TF2_RemoveCondition( iClient, TFCond_Charging );
     }
-    
+
     if ( TF2_IsPlayerInCondition( iClient, TFCond_Taunting ) )
     {
         TF2_RemoveCondition( iClient, TFCond_Taunting );
@@ -1496,7 +1502,9 @@ public void OnSpawnStartTouch( int iRespawnRoom, int iEntity )
         return;
     }
 
+    TF2_AddCondition( iEntity, TFCond_Ubercharged );
     TF2_AddCondition( iEntity, TFCond_UberchargedHidden );
+    TF2_AddCondition( iEntity, TFCond_UberchargeFading );
     TF2_AddCondition( iEntity, TFCond_ImmuneToPushback );
     if ( TF2_HasBomb( iEntity ) )
     {
@@ -1517,9 +1525,6 @@ public void OnSpawnEndTouch( int iRespawnRoom, int iEntity )
         return;
     }
 
-    TF2_RemoveCondition( iEntity, TFCond_UberchargedHidden );
-    TF2_RemoveCondition( iEntity, TFCond_ImmuneToPushback );
-
     if ( TF2_HasBomb( iEntity ) )
     {
         switch( g_aiFlagCarrierUpgradeLevel[ iEntity ] )
@@ -1532,8 +1537,59 @@ public void OnSpawnEndTouch( int iRespawnRoom, int iEntity )
         UpdateBombHud( GetClientUserId( iEntity ) );
     }
 
-    TF2_AddCondition( iEntity, TFCond_UberchargedHidden, 1.0 );
-    TF2_AddCondition( iEntity, TFCond_ImmuneToPushback, 1.0 );
+    /*--------------------------------------------------------------------
+      Remove the spawn protection conditions as soon as the player has
+      a valid ground entity after exiting spawn. This prevents fall
+      damage from large drops at spawn exits.
+    --------------------------------------------------------------------*/
+    g_abPendingSpawnProtectionRemoval[ iEntity ] = true;
+}
+
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: OnGameFrame
+
+  Summary:  Called before every server frame. Note that you should
+            avoid doing expensive computations or declaring large
+            local arrays.
+
+  Returns:  void
+              No return value.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
+public void OnGameFrame()
+{
+    for ( int i = 1; i <= MaxClients; i++ )
+    {
+        if ( !g_abPendingSpawnProtectionRemoval[ i ] )
+        {
+            continue;
+        }
+
+        if ( !IsClientInGame( i ) || !IsPlayerAlive( i ) )
+        {
+            g_abPendingSpawnProtectionRemoval[ i ] = false;
+            continue;
+        }
+
+        /*--------------------------------------------------------------------
+          The way the game itself applies these spawn protection conditions
+          is not by vector location, but by the last nav area the bot stepped
+          onto. This makes it so that if the invading team has a large drop
+          when exiting spawn, these conditions will stay applied until the
+          bot lands on the ground, preventing fall damage. `CTFPlayer`
+          doesn't have a `GetLastKnownArea` member function, and this is
+          much better than manually keeping track of the last nav area we
+          walked on.
+        --------------------------------------------------------------------*/
+        if ( GetEntityFlags( i ) & FL_ONGROUND )
+        {
+            TF2_RemoveCondition( i, TFCond_Ubercharged );
+            TF2_RemoveCondition( i, TFCond_UberchargedHidden );
+            TF2_RemoveCondition( i, TFCond_UberchargeFading );
+            TF2_RemoveCondition( i, TFCond_ImmuneToPushback );
+
+            g_abPendingSpawnProtectionRemoval[ i ] = false;
+        }
+    }
 }
 
 public void TF2_OnConditionAdded( int iClient, TFCond eCond )
@@ -1611,19 +1667,39 @@ public Action OnPlayerRunCmd(
 
     if ( g_abControllingBot[ iClient ] && IsPlayerAlive( iClient ) && TF2_GetClientTeam( iClient ) == TF_TEAM_PVE_INVADERS )
     {
-        int iBot = GetClientOfUserId( g_aiPlayersBot[ iClient ] );
+        float vecOrigin[ 3 ], angEyeAngles[ 3 ];
+        GetClientAbsOrigin( iClient, vecOrigin );
+        GetClientEyeAngles( iClient, angEyeAngles );
+
+        bool bInSpawn = TF2Util_IsPointInRespawnRoom( vecOrigin, iClient, true );
 
         SetEntPropFloat( iClient, Prop_Send, "m_flCloakMeter", 100.0 );
 
+        int iBot = GetClientOfUserId( g_aiPlayersBot[ iClient ] );
         if ( SDKCall( g_hfnShouldAutoJump, iBot ) )
         {
             iButtons |= IN_JUMP;
+
+            // TODO: Attach this particle every time a human invader jumps, not only autojump
+            SDKCall( g_hfnDispatchParticleEffect, "rocketjump_smoke", PATTACH_POINT_FOLLOW, iClient, "foot_L", false );
+            SDKCall( g_hfnDispatchParticleEffect, "rocketjump_smoke", PATTACH_POINT_FOLLOW, iClient, "foot_R", false );
         }
 
-        if ( TF2_GetPlayerClass( iClient ) == TFClass_DemoMan && HasAttribute( iBot, AIR_CHARGE_ONLY ) )
+        if (
+            HasAttribute( iBot, AIR_CHARGE_ONLY )                &&
+            TF2_GetPlayerClass( iClient ) == TFClass_DemoMan     &&
+            !TF2_IsPlayerInCondition( iClient, TFCond_Charging ) &&
+            GetEntProp( iClient, Prop_Send, "m_bShieldEquipped" )
+            )
         {
-            if ( !GetEntProp( iClient, Prop_Send, "m_bJumping" ) )
+            // TODO: Call `ILocomotion::IsPotentiallyTraversable` to make sure we don't charge into a wall
+            if ( GetEntPropEnt( iClient, Prop_Send, "m_hGroundEntity" ) == -1 && vecVelocity[ 2 ] <= 0.0 )
             {
+                iButtons |= IN_ATTACK2;
+            }
+            else
+            {
+                // If we shouldn't charge, then don't allow the player to manually do so either
                 iButtons &= ~IN_ATTACK2;
             }
         }
@@ -1631,7 +1707,7 @@ public Action OnPlayerRunCmd(
         int iActiveWeapon = TF2_GetClientActiveWeapon( iClient );
         if ( IsValidEntity( iActiveWeapon ) )
         {
-            if ( TF2_IsPlayerInCondition( iClient, TFCond_UberchargedHidden ) && TF2_IsPlayerInCondition( iClient, TFCond_ImmuneToPushback ) )
+            if ( bInSpawn )
             {
                 // Allow medic to heal in spawn if they have their medigun out
                 if ( TF2_GetPlayerClass( iClient ) != TFClass_Medic && GetPlayerWeaponSlot( iClient, TFWeaponSlot_Secondary ) != iActiveWeapon )
@@ -1639,7 +1715,7 @@ public Action OnPlayerRunCmd(
                     SetEntPropFloat( iClient, Prop_Send, "m_flStealthNoAttackExpire", GetGameTime() + 0.5 );
                 }
 
-                // Disallow crouching in spawn so when you lose control of your bot the bot wont spawn inside ground.
+                // Disallow crouching in spawn so when you lose control of your bot the bot won't spawn inside the ground.
                 iButtons &= ~IN_DUCK;
             }
 
@@ -1681,87 +1757,77 @@ public Action OnPlayerRunCmd(
             }
         }
 
-        // TODO: Is the `IsFakeClient` check necessary here? Doesn't `g_bControllingBot[ iClient ]` imply that this must be a real player?
-        if ( iBot != 0 && IsFakeClient( iBot ) )
+        SetHudTextParams( 1.0, 0.0, 0.1, 88, 133, 162, 0, 0, 0.0, 0.0, 0.0 );
+        ShowSyncHudText( iClient, g_hHudInfo, "Playing as %N", iBot );
+
+        // FIXME: Doesn't work
+        // TF2_InstructPlayer( iClient );
+
+        if ( bInSpawn )
         {
-            SetHudTextParams( 1.0, 0.0, 0.1, 88, 133, 162, 0, 0, 0.0, 0.0, 0.0 );
-            ShowSyncHudText( iClient, g_hHudInfo, "Playing as %N", iBot );
-            // TODO: Use SuppressFire instead of doing this
-            SetEntPropFloat( iBot, Prop_Send, "m_flStealthNoAttackExpire", GetGameTime() + 0.5 ); // Don't allow the bot to attack
-
-            // FIXME: Doesn't work
-            // TF2_InstructPlayer( iClient );
-
-            if ( TF2_IsPlayerInCondition( iClient, TFCond_UberchargedHidden ) && TF2_IsPlayerInCondition( iClient, TFCond_ImmuneToPushback ) )
+            if ( g_aflControlEndTime[ iClient ] <= GetGameTime() )
             {
-                if ( g_aflControlEndTime[ iClient ] <= GetGameTime() )
+                PrintColoredChat( iClient, COLOR_RED ... "You have lost control of " ... COLOR_BLUE ... "%N" ... COLOR_RED ... " and received a 30 second cooldown from playing as a robot for staying in spawn too long", iBot );
+
+                g_abControllingBot[ iClient ] = false;
+
+                TF2_RestoreBot( iClient );
+                TF2_ChangeClientTeam( iClient, TFTeam_Spectator );
+
+                g_aflCooldownEndTime[ iClient ] = GetGameTime() + 30.0;
+
+                return Plugin_Continue;
+            }
+            else if ( g_aflControlEndTime[ iClient ] > GetGameTime() )
+            {
+                float flTimeLeft = g_aflControlEndTime[ iClient ] - GetGameTime();
+
+                if ( flTimeLeft <= 15.0 )
                 {
-                    PrintColoredChat( iClient, COLOR_RED ... "You have lost control of " ... COLOR_BLUE ... "%N" ... COLOR_RED ... " and received a 30 second cooldown from playing as a robot for staying in spawn too long", iBot );
+                    SetHudTextParams( -1.0, -0.8, 0.1, 255, 0, 0, 0, 0, 0.0, 0.0, 0.0 );
+                    ShowSyncHudText( iClient, g_hHudInfo, "You have %.0f seconds to leave spawn or you will lose control of your bot", flTimeLeft );
+                }
+            }
+        }
 
-                    g_abControllingBot[ iClient ] = false;
+        if ( g_abIsSentryBuster[ iClient ] && HasEntProp( iClient, Prop_Data, "m_hGroundEntity" ) )
+        {
+            // Disable the use of the sentry buster's caber
+            SetEntPropFloat( iClient, Prop_Send, "m_flStealthNoAttackExpire", GetGameTime() + 0.5 );
 
+            // Detonate buster if the player is pressing M1 or taunting
+            if( ( iButtons & IN_ATTACK || TF2_IsPlayerInCondition( iClient, TFCond_Taunting ) ) && !HasAttribute( iBot, ALWAYS_FIRE_WEAPON ) )
+            {
+                TF2_RestoreBot( iClient );
+                TF2_ChangeClientTeam( iClient, TFTeam_Spectator );
+            }
+
+            // Sentry Buster: Check for engineers carrying buildings nearby
+            for ( int i = 1; i <= MaxClients; i++ )
+            {
+                if (
+                    !IsClientInGame( i )                                   ||
+                    TF2_GetClientTeam( i ) == TF2_GetClientTeam( iClient ) ||
+                    !GetEntProp( i, Prop_Send, "m_bCarryingObject" )       ||
+                    i == iClient
+                    )
+                {
+                    continue;
+                }
+
+                float vecEntOrigin[ 3 ];
+                GetClientAbsOrigin( i, vecEntOrigin );
+
+                if ( GetVectorDistance( vecOrigin, vecEntOrigin ) <= 100.0 )
+                {
                     TF2_RestoreBot( iClient );
                     TF2_ChangeClientTeam( iClient, TFTeam_Spectator );
-
-                    g_aflCooldownEndTime[ iClient ] = GetGameTime() + 30.0;
-
-                    return Plugin_Continue;
-                }
-                else if ( g_aflControlEndTime[ iClient ] > GetGameTime() )
-                {
-                    float flTimeLeft = g_aflControlEndTime[ iClient ] - GetGameTime();
-
-                    if ( flTimeLeft <= 15.0 )
-                    {
-                        SetHudTextParams( -1.0, -0.8, 0.1, 255, 0, 0, 0, 0, 0.0, 0.0, 0.0 );
-                        ShowSyncHudText( iClient, g_hHudInfo, "You have %.0f seconds to leave spawn or you will lose control of your bot", flTimeLeft );
-                    }
                 }
             }
-
-            if ( g_abIsSentryBuster[ iClient ] && HasEntProp( iClient, Prop_Data, "m_hGroundEntity" ) )
-            {
-                float vecOrigin[ 3 ], angEyeAngles[ 3 ];
-                GetClientAbsOrigin( iClient, vecOrigin );
-                GetClientEyeAngles( iClient, angEyeAngles );
-
-                // Disable the use of the sentry buster's caber
-                SetEntPropFloat( iClient, Prop_Send, "m_flStealthNoAttackExpire", GetGameTime() + 0.5 );
-
-                // Detonate buster if the player is pressing M1 or taunting
-                if( ( iButtons & IN_ATTACK || TF2_IsPlayerInCondition( iClient, TFCond_Taunting ) ) && !HasAttribute( iBot, ALWAYS_FIRE_WEAPON ) )
-                {
-                    TF2_RestoreBot( iClient );
-                    TF2_ChangeClientTeam( iClient, TFTeam_Spectator );
-                }
-
-                // Sentry Buster: Check for engineers carrying buildings nearby
-                for ( int i = 1; i <= MaxClients; i++ )
-                {
-                    if (
-                        !IsClientInGame( i )                                   ||
-                        TF2_GetClientTeam( i ) == TF2_GetClientTeam( iClient ) ||
-                        !GetEntProp( i, Prop_Send, "m_bCarryingObject" )       ||
-                        i == iClient
-                        )
-                    {
-                        continue;
-                    }
-
-                    float vecEntOrigin[ 3 ];
-                    GetClientAbsOrigin( i, vecEntOrigin );
-
-                    if ( GetVectorDistance( vecOrigin, vecEntOrigin ) <= 100.0 )
-                    {
-                        TF2_RestoreBot( iClient );
-                        TF2_ChangeClientTeam( iClient, TFTeam_Spectator );
-                    }
-                }
-            }
-            else
-            {
-                CopyEntProp( iClient, iBot, Prop_Send, "m_iHealth" );
-            }
+        }
+        else
+        {
+            CopyEntProp( iClient, iBot, Prop_Send, "m_iHealth" );
         }
 
         if ( TF2_HasBomb( iClient ) )
@@ -1808,15 +1874,12 @@ public Action OnPlayerRunCmd(
                 {
                     if ( g_aiFlagCarrierUpgradeLevel[ iClient ] > 0 )
                     {
-                        float vecOrigin[ 3 ];
-                        GetClientAbsOrigin( iClient, vecOrigin );
-
                         for ( int i = 1; i <= MaxClients; i++ )
                         {
                             if (
                                 !IsClientInGame( i )                                   ||
                                 TF2_GetClientTeam( i ) != TF2_GetClientTeam( iClient ) ||
-                                g_aiFlagCarrierUpgradeLevel[ iClient ] < 1              ||
+                                g_aiFlagCarrierUpgradeLevel[ iClient ] < 1             ||
                                 i == iClient
                                 )
                             {
@@ -1833,7 +1896,7 @@ public Action OnPlayerRunCmd(
                         }
                     }
 
-                    if ( g_aflNextBombUpgradeTime[ iClient ] <= GetGameTime() && g_aiFlagCarrierUpgradeLevel[ iClient ] < 3 && HasEntProp( iClient, Prop_Send, "m_hGroundEntity" ) )
+                    if ( g_aflNextBombUpgradeTime[ iClient ] <= GetGameTime() && g_aiFlagCarrierUpgradeLevel[ iClient ] < 3 && GetEntPropEnt( iClient, Prop_Send, "m_hGroundEntity" ) != -1 )
                     {
                         FakeClientCommandThrottled( iClient, "taunt" );
 
@@ -1848,7 +1911,7 @@ public Action OnPlayerRunCmd(
                                     g_aflNextBombUpgradeTime[ iClient ] = GetGameTime() + FindConVar( "tf_mvm_bot_flag_carrier_interval_to_2nd_upgrade" ).FloatValue;
                                     TF2_AddCondition( iClient, TFCond_DefenseBuffNoCritBlock );
 
-                                    SDKCall( g_hfnDispatchParticleEffect, "mvm_levelup1", PATTACH_POINT_FOLLOW, iClient, "head", 0 );
+                                    SDKCall( g_hfnDispatchParticleEffect, "mvm_levelup1", PATTACH_POINT_FOLLOW, iClient, "head", false );
                                 }
                                 case 2:
                                 {
@@ -1862,12 +1925,12 @@ public Action OnPlayerRunCmd(
                                     }
 
                                     TF2Attrib_SetByName( iClient, "health regen", flRegen + 45.0 );
-                                    SDKCall( g_hfnDispatchParticleEffect, "mvm_levelup2", PATTACH_POINT_FOLLOW, iClient, "head", 0 );
+                                    SDKCall( g_hfnDispatchParticleEffect, "mvm_levelup2", PATTACH_POINT_FOLLOW, iClient, "head", false );
                                 }
                                 case 3:
                                 {
                                     TF2_AddCondition( iClient, TFCond_CritOnWin );
-                                    SDKCall( g_hfnDispatchParticleEffect, "mvm_levelup3", PATTACH_POINT_FOLLOW, iClient, "head", 0 );
+                                    SDKCall( g_hfnDispatchParticleEffect, "mvm_levelup3", PATTACH_POINT_FOLLOW, iClient, "head", false );
                                 }
                             }
                             EmitGameSoundToAll( "MVM.Warning", SOUND_FROM_WORLD );
@@ -2291,9 +2354,8 @@ public Action Event_PlayerDeath( Event hEvent, const char[] szName, bool bDontBr
 {
     Action Result = Plugin_Continue;
 
-    int iClient = GetClientOfUserId( hEvent.GetInt( "userid" ) );
-
-    g_aiController[ iClient ]   = -1;
+    int iClient               = hEvent.GetInt( "victim_entindex" );
+    g_aiController[ iClient ] = -1;
 
     if ( IsFakeClient( iClient ) && g_abIsControlled[ iClient ] )
     {
@@ -2307,7 +2369,12 @@ public Action Event_PlayerDeath( Event hEvent, const char[] szName, bool bDontBr
     SetEntProp( iClient, Prop_Send, "m_bUseBossHealthBar", false );
     TF2_StopSounds( iClient );
 
-    if ( !IsFakeClient( iClient ) && g_abControllingBot[ iClient ] )
+    char szWeapon[ 64 ];
+    hEvent.GetString( "weapon", szWeapon, sizeof( szWeapon ) );
+
+    bool bSuicide = StrEqual( szWeapon, "world" ) && hEvent.GetInt( "weaponid" ) == 0 && hEvent.GetInt( "customkill" ) == 6;
+
+    if ( !bSuicide && !IsFakeClient( iClient ) && g_abControllingBot[ iClient ] )
     {
         int iBot = GetClientOfUserId( g_aiPlayersBot[ iClient ] );
 
