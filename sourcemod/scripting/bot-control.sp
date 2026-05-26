@@ -789,13 +789,13 @@ public void OnMapStart()
 F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
 public void OnClientPutInServer( int iClient )
 {
-    g_aiPlayersBot[ iClient ]       = -1;
-    g_abControllingBot[ iClient ]   = false;
-    g_abIsControlled[ iClient ]     = false;
-    g_aiController[ iClient ]       = -1;
-    g_abIsSentryBuster[ iClient ]   = false;
-    g_abSkipInventory[ iClient ]    = false;
-    g_abBlockRagdoll[ iClient ]     = false;
+    g_aiPlayersBot[ iClient ]     = -1;
+    g_abControllingBot[ iClient ] = false;
+    g_abIsControlled[ iClient ]   = false;
+    g_aiController[ iClient ]     = -1;
+    g_abIsSentryBuster[ iClient ] = false;
+    g_abSkipInventory[ iClient ]  = false;
+    g_abBlockRagdoll[ iClient ]   = false;
 
     g_aflCooldownEndTime[ iClient ]              = -1.0;
     g_aflControlEndTime[ iClient ]               = -1.0;
@@ -815,8 +815,13 @@ public void OnClientPutInServer( int iClient )
     }
     else
     {
+        // TODO: Dynamically hook and unhook these
+
         // Mimic gibbing logic for human invaders
         g_hfnShouldGib.HookEntity( Hook_Post, iClient, CTFPlayer_ShouldGib );
+
+        // Fix problems related to switching weapons while we're supposed to fully reload
+        SDKHook( iClient, SDKHook_WeaponSwitchPost, UpdateForcedReloadingVars );
 
         SDKHook( iClient, SDKHook_SetTransmit, Hook_SpyTransmit );
         SDKHook( iClient, SDKHook_OnTakeDamageAlivePost, Player_OnTakeDamageAlivePost );
@@ -1687,6 +1692,45 @@ public void OnCurrencySpawnPost( int iCurrency )
     }
 }
 
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: UpdateForcedReloadingVars
+
+  Summary:  This callback function is called after every weapon
+            switch and is used to reset the per-client value of
+            the array used by the forced full reload logic to
+            determine whether we should prevent the client from
+            firing their weapon until fully reloading.
+
+  Args:     int iClient
+              Index of client that switched weapons.
+            int iWeapon
+              Index of the weapon the client switched to.
+
+  Returns:  void
+              No return value.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
+public void UpdateForcedReloadingVars( int iClient, int iWeapon )
+{
+    if ( !g_abControllingBot[ iClient ] )
+    {
+        return;
+    }
+
+    int iBot = GetClientOfUserId( g_aiPlayersBot[ iClient ] );
+
+    if ( !HasAttribute( iBot, HOLD_FIRE_UNTIL_FULL_RELOAD ) && !FindConVar( "tf_bot_always_full_reload" ).BoolValue )
+    {
+        return;
+    }
+
+    /*--------------------------------------------------------------------
+      FIXME: Right now we force a full reload no matter the amount of
+      ammo we have in our clip, but we should only force it if we had
+      <= 0 when we started reloading.
+    --------------------------------------------------------------------*/
+    g_abIsWaitingForFullReload[ iClient ] = SDKCall( g_hfnIsBarrageAndReloadWeapon, iBot, iWeapon );
+}
+
 public Action OnPlayerRunCmd(
     int   iClient,
     int&  iButtons,
@@ -1776,6 +1820,11 @@ public Action OnPlayerRunCmd(
                         if ( iClip1 < iMaxClip1 )
                         {
                             TF2Attrib_SetByName( iClient, "no_attack", 1.0 );
+                            /*--------------------------------------------------------------------
+                              A player can pause reloading by holding their attack button down,
+                              so we manually unpress that button.
+                            --------------------------------------------------------------------*/
+                            iButtons &= ~IN_ATTACK;
 
                             SetHudTextParams( -1.0, -0.55, 0.25, 255, 150, 0, 255, 0, 0.0, 0.0, 0.0 );
                             ShowSyncHudText( iClient, g_hHudReload, "RELOADING... (%d / %d)", iClip1, iMaxClip1 );
@@ -1801,6 +1850,14 @@ public Action OnPlayerRunCmd(
 
             if ( HasAttribute( iBot, ALWAYS_FIRE_WEAPON ) && !g_abIsWaitingForFullReload[ iClient ] )
             {
+                // Unset this in case the player switched weapons mid-reaload
+                TF2Attrib_SetByName( iClient, "no_attack", 0.0 );
+
+                /*--------------------------------------------------------------------
+                  A player can pause auto-firing by holding down their attack2 key,
+                  so we manually unpress that button.
+                --------------------------------------------------------------------*/
+                iButtons &= ~IN_ATTACK2;
                 iButtons |= IN_ATTACK;
             }
         }
@@ -1894,7 +1951,7 @@ public Action OnPlayerRunCmd(
                     }
 
                     g_abBlockRagdoll[ iClient ] = true;
-                    g_abDeploying[ iClient ]     = false;
+                    g_abDeploying[ iClient ]    = false;
 
                     TF2_RobotsWin();
 
@@ -1908,8 +1965,6 @@ public Action OnPlayerRunCmd(
 
             if ( !TF2_IsPlayerInCondition( iClient, TFCond_Taunting ) && !g_abDeploying[ iClient ] )
             {
-                // iButtons &= ~IN_JUMP;
-
                 if ( !TF2_IsGiant( iClient ) )
                 {
                     if ( g_aiFlagCarrierUpgradeLevel[ iClient ] > 0 )
