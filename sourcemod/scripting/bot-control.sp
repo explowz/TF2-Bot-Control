@@ -41,6 +41,8 @@ public Plugin myinfo =
     url         = "https://www.sourcemod.net/plugins.php?author=Pelipoika&search=1"
 };
 
+#define FLT_MAX 3.402823466e38
+
 // Spectator Movement modes
 enum
 {
@@ -167,7 +169,6 @@ Handle g_hfnPlaySpecificSequence;
 Handle g_hfnDispatchParticleEffect;
 Handle g_hfnSetMission;
 Handle g_hfnGetLeader;
-Handle g_hfnGetMaxClip1;
 // Handle g_hfnPickUp;
 Handle g_hfnDrop;
 Handle g_hfnRemoveObject;
@@ -177,6 +178,7 @@ Handle g_hfnLeaveSquad;
 Handle g_hfnPostInventoryApplication;
 Handle g_hfnShouldAutoJump;
 Handle g_hfnZoomOut;
+Handle g_hfnIsBarrageAndReloadWeapon;
 #if !defined( WIN32 )
 Handle g_hfnGetPercentInvisible;
 Handle g_hfnIsStealthed;
@@ -212,7 +214,7 @@ float g_aflControlEndTime[ MAXPLAYERS + 1 ];
 float g_aflCooldownEndTime[ MAXPLAYERS + 1 ];
 float g_aflNextInstructionTime[ MAXPLAYERS + 1 ];
 bool  g_abControllingBot[ MAXPLAYERS + 1 ];
-bool  g_abReloadingBarrage[ MAXPLAYERS + 1 ];
+bool  g_abIsWaitingForFullReload[ MAXPLAYERS + 1 ];
 bool  g_abSkipInventory[ MAXPLAYERS + 1 ];
 bool  g_abBlockRagdoll[ MAXPLAYERS + 1 ];
 
@@ -272,7 +274,7 @@ public void OnPluginStart()
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     --------------------------------------------------------------------*/
 
-    // This entity is used to get an entitys center position
+    // This entity is used to get an entity's center position
     StartPrepSDKCall( SDKCall_Entity );
     PrepSDKCall_SetFromConf( Conf, SDKConf_Virtual, "CBaseEntity::WorldSpaceCenter" );
     PrepSDKCall_SetReturnInfo( SDKType_Vector, SDKPass_ByRef );
@@ -414,14 +416,15 @@ public void OnPluginStart()
 
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
 
-    // This call gets the maximum clip 1 of a weapon
+    // Used to check if we should hold until a full reload
     StartPrepSDKCall( SDKCall_Entity );
-    PrepSDKCall_SetFromConf( Conf, SDKConf_Virtual, "CTFWeaponBase::GetMaxClip1" );
-    PrepSDKCall_SetReturnInfo( SDKType_PlainOldData, SDKPass_Plain );   // int
-    g_hfnGetMaxClip1 = EndPrepSDKCall();
-    if ( !g_hfnGetMaxClip1 )
+    PrepSDKCall_SetFromConf( Conf, SDKConf_Signature, "CTFBot::IsBarrageAndReloadWeapon" );
+    PrepSDKCall_AddParameter( SDKType_CBaseEntity, SDKPass_Pointer );   // CTFWeaponBase* weapon
+    PrepSDKCall_SetReturnInfo( SDKType_Bool, SDKPass_Plain );
+    g_hfnIsBarrageAndReloadWeapon = EndPrepSDKCall();
+    if ( !g_hfnIsBarrageAndReloadWeapon )
     {
-        SetFailState( "Failed to create SDKCall for CTFWeaponBase::GetMaxClip1 offset." );
+        SetFailState( "Failed to create SDKCall for CTFBot::IsBarrageAndReloadWeapon signature." );
     }
 
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
@@ -698,10 +701,10 @@ public void OnPluginEnd()
     delete g_hfnCreateRagdollEntity;
     delete g_hfnDispatchParticleEffect;
     delete g_hfnDrop;
-    delete g_hfnGetMaxClip1;
     delete g_hfnGetLeader;
     delete g_hfnHasTag;
     delete g_hfnIsAllowedToHealTarget;
+    delete g_hfnIsBarrageAndReloadWeapon;
     delete g_hfnIsValidObserverTarget;
     delete g_hfnLeaveSquad;
     delete g_hfnPassesFilterImpl;
@@ -716,6 +719,13 @@ public void OnPluginEnd()
     delete g_hfnShouldTransmit;
     delete g_hfnWorldSpaceCenter;
     delete g_hfnZoomOut;
+#if !defined( WIN32 )
+    delete g_hfnGetPercentInvisible;
+    delete g_hfnHasAttribute;
+    delete g_hfnHasWeaponRestriction;
+    delete g_hfnIsInASquad;
+    delete g_hfnIsStealthed;
+#endif
 }
 
 /*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
@@ -779,20 +789,20 @@ public void OnMapStart()
 F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
 public void OnClientPutInServer( int iClient )
 {
-    g_aiPlayersBot[ iClient ]     = -1;
-    g_abControllingBot[ iClient ] = false;
-    g_abIsControlled[ iClient ]   = false;
-    g_aiController[ iClient ]     = -1;
-    g_abIsSentryBuster[ iClient ] = false;
-    g_abSkipInventory[ iClient ]  = false;
-    g_abBlockRagdoll[ iClient ]   = false;
+    g_aiPlayersBot[ iClient ]       = -1;
+    g_abControllingBot[ iClient ]   = false;
+    g_abIsControlled[ iClient ]     = false;
+    g_aiController[ iClient ]       = -1;
+    g_abIsSentryBuster[ iClient ]   = false;
+    g_abSkipInventory[ iClient ]    = false;
+    g_abBlockRagdoll[ iClient ]     = false;
 
     g_aflCooldownEndTime[ iClient ]              = -1.0;
     g_aflControlEndTime[ iClient ]               = -1.0;
     g_aflSpawnTime[ iClient ]                    = -1.0;
     g_abPendingSpawnProtectionRemoval[ iClient ] = false;
 
-    g_abReloadingBarrage[ iClient ] = false;
+    g_abIsWaitingForFullReload[ iClient ] = false;
 
     g_aiFlagCarrierUpgradeLevel[ iClient ] = 0;
     g_aflNextBombUpgradeTime[ iClient ]    = -1.0;
@@ -837,6 +847,7 @@ public MRESReturn CTFReviveMarker_Create( DHookReturn hReturn, DHookParam hParam
         int iOwner = hParams.Get( 1 );
         if ( TF2_GetClientTeam( iOwner ) == TF_TEAM_PVE_INVADERS )
         {
+            // FIXME: Directly switching teams from invaders to defenders drops a marker
             hReturn.Value = INVALID_ENT_REFERENCE;
             return MRES_Supercede;
         }
@@ -1021,6 +1032,25 @@ public MRESReturn CTFPlayer_ShouldGib( Address pThis, DHookReturn hReturn, DHook
     }
 }
 
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: CTFPlayer_CreateRagdollEntity
+
+  Summary:  This function blocks ragdolls from spawning if we've
+            marked player accordingly.
+
+            Original function signature:
+            `void CTFPlayer::CreateRagdollEntity( bool bGib, bool bBurning, bool bElectrocuted, bool bOnGround, bool bCloakedCorpse, bool bGoldRagdoll, bool bIceRagdoll, bool bBecomeAsh, int iDamageCustom, bool bCritOnHardHit )`
+
+  Args:     Address pThis
+              Calling CTFPlayer entity.
+            DHookReturn hReturn
+              Handle to the return value of the function.
+            DHookParam hParams
+              Handle to the parameters of the called function.
+
+  Returns:  MRESReturn
+              DHook return action.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
 public MRESReturn CTFPlayer_CreateRagdollEntity( Address pThis, DHookParam hParams )
 {
     if ( g_abBlockRagdoll[ pThis ] )
@@ -1502,10 +1532,22 @@ public void OnSpawnStartTouch( int iRespawnRoom, int iEntity )
         return;
     }
 
+    // Invaders with the `ALWAYS_FIRE_WEAPON` attribute can attack in spawn
+    if ( !HasAttribute( GetClientOfUserId( g_aiPlayersBot[ iEntity ] ), ALWAYS_FIRE_WEAPON ) )
+    {
+        // Otherwise they can't attack in spawn
+        TF2Attrib_SetByName( iEntity, "no_attack", 1.0 );
+    }
+
+    /*--------------------------------------------------------------------
+      Invaders cannot be hurt or pushed around while in spawn. These
+      conditions are the exact same the game itself applies to bots.
+    --------------------------------------------------------------------*/
     TF2_AddCondition( iEntity, TFCond_Ubercharged );
     TF2_AddCondition( iEntity, TFCond_UberchargedHidden );
     TF2_AddCondition( iEntity, TFCond_UberchargeFading );
     TF2_AddCondition( iEntity, TFCond_ImmuneToPushback );
+
     if ( TF2_HasBomb( iEntity ) )
     {
         RequestFrame( UpdateBombHud, GetClientUserId( iEntity ) );
@@ -1582,6 +1624,12 @@ public void OnGameFrame()
         --------------------------------------------------------------------*/
         if ( GetEntityFlags( i ) & FL_ONGROUND )
         {
+            // `OnPlayerRunCmd` decides when players with the `HOLD_FIRE_UNTIL_FULL_RELOAD` attribute can attack
+            if ( !HasAttribute( GetClientOfUserId( g_aiPlayersBot[ i ] ), HOLD_FIRE_UNTIL_FULL_RELOAD ) )
+            {
+                TF2Attrib_SetByName( i, "no_attack", 0.0 );
+            }
+
             TF2_RemoveCondition( i, TFCond_Ubercharged );
             TF2_RemoveCondition( i, TFCond_UberchargedHidden );
             TF2_RemoveCondition( i, TFCond_UberchargeFading );
@@ -1667,11 +1715,15 @@ public Action OnPlayerRunCmd(
 
     if ( g_abControllingBot[ iClient ] && IsPlayerAlive( iClient ) && TF2_GetClientTeam( iClient ) == TF_TEAM_PVE_INVADERS )
     {
-        float vecOrigin[ 3 ], angEyeAngles[ 3 ];
+        float vecOrigin[ 3 ];
         GetClientAbsOrigin( iClient, vecOrigin );
-        GetClientEyeAngles( iClient, angEyeAngles );
 
         bool bInSpawn = TF2Util_IsPointInRespawnRoom( vecOrigin, iClient, true );
+        if ( bInSpawn )
+        {
+            // Disallow crouching in spawn so when you lose control of your bot the bot won't spawn inside the ground.
+            iButtons &= ~IN_DUCK;
+        }
 
         SetEntPropFloat( iClient, Prop_Send, "m_flCloakMeter", 100.0 );
 
@@ -1685,73 +1737,69 @@ public Action OnPlayerRunCmd(
             SDKCall( g_hfnDispatchParticleEffect, "rocketjump_smoke", PATTACH_POINT_FOLLOW, iClient, "foot_R", false );
         }
 
-        if (
-            HasAttribute( iBot, AIR_CHARGE_ONLY )                &&
-            TF2_GetPlayerClass( iClient ) == TFClass_DemoMan     &&
-            !TF2_IsPlayerInCondition( iClient, TFCond_Charging ) &&
-            GetEntProp( iClient, Prop_Send, "m_bShieldEquipped" )
-            )
-        {
-            // TODO: Call `ILocomotion::IsPotentiallyTraversable` to make sure we don't charge into a wall
-            if ( GetEntPropEnt( iClient, Prop_Send, "m_hGroundEntity" ) == -1 && vecVelocity[ 2 ] <= 0.0 )
-            {
-                iButtons |= IN_ATTACK2;
-            }
-            else
-            {
-                // If we shouldn't charge, then don't allow the player to manually do so either
-                iButtons &= ~IN_ATTACK2;
-            }
-        }
-
         int iActiveWeapon = TF2_GetClientActiveWeapon( iClient );
         if ( IsValidEntity( iActiveWeapon ) )
         {
-            if ( bInSpawn )
+            if (
+                HasAttribute( iBot, AIR_CHARGE_ONLY )                &&
+                TF2_GetPlayerClass( iClient ) == TFClass_DemoMan     &&
+                !TF2_IsPlayerInCondition( iClient, TFCond_Charging ) &&
+                GetEntProp( iClient, Prop_Send, "m_bShieldEquipped" )
+                )
             {
-                // Allow medic to heal in spawn if they have their medigun out
-                if ( TF2_GetPlayerClass( iClient ) != TFClass_Medic && GetPlayerWeaponSlot( iClient, TFWeaponSlot_Secondary ) != iActiveWeapon )
+                // TODO: Call `ILocomotion::IsPotentiallyTraversable` to make sure we don't charge into a wall
+                if ( GetEntPropEnt( iClient, Prop_Send, "m_hGroundEntity" ) == -1 && vecVelocity[ 2 ] <= 0.0 )
                 {
-                    SetEntPropFloat( iClient, Prop_Send, "m_flStealthNoAttackExpire", GetGameTime() + 0.5 );
+                    // FIXME: Find a way to only charge when at the top of our jump
+                    iButtons |= IN_ATTACK2;
                 }
-
-                // Disallow crouching in spawn so when you lose control of your bot the bot won't spawn inside the ground.
-                iButtons &= ~IN_DUCK;
+                else
+                {
+                    // If we shouldn't charge, then don't allow the player to manually do so either
+                    iButtons &= ~IN_ATTACK2;
+                }
             }
 
-            if ( HasAttribute( iBot, HOLD_FIRE_UNTIL_FULL_RELOAD ) )
+            if ( SDKCall( g_hfnIsBarrageAndReloadWeapon, iBot, iActiveWeapon ) )
             {
-                int iClip1 = GetEntProp( iActiveWeapon, Prop_Send, "m_iClip1" );
-
-                if ( iClip1 <= 0 )
+                if ( HasAttribute( iBot, HOLD_FIRE_UNTIL_FULL_RELOAD ) || FindConVar( "tf_bot_always_full_reload" ).BoolValue )
                 {
-                    g_abReloadingBarrage[ iClient ] = true;
-
-                    SetHudTextParams( -1.0, -0.55, 0.75, 255, 0, 0, 255, 0, 0.0, 0.0, 0.0 );
-                    ShowSyncHudText( iClient, g_hHudReload, "RELOADING BARRAGE!" );
-                }
-                else if ( g_abReloadingBarrage[ iClient ] )
-                {
-                    int iMaxClip1 = SDKCall( g_hfnGetMaxClip1, iActiveWeapon );
-
-                    SetHudTextParams( -1.0, -0.55, 0.25, 255, 150, 0, 255, 0, 0.0, 0.0, 0.0 );
-                    ShowSyncHudText( iClient, g_hHudReload, "RELOADING... (%i / %i)", iClip1, iMaxClip1 );
-
-                    // Allows reloading even if the user is holding attack, although it looks weird on their screen.
-                    iButtons &= ~( IN_ATTACK | IN_ATTACK2 );
-                    SetEntPropFloat( iClient, Prop_Send, "m_flStealthNoAttackExpire", GetGameTime() + 0.25 );
-
-                    if ( iClip1 >= iMaxClip1 )
+                    int iClip1 = GetEntProp( iActiveWeapon, Prop_Send, "m_iClip1" );
+                    if ( iClip1 <= 0 )
                     {
-                        SetHudTextParams( -1.0, -0.55, 1.75, 0, 255, 0, 255, 0, 0.0, 0.0, 0.0 );
-                        ShowSyncHudText( iClient, g_hHudReload, "READY TO FIRE! (%i / %i)", iClip1, iMaxClip1 );
+                        g_abIsWaitingForFullReload[ iClient ] = true;
+                    }
 
-                        g_abReloadingBarrage[ iClient ] = false;
+                    if ( g_abIsWaitingForFullReload[ iClient ] )
+                    {
+                        int iMaxClip1 = TF2Util_GetWeaponMaxClip( iActiveWeapon );
+                        if ( iClip1 < iMaxClip1 )
+                        {
+                            TF2Attrib_SetByName( iClient, "no_attack", 1.0 );
+
+                            SetHudTextParams( -1.0, -0.55, 0.25, 255, 150, 0, 255, 0, 0.0, 0.0, 0.0 );
+                            ShowSyncHudText( iClient, g_hHudReload, "RELOADING... (%d / %d)", iClip1, iMaxClip1 );
+                        }
+                        else
+                        {
+                            g_abIsWaitingForFullReload[ iClient ] = false;
+                        }
+                    }
+                    else
+                    {
+                        // Don't remove the attribute if we're still in spawn
+                        if ( !bInSpawn )
+                        {
+                            TF2Attrib_SetByName( iClient, "no_attack", 0.0 );
+                        }
+
+                        SetHudTextParams( -1.0, -0.55, 1.75, 0, 255, 0, 255, 0, 0.0, 0.0, 0.0 );
+                        ShowSyncHudText( iClient, g_hHudReload, "READY TO FIRE!" );
                     }
                 }
             }
 
-            if ( HasAttribute( iBot, ALWAYS_FIRE_WEAPON ) && !g_abReloadingBarrage[ iClient ] )
+            if ( HasAttribute( iBot, ALWAYS_FIRE_WEAPON ) && !g_abIsWaitingForFullReload[ iClient ] )
             {
                 iButtons |= IN_ATTACK;
             }
@@ -1796,7 +1844,7 @@ public Action OnPlayerRunCmd(
             SetEntPropFloat( iClient, Prop_Send, "m_flStealthNoAttackExpire", GetGameTime() + 0.5 );
 
             // Detonate buster if the player is pressing M1 or taunting
-            if( ( iButtons & IN_ATTACK || TF2_IsPlayerInCondition( iClient, TFCond_Taunting ) ) && !HasAttribute( iBot, ALWAYS_FIRE_WEAPON ) )
+            if ( ( iButtons & IN_ATTACK || TF2_IsPlayerInCondition( iClient, TFCond_Taunting ) ) && !HasAttribute( iBot, ALWAYS_FIRE_WEAPON ) )
             {
                 TF2_RestoreBot( iClient );
                 TF2_ChangeClientTeam( iClient, TFTeam_Spectator );
@@ -1855,20 +1903,12 @@ public Action OnPlayerRunCmd(
                     EmitGameSoundToAll( "Announcer.MVM_Robots_Planted", SOUND_FROM_WORLD );
                 }
 
-                iButtons   &= ~( IN_JUMP | IN_ATTACK | IN_ATTACK2 | IN_ATTACK3 );
-                vecVelocity = { 0.0, 0.0, 0.0 };
-
                 return Plugin_Changed;
             }
 
-            if (
-                !TF2_IsPlayerInCondition( iClient, TFCond_Taunting )          &&
-                !TF2_IsPlayerInCondition( iClient, TFCond_UberchargedHidden ) &&
-                !TF2_IsPlayerInCondition( iClient, TFCond_ImmuneToPushback )  &&
-                !g_abDeploying[ iClient ]
-                )
+            if ( !TF2_IsPlayerInCondition( iClient, TFCond_Taunting ) && !g_abDeploying[ iClient ] )
             {
-                iButtons &= ~IN_JUMP;
+                // iButtons &= ~IN_JUMP;
 
                 if ( !TF2_IsGiant( iClient ) )
                 {
@@ -1898,8 +1938,10 @@ public Action OnPlayerRunCmd(
 
                     if ( g_aflNextBombUpgradeTime[ iClient ] <= GetGameTime() && g_aiFlagCarrierUpgradeLevel[ iClient ] < 3 && GetEntPropEnt( iClient, Prop_Send, "m_hGroundEntity" ) != -1 )
                     {
+                        // Why do we need to throttle this? Doesn't this happen right away, plus the first check guards this?
                         FakeClientCommandThrottled( iClient, "taunt" );
 
+                        // Is this check needed?
                         if ( TF2_IsPlayerInCondition( iClient, TFCond_Taunting ) )
                         {
                             g_aiFlagCarrierUpgradeLevel[ iClient ]++;
@@ -2267,7 +2309,10 @@ public void UpdateBombHud( int iUserId )
     int iResource = FindEntityByClassname( -1, "tf_objective_resource" );
     SetEntProp( iResource, Prop_Send, "m_nFlagCarrierUpgradeLevel", g_aiFlagCarrierUpgradeLevel[ iClient ] );
 
-    bool bInSpawn = TF2_IsPlayerInCondition( iClient, TFCond_UberchargedHidden ) && TF2_IsPlayerInCondition( iClient, TFCond_ImmuneToPushback );
+    float vecOrigin[ 3 ];
+    GetClientAbsOrigin( iClient, vecOrigin );
+
+    bool bInSpawn = TF2Util_IsPointInRespawnRoom( vecOrigin, iClient, true );
     SetEntPropFloat( iResource, Prop_Send, "m_flMvMBaseBombUpgradeTime", bInSpawn ? -1.0 : GetGameTime() );
     SetEntPropFloat( iResource, Prop_Send, "m_flMvMNextBombUpgradeTime", bInSpawn ? -1.0 : g_aflNextBombUpgradeTime[ iClient ] );
 }
@@ -2904,6 +2949,7 @@ void TF2_MirrorConditions( int iTarget, int iRecipient )
     {
         switch ( eCond )
         {
+            // Don't mirror spawn protection conditions. We manually add and remove these
             case TFCond_Ubercharged, TFCond_CloakFlicker, TFCond_UberchargedHidden, TFCond_ImmuneToPushback:
             {
                 continue;
@@ -3649,7 +3695,7 @@ stock int TF2_FindTeleNearestToBombHole()
     float vecHatchPos[ 3 ];
     vecHatchPos = TF2_GetBombHatchPosition();
 
-    float flBestDistance = 9.9e32;  // No FLT_MAX, but this is large enough
+    float flBestDistance = FLT_MAX;
     int   iBestEntity    = -1;
 
     int iEnt = -1;
