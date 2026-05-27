@@ -234,8 +234,6 @@ int   g_aiFlagCarrierUpgradeLevel[ MAXPLAYERS + 1 ];
 float g_aflBombDeployTime[ MAXPLAYERS + 1 ];
 float g_aflNextBombUpgradeTime[ MAXPLAYERS + 1 ];
 
-#define ResetGlobals    OnClientPutInServer
-
 /*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
   Function: OnPluginStart
 
@@ -776,20 +774,9 @@ public void OnMapStart()
 }
 
 /*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
-  Function: OnClientPutInServer
+  Function: ResetGlobals
 
-  Summary:  Called when a client is entering the game.
-            Whether a client has a steamid is undefined until
-            OnClientAuthorized is called, which may occur either
-            before or after OnClientPutInServer. Similarly, use
-            OnClientPostAdminCheck() if you need to verify whether
-            connecting players are admins.
-            GetClientCount() will include clients as they are passed
-            through this function, as clients are already in game
-            at this point.
-
-            This function resets a player's global values and hooks
-            functions to its entity.
+  Summary:  This function resets a player's global values.
 
   Args:     int iClient
               Client index.
@@ -797,7 +784,7 @@ public void OnMapStart()
   Returns:  void
               No return value.
 F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
-public void OnClientPutInServer( int iClient )
+stock void ResetGlobals( int iClient )
 {
     g_aiPlayersBot[ iClient ]     = -1;
     g_abControllingBot[ iClient ] = false;
@@ -818,15 +805,41 @@ public void OnClientPutInServer( int iClient )
     g_aflNextBombUpgradeTime[ iClient ]    = -1.0;
     g_abDeploying[ iClient ]               = false;
     g_aflBombDeployTime[ iClient ]         = -1.0;
+}
 
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: OnClientPutInServer
+
+  Summary:  Called when a client is entering the game.
+            Whether a client has a steamid is undefined until
+            OnClientAuthorized is called, which may occur either
+            before or after OnClientPutInServer. Similarly, use
+            OnClientPostAdminCheck() if you need to verify whether
+            connecting players are admins.
+            GetClientCount() will include clients as they are passed
+            through this function, as clients are already in game
+            at this point.
+
+            This function hooks the necessary callbacks to player
+            entities.
+
+  Args:     int iClient
+              Client index.
+
+  Returns:  void
+              No return value.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
+public void OnClientPutInServer( int iClient )
+{
+    ResetGlobals( iClient );
+
+    // TODO: Dynamically hook and unhook these
     if ( IsFakeClient( iClient ) )
     {
         g_hfnIsValidObserverTarget.HookEntity( Hook_Post, iClient, CTFPlayer_IsValidObserverTarget );
     }
     else
     {
-        // TODO: Dynamically hook and unhook these
-
         // Mimic gibbing logic for human invaders
         g_hfnShouldGib.HookEntity( Hook_Post, iClient, CTFPlayer_ShouldGib );
 
@@ -3129,7 +3142,7 @@ stock void TF2_KillBot( int iClient, int iAttacker = -1 )
         }
     }
 
-    SDKHooks_TakeDamage( iBot, iWeapon, iAttacker, 99999999.0, _, iWeapon );
+    SDKHooks_TakeDamage( iBot, iWeapon, iAttacker, FLT_MAX, _, iWeapon );
 
     SetEntProp( iBot, Prop_Send, "m_bUseBossHealthBar", false );
     SetEntProp( iBot, Prop_Send, "m_bIsMiniBoss", false );
