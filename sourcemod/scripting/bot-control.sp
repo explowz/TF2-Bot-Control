@@ -192,6 +192,7 @@ DynamicHook g_hfnIsValidObserverTarget;
 DynamicHook g_hfnShouldGib;
 DynamicHook g_hfnShouldTransmit;
 DynamicHook g_hfnPassesFilterImpl;
+DynamicHook g_hfnJump;
 
 // Detours
 DynamicDetour g_hfnSelectPatient;
@@ -626,6 +627,14 @@ public void OnPluginStart()
         SetFailState( "Failed to get create CFilterTFBotHasTag::PassesFilterImpl dynamic hook." );
     }
 
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+
+    g_hfnJump = DynamicHook.FromConf( Conf, "CBasePlayer::Jump" );
+    if ( !g_hfnPassesFilterImpl )
+    {
+        SetFailState( "Failed to get create CBasePlayer::Jump dynamic hook." );
+    }
+
     /*--------------------------------------------------------------------
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!! OFFSETS !!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -706,6 +715,7 @@ public void OnPluginEnd()
     delete g_hfnIsAllowedToHealTarget;
     delete g_hfnIsBarrageAndReloadWeapon;
     delete g_hfnIsValidObserverTarget;
+    delete g_hfnJump;
     delete g_hfnLeaveSquad;
     delete g_hfnPassesFilterImpl;
     // delete g_hfnPickUp;
@@ -819,6 +829,9 @@ public void OnClientPutInServer( int iClient )
 
         // Mimic gibbing logic for human invaders
         g_hfnShouldGib.HookEntity( Hook_Post, iClient, CTFPlayer_ShouldGib );
+
+        // Apply smoke to feet when human invaders jump
+        g_hfnJump.HookEntity( Hook_Post, iClient, CBasePlayer_Jump );
 
         // Fix problems related to switching weapons while we're supposed to fully reload
         SDKHook( iClient, SDKHook_WeaponSwitchPost, UpdateForcedReloadingVars );
@@ -1035,6 +1048,45 @@ public MRESReturn CTFPlayer_ShouldGib( Address pThis, DHookReturn hReturn, DHook
             return MRES_Ignored;
         }
     }
+}
+
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: CBasePlayer_Jump
+
+  Summary:  This function applies the smoke effect to human
+            invaders' feet when they jump if the bot they're
+            controlling has the necessary atribute.
+
+            Original function signature:
+            `void CBasePlayer::Jump()`
+
+  Args:     Address pThis
+              Calling CTFPlayer entity.
+
+  Returns:  MRESReturn
+              DHook return action.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
+public MRESReturn CBasePlayer_Jump( Address pThis )
+{
+    if ( g_abControllingBot[ pThis ] )
+    {
+        Address pCustomJumpParticle = TF2Attrib_GetByName( g_aiPlayersBot[ pThis ], "bot custom jump particle" );
+        if ( !pCustomJumpParticle )
+        {
+            return MRES_Ignored;
+        }
+
+        int iCustomJumpParticle = view_as< int >( TF2Attrib_GetValue( pCustomJumpParticle ) );
+        if ( iCustomJumpParticle )
+        {
+            SDKCall( g_hfnDispatchParticleEffect, "rocketjump_smoke", PATTACH_POINT_FOLLOW, pThis, "foot_L", false );
+            SDKCall( g_hfnDispatchParticleEffect, "rocketjump_smoke", PATTACH_POINT_FOLLOW, pThis, "foot_R", false );
+
+            return MRES_Handled;
+        }
+    }
+
+    return MRES_Ignored;
 }
 
 /*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
@@ -1775,10 +1827,6 @@ public Action OnPlayerRunCmd(
         if ( SDKCall( g_hfnShouldAutoJump, iBot ) )
         {
             iButtons |= IN_JUMP;
-
-            // TODO: Attach this particle every time a human invader jumps, not only autojump
-            SDKCall( g_hfnDispatchParticleEffect, "rocketjump_smoke", PATTACH_POINT_FOLLOW, iClient, "foot_L", false );
-            SDKCall( g_hfnDispatchParticleEffect, "rocketjump_smoke", PATTACH_POINT_FOLLOW, iClient, "foot_R", false );
         }
 
         int iActiveWeapon = TF2_GetClientActiveWeapon( iClient );
@@ -1791,7 +1839,6 @@ public Action OnPlayerRunCmd(
                 GetEntProp( iClient, Prop_Send, "m_bShieldEquipped" )
                 )
             {
-                // TODO: Call `ILocomotion::IsPotentiallyTraversable` to make sure we don't charge into a wall
                 if ( GetEntPropEnt( iClient, Prop_Send, "m_hGroundEntity" ) == -1 && vecVelocity[ 2 ] <= 0.0 )
                 {
                     // FIXME: Find a way to only charge when at the top of our jump
@@ -1858,6 +1905,7 @@ public Action OnPlayerRunCmd(
                   so we manually unpress that button.
                 --------------------------------------------------------------------*/
                 iButtons &= ~IN_ATTACK2;
+
                 iButtons |= IN_ATTACK;
             }
         }

@@ -175,6 +175,11 @@
 				"windows"	"491"
 				"linux"		"498"
 			}
+			"CBasePlayer::Jump"
+			{
+				"windows"	"342"
+				"linux"		"343"
+			}
 			"CTFBot::m_squad"	// Find from `CTFBot::LeaveSquad`
 			{
 				"windows"	"10192"
@@ -413,6 +418,15 @@
 						"flags"	"byref"
 					}
 				}
+			}
+			"CBasePlayer::Jump"
+			{
+				"offset"	"CBasePlayer::Jump"
+
+				"hooktype"	"entity"
+
+				"return"	"void"
+				"this"		"entity"
 			}
 		}
 	}
