@@ -179,12 +179,16 @@ Handle g_hfnPostInventoryApplication;
 Handle g_hfnShouldAutoJump;
 Handle g_hfnZoomOut;
 Handle g_hfnIsBarrageAndReloadWeapon;
-#if !defined( WIN32 )
+Handle g_hfnCapture;
+#if defined( WIN32 )
+Handle g_hfnGetClosestCaptureZone;
+#else
 Handle g_hfnGetPercentInvisible;
 Handle g_hfnIsStealthed;
 Handle g_hfnHasWeaponRestriction;
 Handle g_hfnIsInASquad;
 Handle g_hfnHasAttribute;
+Handle g_hfnGetCaptureZoneStandingOn;
 #endif
 
 // DHooks
@@ -468,7 +472,40 @@ public void OnPluginStart()
 
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
 
-#if !defined( WIN32 )
+    // We use this to capture the defenders' control point (aka bomb hatch)
+    StartPrepSDKCall( SDKCall_Entity );
+    PrepSDKCall_SetFromConf( Conf, SDKConf_Signature, "CCaptureZone::Capture" );
+    PrepSDKCall_AddParameter( SDKType_CBaseEntity, SDKPass_Pointer );   // CBaseEntity *pOther
+    g_hfnCapture = EndPrepSDKCall();
+    if ( !g_hfnCapture )
+    {
+        SetFailState( "Failed to create SDKCall for CCaptureZone::Capture signature." );
+    }
+
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+
+    // We use this to get the control point entity when we're deploying the bomb
+#if defined( WIN32 )
+    StartPrepSDKCall( SDKCall_Player );
+    PrepSDKCall_SetFromConf( Conf, SDKConf_Signature, "CTFPlayer::GetClosestCaptureZone" );
+    PrepSDKCall_SetReturnInfo( SDKType_CBaseEntity, SDKPass_Pointer );
+    g_hfnGetClosestCaptureZone = EndPrepSDKCall();
+    if ( !g_hfnGetClosestCaptureZone )
+    {
+        SetFailState( "Failed to create SDKCall for CTFPlayer::GetClosestCaptureZone signature." );
+    }
+#else
+    StartPrepSDKCall( SDKCall_Player );
+    PrepSDKCall_SetFromConf( Conf, SDKConf_Signature, "CTFPlayer::GetCaptureZoneStandingOn" );
+    PrepSDKCall_SetReturnInfo( SDKType_CBaseEntity, SDKPass_Pointer );
+    g_hfnGetCaptureZoneStandingOn = EndPrepSDKCall();
+    if ( !g_hfnGetCaptureZoneStandingOn )
+    {
+        SetFailState( "Failed to create SDKCall for CTFPlayer::GetCaptureZoneStandingOn signature." );
+    }
+
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+
     StartPrepSDKCall( SDKCall_Player );
     PrepSDKCall_SetFromConf( Conf, SDKConf_Signature, "CTFPlayerShared::GetPercentInvisible" );
     PrepSDKCall_SetReturnInfo( SDKType_Float, SDKPass_Plain );
@@ -2014,11 +2051,21 @@ public Action OnPlayerRunCmd(
                     g_abBlockRagdoll[ iClient ] = true;
                     g_abDeploying[ iClient ]    = false;
 
-                    TF2_RobotsWin();
+                    /*--------------------------------------------------------------------
+                      `GetCaptureZoneStandingOn` is unused and ends up being optimized
+                      away in the Windows build, but not in the Linux one.
+                    --------------------------------------------------------------------*/
+                    int iAreaTrigger;
+#if defined( WIN32 )
+                    iAreaTrigger = SDKCall( g_hfnGetClosestCaptureZone, iClient );
+#else
+                    iAreaTrigger = SDKCall( g_hfnGetCaptureZoneStandingOn, iClient );
+#endif
 
+                    SDKCall( g_hfnCapture, iAreaTrigger, iClient );
                     g_aflCooldownEndTime[ iClient ] = GetGameTime() + 10.0;
-
                     EmitGameSoundToAll( "Announcer.MVM_Robots_Planted", SOUND_FROM_WORLD );
+                    SDKHooks_TakeDamage( iClient, iClient, iClient, 99999.9, DMG_CRUSH );
                 }
 
                 return Plugin_Changed;
@@ -3709,22 +3756,6 @@ stock float[] WorldSpaceCenter( int iEntity )
     float vecOrigin[ 3 ];
     SDKCall( g_hfnWorldSpaceCenter, iEntity, vecOrigin );
     return vecOrigin;
-}
-
-stock void TF2_RobotsWin()
-{
-    int iEntity = -1;
-    while ( ( iEntity = FindEntityByClassname( iEntity, "logic_relay" ) ) != -1 )
-    {
-        // This is a `string_t` internally
-        char iName[ 32 ];
-        GetEntPropString( iEntity, Prop_Data, "m_iName", iName, sizeof( iName ) );
-
-        if ( StrEqual( iName, "boss_deploy_relay", false ) )
-        {
-            AcceptEntityInput( iEntity, "Trigger" );
-        }
-    }
 }
 
 stock void TF2_StopSounds( int iClient )
