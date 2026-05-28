@@ -739,6 +739,7 @@ public void OnPluginEnd()
     delete g_hHudInfo;
     delete g_hHudReload;
 
+    delete g_hfnCapture;
     delete g_hfnCreate;
     delete g_hfnCreateRagdollEntity;
     delete g_hfnDispatchParticleEffect;
@@ -762,7 +763,10 @@ public void OnPluginEnd()
     delete g_hfnShouldTransmit;
     delete g_hfnWorldSpaceCenter;
     delete g_hfnZoomOut;
-#if !defined( WIN32 )
+#if defined( WIN32 )
+    delete g_hfnGetClosestCaptureZone;
+#else
+    delete g_hfnGetCaptureZoneStandingOn;
     delete g_hfnGetPercentInvisible;
     delete g_hfnHasAttribute;
     delete g_hfnHasWeaponRestriction;
@@ -786,7 +790,9 @@ public void OnMapStart()
 {
     if ( !IsMannVsMachineMode() )
     {
-        SteamWorks_SetGameDescription( "Team Fortress 2" );
+        char szDescription[ 64 ];
+        GetGameDescription( szDescription, sizeof( szDescription ), true );
+        SteamWorks_SetGameDescription( szDescription );
         SetFailState( "Disabling for non Mann vs. Machine map." );
     }
 
@@ -1728,7 +1734,7 @@ public void OnGameFrame()
             // `OnPlayerRunCmd` decides when players with the `HOLD_FIRE_UNTIL_FULL_RELOAD` attribute can attack
             if ( !HasAttribute( GetClientOfUserId( g_aiPlayersBot[ i ] ), HOLD_FIRE_UNTIL_FULL_RELOAD ) )
             {
-                TF2Attrib_SetByName( i, "no_attack", 0.0 );
+                TF2Attrib_RemoveByName( i, "no_attack" );
             }
 
             TF2_RemoveCondition( i, TFCond_Ubercharged );
@@ -1930,7 +1936,7 @@ public Action OnPlayerRunCmd(
                         // Don't remove the attribute if we're still in spawn
                         if ( !bInSpawn )
                         {
-                            TF2Attrib_SetByName( iClient, "no_attack", 0.0 );
+                            TF2Attrib_RemoveByName( iClient, "no_attack" );
                         }
 
                         SetHudTextParams( -1.0, -0.55, 1.75, 0, 255, 0, 255, 0, 0.0, 0.0, 0.0 );
@@ -1941,8 +1947,8 @@ public Action OnPlayerRunCmd(
 
             if ( HasAttribute( iBot, ALWAYS_FIRE_WEAPON ) && !g_abIsWaitingForFullReload[ iClient ] )
             {
-                // Unset this in case the player switched weapons mid-reaload
-                TF2Attrib_SetByName( iClient, "no_attack", 0.0 );
+                // Remove this in case the player switched weapons mid-reload
+                TF2Attrib_RemoveByName( iClient, "no_attack" );
 
                 /*--------------------------------------------------------------------
                   A player can pause auto-firing by holding down their attack2 key,
