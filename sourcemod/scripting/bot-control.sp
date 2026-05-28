@@ -16,9 +16,7 @@
 #include <tf2items>
 #include <tf2_stocks>
 #include <tf2utils>
-#if defined( STEAMWORKS_SUPPORT )
 #include <SteamWorks>
-#endif
 #include <stocksoup/tf/annotations>
 #include <stocksoup/tf/client>
 #include <stocksoup/tf/entity_prop_stocks>
@@ -788,15 +786,11 @@ public void OnMapStart()
 {
     if ( !IsMannVsMachineMode() )
     {
-#if defined( STEAMWORKS_SUPPORT )
         SteamWorks_SetGameDescription( "Team Fortress 2" );
-#endif
         SetFailState( "Disabling for non Mann vs. Machine map." );
     }
 
-#if defined( STEAMWORKS_SUPPORT )
     SteamWorks_SetGameDescription( ":: Bot Control ::" );
-#endif
 
     PrecacheScriptSound( "MVM.Warning" );
     PrecacheScriptSound( "MVM.DeployBombGiant" );
