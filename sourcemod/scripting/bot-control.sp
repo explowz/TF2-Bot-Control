@@ -167,7 +167,7 @@ Handle g_hfnPlaySpecificSequence;
 Handle g_hfnDispatchParticleEffect;
 Handle g_hfnSetMission;
 Handle g_hfnGetLeader;
-// Handle g_hfnPickUp;
+Handle g_hfnPickUp;
 Handle g_hfnDrop;
 Handle g_hfnRemoveObject;
 Handle g_hfnHasTag;
@@ -178,15 +178,13 @@ Handle g_hfnShouldAutoJump;
 Handle g_hfnZoomOut;
 Handle g_hfnIsBarrageAndReloadWeapon;
 Handle g_hfnCapture;
-#if defined( WIN32 )
 Handle g_hfnGetClosestCaptureZone;
-#else
+#if !defined( WIN32 )
 Handle g_hfnGetPercentInvisible;
 Handle g_hfnIsStealthed;
 Handle g_hfnHasWeaponRestriction;
 Handle g_hfnIsInASquad;
 Handle g_hfnHasAttribute;
-Handle g_hfnGetCaptureZoneStandingOn;
 #endif
 
 // DHooks
@@ -207,6 +205,7 @@ DynamicDetour g_hfnCreateRagdollEntity;
 int g_flInvisibility_Offset;
 int g_weaponRestrictionFlags_Offset;
 int g_attributeFlags_Offset;
+int g_leader_Offset;
 #endif
 int g_squad_Offset;
 int g_teleportWhereName_Offset;
@@ -371,33 +370,17 @@ public void OnPluginStart()
 
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
 
+#if !defined( WIN32 )
     // Used to get a bot's squad leader
-#if defined( WIN32 )
-    /*--------------------------------------------------------------------
-      There seems to be no way to get a direct signature to
-      CTFBotSquad::GetLeader on Windows because it simply returns
-      `m_leader` which is a `CHandle< CTFBot >`. Many functions that
-      return a `CHandle` compile almost identically, so a byte signature
-      is not unique.
-    --------------------------------------------------------------------*/
-    Address pCallGetLeader = Conf.GetMemSig( "CTFBotEscortSquadLeader::Update_call_GetLeader" );
-    int     iRel           = LoadFromAddress( pCallGetLeader + view_as< Address >( 1 ), NumberType_Int32 );
-    Address pGetLeader     = pCallGetLeader + view_as< Address >( 5 + iRel );
-
-    StartPrepSDKCall( SDKCall_Raw );
-    PrepSDKCall_SetAddress( pGetLeader );
-    PrepSDKCall_SetReturnInfo( SDKType_CBasePlayer, SDKPass_Pointer );
-    g_hfnGetLeader = EndPrepSDKCall();
-#else
     StartPrepSDKCall( SDKCall_Raw );
     PrepSDKCall_SetFromConf( Conf, SDKConf_Signature, "CTFBotSquad::GetLeader" );
     PrepSDKCall_SetReturnInfo( SDKType_CBasePlayer, SDKPass_Pointer );
     g_hfnGetLeader = EndPrepSDKCall();
-#endif
     if ( !g_hfnGetLeader )
     {
         SetFailState( "Failed to create SDKCall for CTFBotSquad::GetLeader signature." );
     }
+#endif
 
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
 
@@ -432,7 +415,7 @@ public void OnPluginStart()
 
     // This call forces a player to pick up the intel
     // FIXME: This just crashes the server no matter how much we wait after the bomb is dropped
-    /*StartPrepSDKCall( SDKCall_Entity );
+    StartPrepSDKCall( SDKCall_Entity );
     PrepSDKCall_SetFromConf( Conf, SDKConf_Virtual, "CCaptureFlag::PickUp" );
     PrepSDKCall_AddParameter( SDKType_CBasePlayer, SDKPass_Pointer );   // CTFPlayer* pPlayer
     PrepSDKCall_AddParameter( SDKType_Bool, SDKPass_Plain );            // bool bInvisible (unused)
@@ -440,7 +423,7 @@ public void OnPluginStart()
     if ( !g_hfnPickUp )
     {
         SetFailState( "Failed to create SDKCall for CCaptureFlag::PickUp offset." );
-    }*/
+    }
 
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
 
@@ -483,7 +466,6 @@ public void OnPluginStart()
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
 
     // We use this to get the control point entity when we're deploying the bomb
-#if defined( WIN32 )
     StartPrepSDKCall( SDKCall_Player );
     PrepSDKCall_SetFromConf( Conf, SDKConf_Signature, "CTFPlayer::GetClosestCaptureZone" );
     PrepSDKCall_SetReturnInfo( SDKType_CBaseEntity, SDKPass_Pointer );
@@ -492,16 +474,8 @@ public void OnPluginStart()
     {
         SetFailState( "Failed to create SDKCall for CTFPlayer::GetClosestCaptureZone signature." );
     }
-#else
-    StartPrepSDKCall( SDKCall_Player );
-    PrepSDKCall_SetFromConf( Conf, SDKConf_Signature, "CTFPlayer::GetCaptureZoneStandingOn" );
-    PrepSDKCall_SetReturnInfo( SDKType_CBaseEntity, SDKPass_Pointer );
-    g_hfnGetCaptureZoneStandingOn = EndPrepSDKCall();
-    if ( !g_hfnGetCaptureZoneStandingOn )
-    {
-        SetFailState( "Failed to create SDKCall for CTFPlayer::GetCaptureZoneStandingOn signature." );
-    }
 
+#if !defined( WIN32 )
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
 
     StartPrepSDKCall( SDKCall_Player );
@@ -677,6 +651,7 @@ public void OnPluginStart()
     g_flInvisibility_Offset         = Conf.GetOffset( "CTFPlayerShared::m_flInvisibility" );
     g_weaponRestrictionFlags_Offset = Conf.GetOffset( "CTFBot::m_weaponRestrictionFlags" );
     g_attributeFlags_Offset         = Conf.GetOffset( "CTFBot::m_attributeFlags" );
+    g_leader_Offset                 = Conf.GetOffset( "CTFBotSquad::m_leader" );
 #endif
     g_squad_Offset             = Conf.GetOffset( "CTFBot::m_squad" );
     g_teleportWhereName_Offset = Conf.GetOffset( "CTFBot::m_teleportWhereName" );
@@ -752,7 +727,7 @@ public void OnPluginEnd()
     delete g_hfnJump;
     delete g_hfnLeaveSquad;
     delete g_hfnPassesFilterImpl;
-    // delete g_hfnPickUp;
+    delete g_hfnPickUp;
     delete g_hfnPlaySpecificSequence;
     delete g_hfnPostInventoryApplication;
     delete g_hfnRemoveObject;
@@ -763,10 +738,8 @@ public void OnPluginEnd()
     delete g_hfnShouldTransmit;
     delete g_hfnWorldSpaceCenter;
     delete g_hfnZoomOut;
-#if defined( WIN32 )
     delete g_hfnGetClosestCaptureZone;
-#else
-    delete g_hfnGetCaptureZoneStandingOn;
+#if !defined( WIN32 )
     delete g_hfnGetPercentInvisible;
     delete g_hfnHasAttribute;
     delete g_hfnHasWeaponRestriction;
@@ -880,7 +853,7 @@ public void OnClientPutInServer( int iClient )
         // Mimic gibbing logic for human invaders
         g_hfnShouldGib.HookEntity( Hook_Post, iClient, CTFPlayer_ShouldGib );
 
-        // Apply smoke to feet when human invaders jump
+        // Apply smoke to feet when human invaders jump (if applicable)
         g_hfnJump.HookEntity( Hook_Post, iClient, CBasePlayer_Jump );
 
         // Fix problems related to switching weapons while we're supposed to fully reload
@@ -1499,7 +1472,7 @@ public Action OnFlagTouch( int iEntity, int iOther )
         int iBot = GetClientOfUserId( g_aiPlayersBot[ iOther ] );
         if ( 0 < iBot <= MaxClients && IsInASquad( iBot ) )
         {
-            if ( TF2_GetBotSquadLeader( iBot ) != iOther )
+            if ( GetLeader( GetSquad( iBot ) ) != iOther )
             {
                 return Plugin_Handled;
             }
@@ -1865,11 +1838,6 @@ public Action OnPlayerRunCmd(
         GetClientAbsOrigin( iClient, vecOrigin );
 
         bool bInSpawn = TF2Util_IsPointInRespawnRoom( vecOrigin, iClient, true );
-        if ( bInSpawn )
-        {
-            // Disallow crouching in spawn so when you lose control of your bot the bot won't spawn inside the ground.
-            iButtons &= ~IN_DUCK;
-        }
 
         SetEntPropFloat( iClient, Prop_Send, "m_flCloakMeter", 100.0 );
 
@@ -1993,7 +1961,7 @@ public Action OnPlayerRunCmd(
             }
         }
 
-        if ( g_abIsSentryBuster[ iClient ] && HasEntProp( iClient, Prop_Data, "m_hGroundEntity" ) )
+        if ( g_abIsSentryBuster[ iClient ] && GetEntPropEnt( iClient, Prop_Send, "m_hGroundEntity" ) != -1 )
         {
             // Disable the use of the sentry buster's caber
             SetEntPropFloat( iClient, Prop_Send, "m_flStealthNoAttackExpire", GetGameTime() + 0.5 );
@@ -2051,16 +2019,7 @@ public Action OnPlayerRunCmd(
                     g_abBlockRagdoll[ iClient ] = true;
                     g_abDeploying[ iClient ]    = false;
 
-                    /*--------------------------------------------------------------------
-                      `GetCaptureZoneStandingOn` is unused and ends up being optimized
-                      away in the Windows build, but not in the Linux one.
-                    --------------------------------------------------------------------*/
-                    int iAreaTrigger;
-#if defined( WIN32 )
-                    iAreaTrigger = SDKCall( g_hfnGetClosestCaptureZone, iClient );
-#else
-                    iAreaTrigger = SDKCall( g_hfnGetCaptureZoneStandingOn, iClient );
-#endif
+                    int iAreaTrigger = SDKCall( g_hfnGetClosestCaptureZone, iClient );
 
                     SDKCall( g_hfnCapture, iAreaTrigger, iClient );
                     g_aflCooldownEndTime[ iClient ] = GetGameTime() + 10.0;
@@ -2260,7 +2219,7 @@ stock void TF2_InstructPlayer( int iClient )
     {
         LogServer( "%N does't have the bomb. Instructing them to do something else...", iClient );
 
-        int iLeader = TF2_GetBotSquadLeader( iBot );
+        int iLeader = GetLeader( GetSquad( iBot ) );
         if ( 0 < iLeader <= MaxClients && IsClientInGame( iLeader ) && IsPlayerAlive( iLeader ) && iLeader != iClient )
         {
             // We're in a squad, so tell the player to focus on making sure the squad leader
@@ -2585,8 +2544,7 @@ public Action Event_PlayerDeath( Event hEvent, const char[] szName, bool bDontBr
     if ( !bSuicide && !IsFakeClient( iClient ) && g_abControllingBot[ iClient ] )
     {
         int iBot = GetClientOfUserId( g_aiPlayersBot[ iClient ] );
-
-        if ( iBot != 0 && IsFakeClient( iBot ) )
+        if ( iBot != 0 )
         {
             if ( g_abIsSentryBuster[ iClient ] )
             {
@@ -2798,35 +2756,20 @@ public MRESReturn CTFBotMedicHeal_SelectPatient( DHookReturn hReturn, DHookParam
 
 public MRESReturn CTFBotMedicHeal_SelectPatient_Post( DHookReturn hReturn, DHookParam hParams )
 {
-    int iPatient = hReturn.Value;
-
     if ( g_iLastHealer != -1 )
     {
         if ( IsInASquad( g_iLastHealer ) )
         {
-            int iLeader = SDKCall( g_hfnGetLeader, GetSquad( g_iLastHealer ) );
-            if ( 0 < iLeader <= MaxClients && IsClientInGame( iLeader ) )
+            int iLeader = GetLeader( GetSquad( g_iLastHealer ) );
+            if ( 0 < iLeader <= MaxClients && IsClientInGame( iLeader ) && g_abIsControlled[ iLeader ] )
             {
-                iPatient = iLeader;
-            }
-
-            int iLeader2 = TF2_GetBotSquadLeader( g_iLastHealer );
-            if ( 0 < iLeader2 <= MaxClients && IsClientInGame( iLeader2 ) )
-            {
-                iPatient = iLeader2;
+                hReturn.Value = g_aiController[ iLeader ];
+                return MRES_Supercede;
             }
         }
     }
 
-
-    // Scuffed way to fix error
-    if ( iPatient == -1 )
-    {
-        return MRES_Ignored;
-    }
-
-    hReturn.Value = iPatient;
-    return MRES_Supercede;
+    return MRES_Ignored;
 }
 
 int g_iLastMedigun       = -1;
@@ -2842,9 +2785,6 @@ public MRESReturn CWeaponMedigun_IsAllowedToHealTarget( Address pThis, DHookRetu
 
 public MRESReturn CWeaponMedigun_IsAllowedToHealTarget_Post( Address pThis, DHookReturn hReturn, DHookParam hParams )
 {
-    // Save the original result
-    bool bResult = hReturn.Value;
-
     int iOwner = TF2_GetEntityOwner( g_iLastMedigun );
 
     // Controlled bots aren't allowed to heal
@@ -2859,29 +2799,25 @@ public MRESReturn CWeaponMedigun_IsAllowedToHealTarget_Post( Address pThis, DHoo
         int iBot = GetClientOfUserId( g_aiPlayersBot[ iOwner ] );
         if ( 0 < iBot <= MaxClients && IsPlayerAlive( iBot ) )
         {
-            int iLeader = TF2_GetBotSquadLeader( iBot );
-
-            // If the player is controlling the squad leader then we don't need to restrict their heal target.
-            if ( 0 < iLeader <= MaxClients && IsClientInGame( iLeader ) && IsPlayerAlive( iLeader ) && iLeader != iBot)
+            int iLeader = GetLeader( GetSquad( iBot ) );
+            // If the player is controlling the squad leader then we don't need to restrict their heal target
+            if ( 0 < iLeader <= MaxClients && IsClientInGame( iLeader ) && IsPlayerAlive( iLeader ) && iLeader != iBot )
             {
-                bResult = ( g_iLastMedigunTarget == iLeader );
+                hReturn.Value = ( g_iLastMedigunTarget == iLeader );
+                return MRES_Supercede;
             }
         }
     }
 
-    // PrintToServer("CWeaponMedigun_IsAllowedToHealTarget_Post %i %i", g_iLastMedigunTarget, bOriginalResult);
-
-    hReturn.Value = bResult;
-    return MRES_Supercede;
+    return MRES_Ignored;
 }
 
-stock int TF2_GetObjectCount( int iClient, TFObjectType eObjectType )
+stock int TF2_GetObjectCount( int iBuilder, TFObjectType eObjectType )
 {
     int iObject = -1, iCount = 0;
     while ( ( iObject = FindEntityByClassname( iObject, "obj_*" ) ) != -1 )
     {
-        TFObjectType iObjType = TF2_GetObjectType( iObject );
-        if ( TF2_GetObjectBuilder( iObject  ) == iClient && iObjType == eObjectType )
+        if ( TF2_GetObjectBuilder( iObject  ) == iBuilder && TF2_GetObjectType( iObject ) == eObjectType )
         {
             iCount++;
         }
@@ -2902,7 +2838,7 @@ public Action Listener_Block( int iClient, char[] szCommand, int argc )
 
             g_aflCooldownEndTime[ iClient ] = GetGameTime() + 10.0;
         }
-        else if ( g_abIsSentryBuster[ iClient ] && GetEntPropEnt( iClient, Prop_Data, "m_hGroundEntity" ) != -1 )
+        else if ( g_abIsSentryBuster[ iClient ] && GetEntPropEnt( iClient, Prop_Send, "m_hGroundEntity" ) != -1 )
         {
             TF2_RestoreBot( iClient );
             TF2_RespawnPlayer( iClient );   // No gibs/ragdoll
@@ -3057,7 +2993,7 @@ stock void TF2_RestoreBot( int iClient )
             int iBomb = TF2_DropBomb( iClient );
             if ( IsValidEntity( iBomb ) )
             {
-                TeleportEntity( iBomb, vecOrigin );
+                SDKCall( g_hfnPickUp, iBomb, iBot, false );
             }
         }
 
@@ -3202,10 +3138,10 @@ stock void TF2_KillBot( int iClient, int iAttacker = -1 )
 
 stock void TF2_MirrorRobot( int iRobot, int iClient )
 {
-    float vecOrigin[ 3 ], angEyeAngles[ 3 ];
+    float vecOrigin[ 3 ], angEyeAngles[ 3 ], vecVelocity[ 3 ];
     GetClientAbsOrigin( iRobot, vecOrigin );
     GetClientEyeAngles( iRobot, angEyeAngles );
-    angEyeAngles[ 2 ] = 0.0;
+    GetEntPropVector( iRobot, Prop_Data, "m_vecVelocity", vecVelocity );
 
     // Set up player
     SetEntityFlags( iClient, GetEntityFlags( iClient ) | FL_FAKECLIENT );
@@ -3216,7 +3152,6 @@ stock void TF2_MirrorRobot( int iRobot, int iClient )
     TF2_RegeneratePlayer( iClient );
     TF2_RemoveAllWearables( iClient );
     TF2Attrib_RemoveAll( iClient );
-    TF2Attrib_ClearCache( iClient );
 
     // New hot technology
     g_aflControlEndTime[ iClient ]      = GetGameTime() + 35.0;
@@ -3229,8 +3164,8 @@ stock void TF2_MirrorRobot( int iRobot, int iClient )
     char szModelName[ PLATFORM_MAX_PATH ];
     GetEntPropString( iRobot, Prop_Data, "m_ModelName", szModelName, PLATFORM_MAX_PATH );
     SetVariantString( szModelName );
-    AcceptEntityInput( iClient, "SetCustomModel" );
-    SetEntProp( iClient, Prop_Send, "m_bUseClassAnimations", true );
+    AcceptEntityInput( iClient, "SetCustomModelWithClassAnimations" );
+    // SetEntProp( iClient, Prop_Send, "m_bUseClassAnimations", true );
 
     // Set ModelScale
     char szModelScale[ 8 ];
@@ -3316,10 +3251,10 @@ stock void TF2_MirrorRobot( int iRobot, int iClient )
 
     if ( IsInASquad( iRobot ) )
     {
-        Address pTargetSquad = GetSquad( iRobot );
-        int     iLeader      = SDKCall( g_hfnGetLeader, pTargetSquad );
+        Address pSquad  = GetSquad( iRobot );
+        int     iLeader = GetLeader( pSquad );
 
-        // Everyone but medics leave the targets squad
+        // Everyone but medics leave the robot's squad
         for ( int i = 1; i <= MaxClients; i++ )
         {
             if ( !IsClientInGame( i ) || !IsFakeClient( i ) || i == iRobot || i == iLeader )
@@ -3329,10 +3264,9 @@ stock void TF2_MirrorRobot( int iRobot, int iClient )
 
             if ( TF2_GetPlayerClass( i ) != TFClass_Medic )
             {
-                if ( GetSquad( i ) == pTargetSquad )
+                if ( GetSquad( i ) == pSquad )
                 {
                     SDKCall( g_hfnLeaveSquad, i );
-                //    PrintToChatAll("Bye %N", i);
                 }
             }
         }
@@ -3369,9 +3303,6 @@ stock void TF2_MirrorRobot( int iRobot, int iClient )
     // SetEntData( iClient, g_iOffsetSupportLimited, 0, _, true );  // Makes player death not decrement wave bot count
 
     // Teleport player to bots position
-    float vecVelocity[ 3 ];
-    GetEntPropVector( iRobot, Prop_Data, "m_vecVelocity", vecVelocity );
-
     SetEntityMoveType( iRobot, MOVETYPE_NONE );
     TeleportEntity( iClient, vecOrigin, angEyeAngles, vecVelocity );
     TeleportEntity( iRobot, { 0.0, 0.0, 9999.0 }, NULL_VECTOR, NULL_VECTOR );
@@ -3429,10 +3360,8 @@ public Action Timer_ReplaceWeapons( Handle hTimer, int iUserId )
         if ( IsValidEntity( iBomb ) )
         {
             LogServer( "%N dropped the bomb. Making %N pick it up...", iBot, iPlayer );
-            float vecOrigin[ 3 ];
-            GetClientAbsOrigin( iPlayer, vecOrigin );
-            TeleportEntity( iBomb, vecOrigin );
-            LogServer( "Teleported bomb to %N's position. They should now have it.", iPlayer );
+            SDKCall( g_hfnPickUp, iBomb, iPlayer, false );
+            LogServer( "Forced %N to pick up the bomb." );
 
             // Copy bomb carrier upgrade level
             int iResource = FindEntityByClassname( -1, "tf_objective_resource" );
@@ -3727,7 +3656,7 @@ stock bool TF2_HasBomb( int iClient )
 stock int TF2_DropBomb( int iClient )
 {
     int iBomb = GetEntPropEnt( iClient, Prop_Send, "m_hItem" );
-    SDKCall( g_hfnDrop, iBomb, iClient, false, true, false );
+    SDKCall( g_hfnDrop, iBomb, iClient, true, true, false );
 
     return iBomb;
 }
@@ -3826,14 +3755,14 @@ stock void TF2_DetonateBuster( int iClient )
     float vecOrigin[ 3 ], angEyeAngles[ 3 ], vecVelocity[ 3 ];
     GetClientAbsOrigin( iClient, vecOrigin );
     GetClientEyeAngles( iClient, angEyeAngles );
-    GetEntPropVector( iClient, Prop_Data, "m_vecVelocity", vecVelocity );
+    GetEntPropVector( iClient, Prop_Send, "m_vecVelocity", vecVelocity );
 
     SetEntityMoveType( iBot, MOVETYPE_WALK );
     TeleportEntity( iBot, vecOrigin, angEyeAngles, vecVelocity );
 
     SDKCall( g_hfnSetMission, iBot, MISSION_DESTROY_SENTRIES, 1 );
 
-    SetEntProp( iBot, Prop_Send, "m_iHealth", 1 );
+    SetEntityHealth( iBot, 1 );
     SetEntPropEnt( iClient, Prop_Send, "m_hObserverTarget", iBot );
 }
 
@@ -3857,7 +3786,7 @@ stock int TF2_FindTeleNearestToBombHole()
         )
         {
             float vecTeleporterOrigin[ 3 ];
-            GetEntPropVector( iEnt, Prop_Data, "m_vecOrigin", vecTeleporterOrigin );
+            GetEntPropVector( iEnt, Prop_Send, "m_vecOrigin", vecTeleporterOrigin );
 
             float flDistance = GetVectorDistance( vecHatchPos, vecTeleporterOrigin, true );
             if ( flDistance <= flBestDistance )
@@ -3869,27 +3798,6 @@ stock int TF2_FindTeleNearestToBombHole()
     }
 
     return iBestEntity;
-}
-
-stock int TF2_GetSquadLeader( Address pSquad )
-{
-    int iLeader = SDKCall( g_hfnGetLeader, pSquad );
-    if ( 0 < iLeader <= MaxClients && IsFakeClient( iLeader ) && g_abIsControlled[ iLeader ] )
-    {
-        return GetClientOfUserId( g_aiController[ iLeader ] );
-    }
-
-    return iLeader;
-}
-
-stock int TF2_GetBotSquadLeader( int iBot )
-{
-    if ( IsInASquad( iBot ) )
-    {
-        return TF2_GetSquadLeader( GetSquad( iBot ) );
-    }
-
-    return -1;
 }
 
 stock void TF2_TakeOverBuildings( int iReceiver, int iTarget )
@@ -4010,8 +3918,9 @@ public void GiveItem(
 
     if ( bSetActive && bIsWeapon )
     {
-        FakeClientCommand( iClient, "use %s", szClassname );
-        SetEntPropEnt( iClient, Prop_Send, "m_hActiveWeapon", iItem );
+        TF2Util_SetPlayerActiveWeapon( iClient, iItem );
+        // FakeClientCommand( iClient, "use %s", szClassname );
+        // SetEntPropEnt( iClient, Prop_Send, "m_hActiveWeapon", iItem );
     }
 }
 
@@ -4066,5 +3975,14 @@ stock bool IsInASquad( int iBot )
     return view_as< Address >( GetEntData( iBot, g_squad_Offset ) ) != Address_Null;
 #else
     return SDKCall( g_hfnIsInASquad, iBot );
+#endif
+}
+
+stock int GetLeader( Address pSquad )
+{
+#if defined( WIN32 )
+    return LoadEntityFromHandleAddress( pSquad + view_as< Address >( g_leader_Offset ) );
+#else
+    return SDKCall( g_hfnGetLeader, pSquad );
 #endif
 }
