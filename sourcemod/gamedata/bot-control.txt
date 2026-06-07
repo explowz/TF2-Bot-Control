@@ -180,10 +180,25 @@
 				"windows"	"342"
 				"linux"		"343"
 			}
+			"CTFPlayer::m_flSpawnTime"
+			{
+				"windows"	"9060"
+				"linux"		"9068"
+			}
+			"CTFPlayer::m_nDeployingBombState"
+			{
+				"windows"	"9280"
+				"linux"		"9288"
+			}
 			"CTFBot::m_squad"	// Find from `CTFBot::LeaveSquad`
 			{
 				"windows"	"10192"
 				"linux"		"10192"
+			}
+			"CTFBot::m_mission"	// Find `CTFBotScenarioMonitor::DesiredScenarioAndClassAction`
+			{
+				"windows"	"10396"
+				"linux"		"10396"
 			}
 			"CTFBot::m_teleportWhereName"	// Find function containing both "Engineer.MVM_AutoBuildingTeleporter02" and "Teleport exit built"
 			{
