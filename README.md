@@ -7,5 +7,6 @@ A Team Fortress 2 plugin that allows players to take control of a robot in Mann 
 - [SM-TFUtils](https://github.com/nosoop/SM-TFUtils)
 - [stocksoup](https://github.com/nosoop/stocksoup)
 - [SteamWorks](https://forums.alliedmods.net/showthread.php?t=229556)
+- [VScript](https://github.com/FortyTwoFortyTwo/VScript)
 
 Pull requests welcome

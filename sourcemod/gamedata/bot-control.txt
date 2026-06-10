@@ -5,12 +5,6 @@
 	{
 		"Signatures"
 		{
-			"CTFBot::LeaveSquad"	// "Squad leader is dead"
-			{
-				"library"	"server"
-				"windows"	"\x56\x8B\xF1\x8B\x8E\x2A\x2A\x2A\x2A\x85\xC9\x74\x2A\x56"
-				"linux"		"@_ZN6CTFBot10LeaveSquadEv"
-			}
 			"CTFPlayer::PlaySpecificSequence"	// "primary_deploybomb"
 			{
 				"library"	"server"
@@ -23,23 +17,11 @@
 				"windows"	"\x55\x8B\xEC\x56\x57\x8B\xF9\x8B\xB7\x2A\x2A\x2A\x2A\x83\xEE\x01"
 				"linux"		"@_ZN9CTFPlayer12RemoveObjectEP11CBaseObject"
 			}
-			"CTFBot::SetMission"	// "mvm_sentrybuster_killed"
-			{
-				"library"	"server"
-				"windows"	"\x55\x8B\xEC\x83\xEC\x20\x80\x7D\x2A\x00\x56"
-				"linux"		"@_ZN6CTFBot10SetMissionENS_11MissionTypeEb"
-			}
 			"CTFBotMedicHeal::SelectPatient"	// "I'm now a squad leader! Going for the flag!"
 			{
 				"library"	"server"
 				"windows"	"\x55\x8B\xEC\x83\xEC\x54\x53\x8B\x5D\x2A\x56\x57\x6A\x00"
 				"linux"		"@_ZN15CTFBotMedicHeal13SelectPatientEP6CTFBotP9CTFPlayer"
-			}
-			"CTFBot::HasTag"	// "bot_gatebot"
-			{
-				"library"	"server"
-				"windows"	"\x55\x8B\xEC\x53\x8B\xD9\x56\x33\xF6\x57\x39\xB3\x2A\x2A\x2A\x2A\x7E\x2A\x8B\x4D\x2A\x33\xFF\xEB\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x8B\x83\x2A\x2A\x2A\x2A\x83\xC0\x05\x03\xC7\x3B\xC8"
-				"linux"		"@_ZN6CTFBot6HasTagEPKc"
 			}
 			"DispatchParticleEffect"	// "particle_spawn"
 			{
@@ -58,12 +40,6 @@
 				"library"	"server"
 				"windows"	"\x55\x8B\xEC\x83\xEC\x3C\x53\x8B\xD9\x56\x57"
 				"linux"		"@_ZN9CTFPlayer24PostInventoryApplicationEv"
-			}
-			"CTFBot::ShouldAutoJump"	// Find from `CTFBotMainAction::Update` with string "CTFBotMainAction::Update"
-			{
-				"library"	"server"
-				"windows"	"\x55\x8B\xEC\x51\x56\x8B\xF1\x57\x8B\x86\x2A\x2A\x2A\x2A\xC1\xE8\x12"
-				"linux"		"@_ZN6CTFBot14ShouldAutoJumpEv"
 			}
 			"CTFReviveMarker::Create"	// "entity_revive_marker"
 			{
@@ -95,6 +71,12 @@
 				"windows"	"\x55\x8B\xEC\x51\x53\x57\x8B\x7D\x2A\x8B\xD9\x85\xFF\x0F\x84"
 				"linux"		"@_ZN12CCaptureZone7CaptureEP11CBaseEntity"
 			}
+			"CTFBot::ForgetSpy"
+			{
+				"library"	"server"
+				"windows"	"\x55\x8B\xEC\x83\xEC\x0C\x53\x8B\xD9\x56\x33\xF6\x89\x5D"
+				"linux"		"@_ZN6CTFBot9ForgetSpyEP9CTFPlayer"
+			}
 
 			/*--------------------------------------------------------------------
 			  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -117,26 +99,6 @@
 				"library"	"server"
 				"linux"		"@_ZNK15CTFPlayerShared19GetPercentInvisibleEv"
 			}
-			"CTFPlayerShared::IsStealthed"
-			{
-				"library"	"server"
-				"linux"		"@_ZNK15CTFPlayerShared11IsStealthedEv"
-			}
-			"CTFBot::HasWeaponRestriction"
-			{
-				"library"	"server"
-				"linux"		"@_ZNK6CTFBot20HasWeaponRestrictionEi"
-			}
-			"CTFBot::IsInASquad"
-			{
-				"library"	"server"
-				"linux"		"@_ZNK6CTFBot10IsInASquadEv"
-			}
-			"CTFBot::HasAttribute"
-			{
-				"library"	"server"
-				"linux"		"@_ZNK6CTFBot12HasAttributeEi"
-			}
 		}
 		"Offsets"
 		{
@@ -144,11 +106,6 @@
 			{
 				"windows"	"20"
 				"linux"		"21"
-			}
-			"CBaseEntity::WorldSpaceCenter"
-			{
-				"windows"	"156"
-				"linux"		"157"
 			}
 			"CFilterTFBotHasTag::PassesFilterImpl"
 			{

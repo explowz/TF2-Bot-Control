@@ -16,6 +16,7 @@
 #include <tf2items>
 #include <tf2_stocks>
 #include <tf2utils>
+#include <vscript>
 #include <SteamWorks>
 #include <stocksoup/tf/annotations>
 #include <stocksoup/tf/client>
@@ -202,13 +203,13 @@ Handle g_hfnZoomOut;
 Handle g_hfnIsBarrageAndReloadWeapon;
 Handle g_hfnCapture;
 Handle g_hfnGetClosestCaptureZone;
+Handle g_hfnIsInASquad;
+Handle g_hfnIsStealthed;
+Handle g_hfnHasWeaponRestriction;
+Handle g_hfnHasAttribute;
 #if !defined( WIN32 )
 Handle g_hfnRemoveAllItems;
 Handle g_hfnGetPercentInvisible;
-Handle g_hfnIsStealthed;
-Handle g_hfnHasWeaponRestriction;
-Handle g_hfnIsInASquad;
-Handle g_hfnHasAttribute;
 #endif
 
 // DHooks
@@ -227,8 +228,6 @@ DynamicDetour g_hfnCreateRagdollEntity;
 // Offsets
 #if defined( WIN32 )
 int g_flInvisibility_Offset;
-int g_weaponRestrictionFlags_Offset;
-int g_attributeFlags_Offset;
 int g_leader_Offset;
 #endif
 int g_flSpawnTime_Offset;
@@ -330,18 +329,6 @@ public void OnPluginStart()
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     --------------------------------------------------------------------*/
 
-    // This entity is used to get an entity's center position
-    StartPrepSDKCall( SDKCall_Entity );
-    PrepSDKCall_SetFromConf( Conf, SDKConf_Virtual, "CBaseEntity::WorldSpaceCenter" );
-    PrepSDKCall_SetReturnInfo( SDKType_Vector, SDKPass_ByRef );
-    g_hfnWorldSpaceCenter = EndPrepSDKCall();
-    if ( !g_hfnWorldSpaceCenter )
-    {
-        SetFailState( "Failed to create SDKCall for CBaseEntity::WorldSpaceCenter offset." );
-    }
-
-    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
-
     // This call is used to set the deploy animation on the robots with the bomb
     StartPrepSDKCall( SDKCall_Player );
     PrepSDKCall_SetFromConf( Conf, SDKConf_Signature, "CTFPlayer::PlaySpecificSequence" );
@@ -377,55 +364,6 @@ public void OnPluginStart()
 
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
 
-    // This call is used to make sentry busters behave nicely
-    /*StartPrepSDKCall( SDKCall_Player );
-    PrepSDKCall_SetFromConf( Conf, SDKConf_Signature, "CTFBot::SetMission" );
-    PrepSDKCall_AddParameter( SDKType_PlainOldData, SDKPass_Plain );  // MissionType mission
-    PrepSDKCall_AddParameter( SDKType_Bool, SDKPass_Plain );          // bool resetBehaviorSystem
-    g_hfnSetMission = EndPrepSDKCall();
-    if ( !g_hfnSetMission )
-    {
-        SetFailState( "Failed to create SDKCall for CTFBot::SetMission signature." );
-    }*/
-
-    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
-
-    // This call is used to get a bot's tag
-    StartPrepSDKCall( SDKCall_Player );
-    PrepSDKCall_SetFromConf( Conf, SDKConf_Signature, "CTFBot::HasTag" );
-    PrepSDKCall_AddParameter( SDKType_String, SDKPass_Pointer );  // const char* tag
-    PrepSDKCall_SetReturnInfo( SDKType_Bool, SDKPass_Plain );
-    g_hfnHasTag = EndPrepSDKCall();
-    if ( !g_hfnHasTag )
-    {
-        SetFailState( "Failed to create SDKCall for CTFBot::HasTag signature." );
-    }
-
-    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
-
-    // This call will make a bot leave their squad
-    StartPrepSDKCall( SDKCall_Player );
-    PrepSDKCall_SetFromConf( Conf, SDKConf_Signature, "CTFBot::LeaveSquad" );
-    g_hfnLeaveSquad = EndPrepSDKCall();
-    if ( !g_hfnLeaveSquad )
-    {
-        SetFailState( "Failed to create SDKCall for CTFBot::LeaveSquad signature." );
-    }
-
-    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
-
-    // Used to determine whether we should auto jump
-    StartPrepSDKCall( SDKCall_Player );
-    PrepSDKCall_SetFromConf( Conf, SDKConf_Signature, "CTFBot::ShouldAutoJump" );
-    PrepSDKCall_SetReturnInfo( SDKType_Bool, SDKPass_Plain );
-    g_hfnShouldAutoJump = EndPrepSDKCall();
-    if ( !g_hfnShouldAutoJump )
-    {
-        SetFailState( "Failed to create SDKCall for CTFBot::ShouldAutoJump signature." );
-    }
-
-    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
-
 #if !defined( WIN32 )
     // Used to get a bot's squad leader
     StartPrepSDKCall( SDKCall_Raw );
@@ -440,7 +378,12 @@ public void OnPluginStart()
 
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
 
-    // This call will play a particle effect
+    /*--------------------------------------------------------------------
+      We cannot use the VScript function in this case, since it uses the
+      simplified version of `DispatchParticleEffect`
+    --------------------------------------------------------------------*/
+
+    // Dispatches a one-off particle system
     StartPrepSDKCall( SDKCall_Static );
     PrepSDKCall_SetFromConf( Conf, SDKConf_Signature, "DispatchParticleEffect" );
     PrepSDKCall_AddParameter( SDKType_String, SDKPass_Pointer );        // const char* pszParticleName
@@ -482,6 +425,11 @@ public void OnPluginStart()
     }
 
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+
+    /*--------------------------------------------------------------------
+      The `DropFlag` VScript function creates a teamplay_flag_event,
+      which we do not want. Therefore, we cannot use it.
+    --------------------------------------------------------------------*/
 
     // This call forces a player to drop the intel
     StartPrepSDKCall( SDKCall_Entity );
@@ -551,50 +499,6 @@ public void OnPluginStart()
     if ( !g_hfnGetPercentInvisible )
     {
         SetFailState( "Failed to create SDKCall for CTFPlayerShared::GetPercentInvisible signature." );
-    }
-
-    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
-
-    StartPrepSDKCall( SDKCall_Player );
-    PrepSDKCall_SetFromConf( Conf, SDKConf_Signature, "CTFPlayerShared::IsStealthed" );
-    PrepSDKCall_SetReturnInfo( SDKType_Bool, SDKPass_Plain );
-    g_hfnIsStealthed = EndPrepSDKCall();
-    if ( !g_hfnIsStealthed )
-    {
-        SetFailState( "Failed to create SDKCall for CTFPlayerShared::IsStealthed signature." );
-    }
-
-    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
-
-    StartPrepSDKCall( SDKCall_Player );
-    PrepSDKCall_SetFromConf( Conf, SDKConf_Signature, "CTFBot::HasWeaponRestriction" );
-    PrepSDKCall_SetReturnInfo( SDKType_Bool, SDKPass_Plain );
-    g_hfnHasWeaponRestriction = EndPrepSDKCall();
-    if ( !g_hfnHasWeaponRestriction )
-    {
-        SetFailState( "Failed to create SDKCall for CTFBot::HasWeaponRestriction signature." );
-    }
-
-    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
-
-    StartPrepSDKCall( SDKCall_Player );
-    PrepSDKCall_SetFromConf( Conf, SDKConf_Signature, "CTFBot::IsInASquad" );
-    PrepSDKCall_SetReturnInfo( SDKType_Bool, SDKPass_Plain );
-    g_hfnIsInASquad = EndPrepSDKCall();
-    if ( !g_hfnIsInASquad )
-    {
-        SetFailState( "Failed to create SDKCall for CTFBot::IsInASquad signature." );
-    }
-
-    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
-
-    StartPrepSDKCall( SDKCall_Player );
-    PrepSDKCall_SetFromConf( Conf, SDKConf_Signature, "CTFBot::HasAttribute" );
-    PrepSDKCall_SetReturnInfo( SDKType_Bool, SDKPass_Plain );
-    g_hfnHasAttribute = EndPrepSDKCall();
-    if ( !g_hfnHasAttribute )
-    {
-        SetFailState( "Failed to create SDKCall for CTFBot::HasAttribute signature." );
     }
 #endif
 
@@ -714,10 +618,8 @@ public void OnPluginStart()
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     --------------------------------------------------------------------*/
 #if defined( WIN32 )
-    g_flInvisibility_Offset         = Conf.GetOffset( "CTFPlayerShared::m_flInvisibility" );
-    g_weaponRestrictionFlags_Offset = Conf.GetOffset( "CTFBot::m_weaponRestrictionFlags" );
-    g_attributeFlags_Offset         = Conf.GetOffset( "CTFBot::m_attributeFlags" );
-    g_leader_Offset                 = Conf.GetOffset( "CTFBotSquad::m_leader" );
+    g_flInvisibility_Offset = Conf.GetOffset( "CTFPlayerShared::m_flInvisibility" );
+    g_leader_Offset         = Conf.GetOffset( "CTFBotSquad::m_leader" );
 #endif
     g_flSpawnTime_Offset         = Conf.GetOffset( "CTFPlayer::m_flSpawnTime" );
     g_nDeployingBombState_Offset = Conf.GetOffset( "CTFPlayer::m_nDeployingBombState" );
@@ -763,6 +665,101 @@ public void OnPluginStart()
 }
 
 /*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: OnAllPluginsLoaded
+
+  Summary:  Called after all plugins have been loaded. This is
+            called once for every plugin. If a plugin late loads,
+            it will be called immediately after OnPluginStart().
+
+            This function initializes all SDK calls created from
+            VScript functions. This must be done after all plugins
+            have been loaded due to variables that need to be
+            initialized by the VScript plugin.
+
+  Returns:  void
+              No return value.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
+public void OnAllPluginsLoaded()
+{
+    // Get vector to center of object - absolute coords
+    g_hfnWorldSpaceCenter = VScript_GetClassFunction( "CBaseEntity", "GetCenter" ).CreateSDKCall();
+    if ( !g_hfnWorldSpaceCenter )
+    {
+        SetFailState( "Failed to create SDKCall for CBaseEntity::WorldSpaceCenter from VScript function." );
+    }
+
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+
+    // Set this bot's current mission to the given mission
+    /*g_hfnSetMission = VScript_GetClassFunction( "CTFBot", "SetMission" ).CreateSDKCall();
+    if ( !g_hfnSetMission )
+    {
+        SetFailState( "Failed to create SDKCall for CTFBot::SetMission from VScript function." );
+    }*/
+
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+
+    // Checks if this TFBot has the given bot tag
+    g_hfnHasTag = VScript_GetClassFunction( "CTFBot", "HasBotTag" ).CreateSDKCall();
+    if ( !g_hfnHasTag )
+    {
+        SetFailState( "Failed to create SDKCall for CTFBot::HasTag from VScript function." );
+    }
+
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+
+    // Checks if we are in a squad
+    g_hfnIsInASquad = VScript_GetClassFunction( "CTFBot", "IsInASquad" ).CreateSDKCall();
+    if ( !g_hfnIsInASquad )
+    {
+        SetFailState( "Failed to create SDKCall for CTFBot::IsInASquad from VScript function." );
+    }
+
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+
+    // This call will make a bot leave their squad
+    g_hfnLeaveSquad = VScript_GetClassFunction( "CTFBot", "LeaveSquad" ).CreateSDKCall();
+    if ( !g_hfnLeaveSquad )
+    {
+        SetFailState( "Failed to create SDKCall for CTFBot::LeaveSquad from VScript function." );
+    }
+
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+
+    // Returns if the bot should automatically jump
+    g_hfnShouldAutoJump = VScript_GetClassFunction( "CTFBot", "ShouldAutoJump" ).CreateSDKCall();
+    if ( !g_hfnShouldAutoJump )
+    {
+        SetFailState( "Failed to create SDKCall for CTFBot::ShouldAutoJump from VScript function." );
+    }
+
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+
+    g_hfnIsStealthed = VScript_GetClassFunction( "CTFPlayer", "IsStealthed" ).CreateSDKCall();
+    if ( !g_hfnIsStealthed )
+    {
+        SetFailState( "Failed to create SDKCall for CTFPlayerShared::IsStealthed from VScript function." );
+    }
+
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+
+    // Checks if this TFBot has the given weapon restriction flag
+    g_hfnHasWeaponRestriction = VScript_GetClassFunction( "CTFBot", "HasWeaponRestriction" ).CreateSDKCall();
+    if ( !g_hfnHasWeaponRestriction )
+    {
+        SetFailState( "Failed to create SDKCall for CTFBot::HasWeaponRestriction from VScript function." );
+    }
+
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+
+    g_hfnHasAttribute = VScript_GetClassFunction( "CTFBot", "HasBotAttribute" ).CreateSDKCall();
+    if ( !g_hfnHasAttribute )
+    {
+        SetFailState( "Failed to create SDKCall for CTFBot::HasAttribute from VScript function." );
+    }
+}
+
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
   Function: OnPluginEnd
 
   Summary:  Called when the plugin is about to be unloaded.
@@ -789,9 +786,13 @@ public void OnPluginEnd()
     delete g_hfnDispatchParticleEffect;
     delete g_hfnDrop;
     delete g_hfnGetLeader;
+    delete g_hfnHasAttribute;
     delete g_hfnHasTag;
+    delete g_hfnHasWeaponRestriction;
     delete g_hfnIsAllowedToHealTarget;
     delete g_hfnIsBarrageAndReloadWeapon;
+    delete g_hfnIsInASquad;
+    delete g_hfnIsStealthed;
     delete g_hfnIsValidObserverTarget;
     delete g_hfnJump;
     delete g_hfnLeaveSquad;
@@ -810,10 +811,7 @@ public void OnPluginEnd()
     delete g_hfnGetClosestCaptureZone;
 #if !defined( WIN32 )
     delete g_hfnGetPercentInvisible;
-    delete g_hfnHasAttribute;
-    delete g_hfnHasWeaponRestriction;
-    delete g_hfnIsInASquad;
-    delete g_hfnIsStealthed;
+    delete g_hfnRemoveAllItems;
 #endif
 }
 
@@ -1092,10 +1090,7 @@ public MRESReturn CTFPlayer_ShouldGib( int iThis, DHookReturn hReturn, DHookPara
         return MRES_Ignored;
     }
 
-    if (
-         GetEntProp( iThis, Prop_Send, "m_bIsMiniBoss" ) ||
-         GetEntPropFloat( iThis, Prop_Send, "m_flModelScale" ) > 1.0
-        )
+    if ( IsMiniBoss( iThis ) || GetEntPropFloat( iThis, Prop_Send, "m_flModelScale" ) > 1.0 )
     {
         hReturn.Value = true;
         return MRES_Supercede;
@@ -2929,64 +2924,75 @@ public Action Hook_TeleporterTransmit( int iEntity, int iOther )
     return Plugin_Continue; //Transmit
 }
 
-public Action Hook_SpyTransmit( int iEntity, int iOther )
+// TODO: Call CTFBotVision::IsIgnored
+public Action Hook_SpyTransmit( int iMe, int iSubject )
 {
     // Bots don't know where players are when they are disguised so neither should player bots
-    if ( !( 0 < iOther <= MaxClients ) || iEntity == iOther )
+    if ( !( 0 < iSubject <= MaxClients ) || iMe == iSubject )
     {
         return Plugin_Continue;
     }
 
-    if ( !IsClientInGame( iOther ) )
+    if ( !IsClientInGame( iSubject ) )
     {
         return Plugin_Continue;
     }
 
     // Ignore everything but spies
-    if ( TF2_GetPlayerClass( iEntity ) != TFClass_Spy )
+    if ( TF2_GetPlayerClass( iMe ) != TFClass_Spy )
     {
         return Plugin_Continue;
     }
 
     // Always transmit invader spies
-    if ( TF2_GetClientTeam( iOther ) != TF_TEAM_PVE_INVADERS )
+    if ( TF2_GetClientTeam( iSubject ) != TF_TEAM_PVE_INVADERS )
     {
         return Plugin_Continue;
     }
 
-    if ( !ShouldSpyTransmit( iEntity ) )
+    if ( IsSpyIgnored( iMe ) )
     {
-        return Plugin_Handled;  // Don't transmit
+        return Plugin_Handled;
     }
 
-    return Plugin_Continue; // Transmit
+    return Plugin_Continue;
 }
 
-stock bool ShouldSpyTransmit( int iClient )
+stock bool IsSpyIgnored( int iSpy )
 {
-    // Players who are burning/jarated/bleeding, or who are cloaked and bump into something, are not ignored
-    if (
-        TF2_IsPlayerInCondition( iClient, TFCond_CloakFlicker ) ||
-        TF2_IsPlayerInCondition( iClient, TFCond_Bleeding )     ||
-        TF2_IsPlayerInCondition( iClient, TFCond_Jarated )      ||
-        TF2_IsPlayerInCondition( iClient, TFCond_Milked )       ||
-        TF2_IsPlayerInCondition( iClient, TFCond_OnFire )       ||
-        TF2_IsPlayerInCondition( iClient, TFCond_Gas )
-        )
+    if ( TF2_IsPlayerInCondition( iSpy, TFCond_OnFire )      ||
+         TF2_IsPlayerInCondition( iSpy, TFCond_Jarated )     ||
+         TF2_IsPlayerInCondition( iSpy, TFCond_CloakFlicker) ||
+         TF2_IsPlayerInCondition( iSpy, TFCond_Bleeding ) )
+    {
+        // always notice players with these conditions
+        return false;
+    }
+
+    // An upgrade in MvM grants AE stealth where the player can fire
+    // while in stealth, and for a short period after it drops
+    if ( TF2_IsPlayerInCondition( iSpy, TFCond_StealthedUserBuffFade ) )
     {
         return true;
     }
 
     // Spies are only ignored when more than 75% cloaked
-    if ( IsStealthed( iClient ) )
+    if ( IsStealthed( iSpy ) )
     {
-        return ( GetPercentInvisible( iClient ) <= 0.75 );
+        if ( GetPercentInvisible( iSpy ) < 0.75 )
+        {
+            // spy is partially cloaked, and therefore attracts our attention
+            return false;
+        }
+
+        // invisible!
+        return true;
     }
 
     // Spies who are not fully disguised are not ignored
     if (
-        !TF2_IsPlayerInCondition( iClient, TFCond_Disguised ) ||
-        TF2_IsPlayerInCondition( iClient, TFCond_Disguising )
+        !TF2_IsPlayerInCondition( iSpy, TFCond_Disguised ) ||
+        TF2_IsPlayerInCondition( iSpy, TFCond_Disguising )
         )
     {
         return true;
@@ -2997,13 +3003,7 @@ stock bool ShouldSpyTransmit( int iClient )
 
 stock bool IsStealthed( int iClient )
 {
-#if defined( WIN32 )
-    return TF2_IsPlayerInCondition( iClient, TFCond_Cloaked )   ||
-           TF2_IsPlayerInCondition( iClient, TFCond_Stealthed ) ||
-           TF2_IsPlayerInCondition( iClient, TFCond_StealthedUserBuffFade );
-#else
     return SDKCall( g_hfnIsStealthed, iClient );
-#endif
 }
 
 stock float GetPercentInvisible( int iClient )
@@ -3120,7 +3120,7 @@ stock void TF2_ClearBot( int iClient, bool bKillBot )
 
     SetEntProp( iClient, Prop_Send, "m_bIsABot", false );
     SetEntProp( iClient, Prop_Send, "m_nBotSkill", -1 );
-    SetEntProp( iClient, Prop_Send, "m_bIsMiniBoss", false );
+    SetIsMiniBoss( iClient, false );
 
     SetVariantString( "" );
     AcceptEntityInput( iClient, "SetCustomModel" );
@@ -3163,7 +3163,7 @@ stock void TF2_KillBot( int iClient, int iAttacker = -1 )
     SDKHooks_TakeDamage( iBot, iWeapon, iAttacker, FLT_MAX, _, iWeapon );
 
     SetEntProp( iBot, Prop_Send, "m_bUseBossHealthBar", false );
-    SetEntProp( iBot, Prop_Send, "m_bIsMiniBoss", false );
+    SetIsMiniBoss( iBot, false );
 
     ResetGlobals( iBot );
 }
@@ -3677,6 +3677,11 @@ stock bool IsMiniBoss( int iClient )
     return view_as< bool >( GetEntProp( iClient, Prop_Send, "m_bIsMiniBoss" ) );
 }
 
+stock void SetIsMiniBoss( int iClient, bool bIsMiniBoss )
+{
+    SetEntProp( iClient, Prop_Send, "m_bIsMiniBoss", bIsMiniBoss );
+}
+
 stock bool TF2_HasBomb( int iClient )
 {
     int iBomb = GetEntPropEnt( iClient, Prop_Send, "m_hItem" );
@@ -3755,7 +3760,7 @@ stock bool TF2_ObservedIsValidClient( int iObserver )
                 if ( GetEntProp( iObserverTarget, Prop_Data, "m_takedamage" ) != DAMAGE_NO )
                 {
                     float flTimeSinceSpawn = GetGameTime() - GetSpawnTime( iObserverTarget );
-                    if ( TF2_GetPlayerClass( iObserverTarget ) != TFClass_Spy && flTimeSinceSpawn >= 1.5 )  // Allow the bots some time to spawn
+                    if ( TF2_GetPlayerClass( iObserverTarget ) != TFClass_Spy && flTimeSinceSpawn >= 1.0 )  // Allow the bots some time to spawn
                     {
                         return true;
                     }
@@ -3984,20 +3989,12 @@ stock bool IsMannVsMachineMode()
 
 stock bool HasWeaponRestriction( int iBot, WeaponRestrictionType eRestriction )
 {
-#if defined( WIN32 )
-    return GetEntData( iBot, g_weaponRestrictionFlags_Offset ) & view_as< int >( eRestriction );
-#else
     return SDKCall( g_hfnHasWeaponRestriction, iBot, view_as< int >( eRestriction ) );
-#endif
 }
 
 stock bool HasAttribute( int iBot, AttributeType eAttribute )
 {
-#if defined( WIN32 )
-    return GetEntData( iBot, g_attributeFlags_Offset ) & view_as< int >( eAttribute );
-#else
     return SDKCall( g_hfnHasAttribute, iBot, view_as< int >( eAttribute ) );
-#endif
 }
 
 stock Address GetSquad( int iBot )
@@ -4007,11 +4004,7 @@ stock Address GetSquad( int iBot )
 
 stock bool IsInASquad( int iBot )
 {
-#if defined( WIN32 )
-    return GetSquad( iBot ) != Address_Null;
-#else
     return SDKCall( g_hfnIsInASquad, iBot );
-#endif
 }
 
 stock int GetLeader( Address pSquad )
