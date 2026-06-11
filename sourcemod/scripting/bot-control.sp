@@ -182,6 +182,22 @@ enum
 #define	DAMAGE_YES          2
 #define	DAMAGE_AIM          3
 
+//----------------------------------------------------------------------------
+// These must remain in sync with the bot_generator's spawnflags in tf.fgd:
+#define TFBOT_IGNORE_ENEMY_SCOUTS       0x0001
+#define TFBOT_IGNORE_ENEMY_SOLDIERS     0x0002
+#define TFBOT_IGNORE_ENEMY_PYROS        0x0004
+#define TFBOT_IGNORE_ENEMY_DEMOMEN      0x0008
+#define TFBOT_IGNORE_ENEMY_HEAVIES      0x0010
+#define TFBOT_IGNORE_ENEMY_MEDICS       0x0020
+#define TFBOT_IGNORE_ENEMY_ENGINEERS    0x0040
+#define TFBOT_IGNORE_ENEMY_SNIPERS      0x0080
+#define TFBOT_IGNORE_ENEMY_SPIES        0x0100
+#define TFBOT_IGNORE_ENEMY_SENTRY_GUNS  0x0200
+#define TFBOT_IGNORE_SCENARIO_GOALS     0x0400
+
+#define TFBOT_ALL_BEHAVIOR_FLAGS        0xFFFF
+
 // Used for displaying robot-related information on the client's HUD
 Handle g_hHudInfo;
 Handle g_hHudReload;
@@ -207,6 +223,8 @@ Handle g_hfnIsInASquad;
 Handle g_hfnIsStealthed;
 Handle g_hfnHasWeaponRestriction;
 Handle g_hfnHasAttribute;
+Handle g_hfnIsPlacingSapper;
+Handle g_hfnIsBehaviorFlagSet;
 #if !defined( WIN32 )
 Handle g_hfnRemoveAllItems;
 Handle g_hfnGetPercentInvisible;
@@ -752,10 +770,29 @@ public void OnAllPluginsLoaded()
 
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
 
+    // Checks if this TFBot has the given attributes
     g_hfnHasAttribute = VScript_GetClassFunction( "CTFBot", "HasBotAttribute" ).CreateSDKCall();
     if ( !g_hfnHasAttribute )
     {
         SetFailState( "Failed to create SDKCall for CTFBot::HasAttribute from VScript function." );
+    }
+
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+
+    // Return true if the given behavior flag(s) are set for this bot
+    g_hfnIsBehaviorFlagSet = VScript_GetClassFunction( "CTFBot", "IsBehaviorFlagSet" ).CreateSDKCall();
+    if ( !g_hfnIsBehaviorFlagSet )
+    {
+        SetFailState( "Failed to create SDKCall for CTFBot::IsBehaviorFlagSet from VScript function." );
+    }
+
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+
+    // Returns true if we placed a sapper in the last few moments
+    g_hfnIsPlacingSapper = VScript_GetClassFunction( "CTFPlayer", "IsPlacingSapper" ).CreateSDKCall();
+    if ( !g_hfnIsPlacingSapper )
+    {
+        SetFailState( "Failed to create SDKCall for CTFPlayer::IsPlacingSapper from VScript function." );
     }
 }
 
@@ -791,7 +828,9 @@ public void OnPluginEnd()
     delete g_hfnHasWeaponRestriction;
     delete g_hfnIsAllowedToHealTarget;
     delete g_hfnIsBarrageAndReloadWeapon;
+    delete g_hfnIsBehaviorFlagSet;
     delete g_hfnIsInASquad;
+    delete g_hfnIsPlacingSapper;
     delete g_hfnIsStealthed;
     delete g_hfnIsValidObserverTarget;
     delete g_hfnJump;
@@ -908,7 +947,7 @@ public void OnClientPutInServer( int iClient )
         // Fix problems related to switching weapons while we're supposed to fully reload
         SDKHook( iClient, SDKHook_WeaponSwitchPost, UpdateForcedReloadingVars );
 
-        SDKHook( iClient, SDKHook_SetTransmit, Hook_SpyTransmit );
+        SDKHook( iClient, SDKHook_SetTransmit, IsIgnored );
         SDKHook( iClient, SDKHook_OnTakeDamageAlivePost, Player_OnTakeDamageAlivePost );
     }
 }
@@ -974,7 +1013,7 @@ public MRESReturn CFilterTFBotHasTag_PassesFilterImpl( int iThis, DHookReturn hR
     }
 
     int iCaller = hParams.Get( 2 );
-    if ( !( 0 < iCaller <= MaxClients ) || !IsClientInGame( iCaller ) || IsFakeClient( iCaller ) )
+    if ( !IsPlayerIndex( iCaller ) || !IsClientInGame( iCaller ) || IsFakeClient( iCaller ) )
     {
         return MRES_Ignored;
     }
@@ -1050,7 +1089,7 @@ public MRESReturn CTFPlayer_IsValidObserverTarget( int iThis, DHookReturn hRetur
     }
 
     int iTarget = hParams.Get( 1 );
-    if ( !( 0 < iTarget <= MaxClients ) || !IsClientInGame( iThis ) || !IsClientInGame( iTarget ) )
+    if ( !IsPlayerIndex( iTarget ) || !IsClientInGame( iThis ) || !IsClientInGame( iTarget ) )
     {
         return MRES_Ignored;
     }
@@ -1198,8 +1237,7 @@ public MRESReturn CTFPlayer_CreateRagdollEntity( int iThis, DHookParam hParams )
 F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
 public MRESReturn CBaseEntity_ShouldTransmit( int iThis, DHookReturn hReturn, DHookParam hParams )
 {
-    if ( view_as< bool >( GetEntProp( iThis, Prop_Send, "m_bCarried" ) ) ||
-         view_as< bool >( GetEntProp( iThis, Prop_Send, "m_bPlacing") ) )
+    if ( IsCarried( iThis ) || IsPlacing( iThis ) )
     {
         // Let game decide
         return MRES_Ignored;
@@ -1224,11 +1262,7 @@ public MRESReturn CBaseEntity_ShouldTransmit( int iThis, DHookReturn hReturn, DH
 F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
 public void OnClientDisconnect( int iClient )
 {
-    if (
-        !( 0 < iClient <= MaxClients ) ||
-        !IsClientInGame( iClient )     ||
-        IsFakeClient( iClient )
-        )
+    if ( !IsPlayerIndex( iClient ) || !IsClientInGame( iClient ) || IsFakeClient( iClient ) )
     {
         return;
     }
@@ -1240,9 +1274,7 @@ public void OnClientDisconnect( int iClient )
   Function: OnEntityCreated
 
   Summary:  This function is called when an entity is created. It
-            hooks functions onto specific entities and blocks
-            entities from being created if they're from a human
-            invader.
+            hooks functions onto specific entities.
 
   Args:     int iEntity
               Entity index.
@@ -1262,9 +1294,11 @@ public void OnEntityCreated( int iEntity, const char[] szClassname )
     {
         SDKHook( iEntity, SDKHook_SpawnPost, OnFilterSpawnPos );
     }
-    else if ( StrEqual( szClassname, "obj_teleporter" ) )
+    else if ( StrEqual( szClassname, "obj_sentrygun" )  ||
+              StrEqual( szClassname, "obj_minisentry" ) ||
+              StrEqual( szClassname, "obj_teleporter" ) )
     {
-        SDKHook( iEntity, SDKHook_SetTransmit, Hook_TeleporterTransmit );
+        SDKHook( iEntity, SDKHook_SetTransmit, IsIgnored );
     }
     else if( StrEqual( szClassname, "func_respawnroom" ) )
     {
@@ -1355,14 +1389,12 @@ public Action SentryVision_OnThink( int iSentryGlow, int iClient )
     if ( moveparent > MaxClients )
     {
         // Safe check to know if I'm parented to the sentry and NOT carried! We don't want to put the glow on the blueprint!
-        bool bNotPlaced = ( view_as< bool >( GetEntProp( moveparent, Prop_Send, "m_bCarried" ) ) ||
-                            view_as< bool >( GetEntProp( moveparent, Prop_Send, "m_bPlacing" ) ) );
-        if ( bNotPlaced )   // The sentry is carried, set my parent to the engie!
+        if ( IsCarried( moveparent ) || IsPlacing( moveparent ) )   // The sentry is carried, set my parent to the engie!
         {
             moveparent = TF2_GetObjectBuilder( moveparent );
         }
     }
-    else if ( 0 < moveparent <= MaxClients ) // My parent is the engie
+    else if ( IsPlayerIndex( moveparent ) ) // My parent is the engie
     {
         static int c_iRefCarriedObjects[ MAXPLAYERS + 1 ];    // Last carried object by the engie.
 
@@ -1439,7 +1471,7 @@ public Action SentryVision_OnThink( int iSentryGlow, int iClient )
         RemoveEntity( iSentryGlow );
     }
 
-    if ( 0 < iClient <= MaxClients && IsClientInGame( iClient ) && IsSentryBuster( iClient ) )
+    if ( IsPlayerIndex( iClient ) && IsClientInGame( iClient ) && IsSentryBuster( iClient ) )
     {
         // Allow the sentry buster to see the glow
         return Plugin_Continue;
@@ -1455,7 +1487,7 @@ public void Event_SappedObject( Event hEvent, const char[] szName, bool bDontBro
     TFObjectType iObject = view_as< TFObjectType >( hEvent.GetInt( "object" ) );
     if (
         iObject == TFObject_Teleporter &&
-        0 < iClient <= MaxClients      &&
+        IsPlayerIndex( iClient )       &&
         IsClientInGame( iClient )      &&
         TF2_GetClientTeam( iClient ) == TF_TEAM_PVE_INVADERS
         )
@@ -1467,7 +1499,7 @@ public void Event_SappedObject( Event hEvent, const char[] szName, bool bDontBro
 public Action OnFlagTouch( int iEntity, int iOther )
 {
     // If its not a client we don't care
-    if ( !( 0 < iOther <= MaxClients ) )
+    if ( !IsPlayerIndex( iOther ) )
     {
         return Plugin_Continue;
     }
@@ -1513,7 +1545,7 @@ public Action OnFlagTouch( int iEntity, int iOther )
 
 public Action OnHatchStartTouch( int iEntity, int iClient )
 {
-    if ( !( 0 < iClient <= MaxClients ) || IsFakeClient( iClient ) )
+    if ( !IsPlayerIndex( iClient ) || IsFakeClient( iClient ) )
     {
         return Plugin_Continue;
     }
@@ -1607,7 +1639,7 @@ public void DisableDeployBombAnimation( int iClientSerial )
 
 public void OnHatchEndTouch( int iEntity, int iClient )
 {
-    if ( !( 0 < iClient <= MaxClients ) || IsFakeClient( iClient ) || !TF2_HasBomb( iClient ) )
+    if ( !IsPlayerIndex( iClient ) || IsFakeClient( iClient ) || !TF2_HasBomb( iClient ) )
     {
         return;
     }
@@ -1630,7 +1662,7 @@ public void OnSpawnStartTouch( int iRespawnRoom, int iEntity )
     TFTeam eTeam = view_as< TFTeam >( GetEntProp( iRespawnRoom, Prop_Send, "m_iTeamNum" ) );
     if (
         eTeam != TF_TEAM_PVE_INVADERS         ||
-        !( 0 < iEntity <= MaxClients )        ||
+        !IsPlayerIndex( iEntity )             ||
         TF2_GetClientTeam( iEntity ) != eTeam ||
         IsFakeClient( iEntity )
         )
@@ -1665,7 +1697,7 @@ public void OnSpawnEndTouch( int iRespawnRoom, int iEntity )
     TFTeam eTeam = view_as< TFTeam >( GetEntProp( iRespawnRoom, Prop_Send, "m_iTeamNum" ) );
     if (
         eTeam != TF_TEAM_PVE_INVADERS         ||
-        !( 0 < iEntity <= MaxClients )        ||
+        !IsPlayerIndex( iEntity )             ||
         TF2_GetClientTeam( iEntity ) != eTeam ||
         IsFakeClient( iEntity )
         )
@@ -1775,7 +1807,7 @@ public void TF2_OnConditionAdded( int iClient, TFCond eCond )
 public void OnCurrencySpawnPost( int iCurrency )
 {
     int iOwnerEntity = TF2_GetEntityOwner( iCurrency );   // The bot who dropped the money
-    if ( !( 0 < iOwnerEntity <= MaxClients ) || !g_aAttributes[ iOwnerEntity ].IsControlled() )
+    if ( !IsPlayerIndex( iOwnerEntity ) || !g_aAttributes[ iOwnerEntity ].IsControlled() )
     {
         return;
     }
@@ -2148,7 +2180,7 @@ public Action OnPlayerRunCmd(
             SetHudTextParams( 1.0, 0.0, 0.1, 126, 126, 126, 0, 0, 0.0, 0.0, 0.0 );
             ShowSyncHudText( iClient, g_hHudInfo, "Call for MEDIC! to play as %N", iObserverTarget );
         }
-        else if ( 0 < iObserverTarget <= MaxClients && IsFakeClient( iObserverTarget ) )
+        else if ( IsPlayerIndex( iObserverTarget ) && IsFakeClient( iObserverTarget ) )
         {
             int iObserverMode = GetEntProp( iClient, Prop_Send, "m_iObserverMode" );
             if ( iObserverMode == OBS_MODE_IN_EYE || iObserverMode == OBS_MODE_CHASE )
@@ -2190,7 +2222,7 @@ public void Player_OnTakeDamageAlivePost(
     int         iDamageCustom
     )
 {
-    if ( !( 0 < iVictim <= MaxClients ) || !( 0 < iAttacker <= MaxClients ) )
+    if ( !IsPlayerIndex( iVictim ) || !IsPlayerIndex( iAttacker ) )
     {
         return;
     }
@@ -2249,7 +2281,7 @@ stock void TF2_InstructPlayer( int iClient )
         LogServer( "%N does't have the bomb. Instructing them to do something else...", iClient );
 
         int iLeader = GetLeader( GetSquad( iBot ) );
-        if ( 0 < iLeader <= MaxClients && IsClientInGame( iLeader ) && IsPlayerAlive( iLeader ) && iLeader != iClient )
+        if ( IsPlayerIndex( iLeader ) && IsClientInGame( iLeader ) && IsPlayerAlive( iLeader ) && iLeader != iClient )
         {
             // We're in a squad, so tell the player to focus on making sure the squad leader
             // successfully deploys the bomb.
@@ -2336,7 +2368,7 @@ stock void TF2_InstructPlayer( int iClient )
                     }
 
                     int moveparent = GetEntPropEnt( iBomb, Prop_Send, "moveparent" );
-                    if ( 0 < moveparent <= MaxClients )
+                    if ( IsPlayerIndex( moveparent ) )
                     {
                         LogServer( "Bomb is already picked up by %N. Telling %N to escort.", moveparent, iClient );
 
@@ -2375,7 +2407,7 @@ public void Event_FlagEvent( Event hEvent, const char[] szName, bool bDontBroadc
     int iClient    = hEvent.GetInt( "player" );
     int iEventType = hEvent.GetInt( "eventtype" );
 
-    if ( !( 0 < iClient <= MaxClients ) || !IsClientInGame( iClient ) || iEventType == TF_FLAGEVENT_DEFENDED )
+    if ( !IsPlayerIndex( iClient ) || !IsClientInGame( iClient ) || iEventType == TF_FLAGEVENT_DEFENDED )
     {
         return;
     }
@@ -2489,7 +2521,7 @@ public void Event_PlayerSpawn( Event hEvent, const char[] szName, bool bDontBroa
 {
     int iClient = GetClientOfUserId( hEvent.GetInt( "userid" ) );
 
-    if ( !( 0 < iClient <= MaxClients ) || !IsClientInGame( iClient ) )
+    if ( !IsPlayerIndex( iClient ) || !IsClientInGame( iClient ) )
     {
         return;
     }
@@ -2534,7 +2566,7 @@ public void Event_PlayerSpawn( Event hEvent, const char[] szName, bool bDontBroa
         TF2_AddCondition( iClient, TFCond_UberchargeFading, flUberTime );
 
         int iBuilder = TF2_GetObjectBuilder( iTeleporter );
-        if ( 0 < iBuilder <= MaxClients && IsClientInGame( iBuilder ) && !IsFakeClient( iBuilder ) )
+        if ( IsPlayerIndex( iBuilder ) && IsClientInGame( iBuilder ) && !IsFakeClient( iBuilder ) )
         {
             TeleportEntity( iClient, vecOrigin, NULL_VECTOR, NULL_VECTOR );
 
@@ -2793,7 +2825,7 @@ public MRESReturn CTFBotMedicHeal_SelectPatient_Post( DHookReturn hReturn, DHook
         if ( IsInASquad( g_iLastHealer ) )
         {
             int iLeader = GetLeader( GetSquad( g_iLastHealer ) );
-            if ( 0 < iLeader <= MaxClients && IsClientInGame( iLeader ) && g_aAttributes[ iLeader ].IsControlled() )
+            if ( IsPlayerIndex( iLeader ) && IsClientInGame( iLeader ) && g_aAttributes[ iLeader ].IsControlled() )
             {
                 hReturn.Value = g_aAttributes[ iLeader ].iPlayerSerial;
                 return MRES_Supercede;
@@ -2829,11 +2861,11 @@ public MRESReturn CWeaponMedigun_IsAllowedToHealTarget_Post( int iThis, DHookRet
     if ( !IsFakeClient( iOwner ) && g_aAttributes[ iOwner ].IsControlling() )
     {
         int iBot = GetClientFromSerial( g_aAttributes[ iOwner ].iBotSerial );
-        if ( 0 < iBot <= MaxClients && IsPlayerAlive( iBot ) )
+        if ( IsPlayerIndex( iBot ) && IsPlayerAlive( iBot ) )
         {
             int iLeader = GetLeader( GetSquad( iBot ) );
             // If the player is controlling the squad leader then we don't need to restrict their heal target
-            if ( 0 < iLeader <= MaxClients && IsClientInGame( iLeader ) && IsPlayerAlive( iLeader ) && iLeader != iBot )
+            if ( IsPlayerIndex( iLeader ) && IsClientInGame( iLeader ) && IsPlayerAlive( iLeader ) && iLeader != iBot )
             {
                 hReturn.Value = ( g_iLastMedigunTarget == iLeader );
                 return MRES_Supercede;
@@ -2909,96 +2941,157 @@ public Action Listener_Voice( int iClient, char[] szCommand, int argc )
     return Plugin_Continue;
 }
 
-public Action Hook_TeleporterTransmit( int iEntity, int iOther )
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: IsIgnored
+
+  Summary:  This function determines whether an entity should be
+            hidden from controlling players. It matches a CTFBot's
+            behavior according to functions `CTFBotVision::IsIgnored`
+            and `CTFBotVision::IsVisibleEntityNoticed`.
+
+  Args:     int iEntity
+              Entity index which should or should not be transmitted.
+            int iClient
+              Client index to which `iEntity` should or should not
+              be transmitted.
+
+  Returns:  Action
+              Specifies what to do after a hook completes.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
+public Action IsIgnored( int iEntity, int iClient )
 {
-    // Bots don't go after teleporters to destroy them so neither should player bots
-    if ( 0 < iOther <= MaxClients && IsClientInGame( iOther ) && !IsFakeClient( iOther ) )
+#define TRUE  Plugin_Handled
+#define FALSE Plugin_Continue
+    // we only care about human invaders
+    if ( !g_aAttributes[ iClient ].IsControlling() )
     {
-        if ( view_as< TFTeam >( GetEntProp( iEntity, Prop_Send, "m_iTeamNum" ) ) == TF_TEAM_PVE_DEFENDERS &&
-             TF2_GetClientTeam( iOther ) == TF_TEAM_PVE_INVADERS )
+        return FALSE;
+    }
+
+    if ( !TF2_IsEnemyTeam(
+                          TF2_GetClientTeam( iClient ),
+                          view_as< TFTeam >( GetEntProp( iEntity, Prop_Send, "m_iTeamNum" ) )
+                          ) )
+    {
+        // don't ignore friends
+        return FALSE;
+    }
+
+    if ( IsPlayerIndex( iEntity ) )
+    {
+        // test for designer-defined ignorance
+        switch ( TF2_GetPlayerClass( iEntity ) )
         {
-            return Plugin_Handled;  // Don't transmit
+        case TFClass_Medic:
+            if ( IsBehaviorFlagSet( iClient, TFBOT_IGNORE_ENEMY_MEDICS ) )
+            {
+                return TRUE;
+            }
+
+        case TFClass_Engineer:
+            if ( IsBehaviorFlagSet( iClient, TFBOT_IGNORE_ENEMY_ENGINEERS ) )
+            {
+                return TRUE;
+            }
+
+        case TFClass_Sniper:
+            if ( IsBehaviorFlagSet( iClient, TFBOT_IGNORE_ENEMY_SNIPERS ) )
+            {
+                return TRUE;
+            }
+
+        case TFClass_Scout:
+            if ( IsBehaviorFlagSet( iClient, TFBOT_IGNORE_ENEMY_SCOUTS ) )
+            {
+                return TRUE;
+            }
+
+        case TFClass_Spy:
+            if ( IsBehaviorFlagSet( iClient, TFBOT_IGNORE_ENEMY_SPIES ) )
+            {
+                return TRUE;
+            }
+
+        case TFClass_DemoMan:
+            if ( IsBehaviorFlagSet( iClient, TFBOT_IGNORE_ENEMY_DEMOMEN ) )
+            {
+                return TRUE;
+            }
+
+        case TFClass_Soldier:
+            if ( IsBehaviorFlagSet( iClient, TFBOT_IGNORE_ENEMY_SOLDIERS ) )
+            {
+                return TRUE;
+            }
+
+        case TFClass_Heavy:
+            if ( IsBehaviorFlagSet( iClient, TFBOT_IGNORE_ENEMY_HEAVIES ) )
+            {
+                return TRUE;
+            }
+
+        case TFClass_Pyro:
+            if ( IsBehaviorFlagSet( iClient, TFBOT_IGNORE_ENEMY_PYROS ) )
+            {
+                return TRUE;
+            }
         }
-    }
 
-    return Plugin_Continue; //Transmit
-}
+        if ( TF2_IsPlayerInCondition( iEntity, TFCond_OnFire )       ||
+             TF2_IsPlayerInCondition( iEntity, TFCond_Jarated )      ||
+             TF2_IsPlayerInCondition( iEntity, TFCond_CloakFlicker ) ||
+             TF2_IsPlayerInCondition( iEntity, TFCond_Bleeding ) )
+        {
+            // always notice players with these conditions
+            return FALSE;
+        }
 
-// TODO: Call CTFBotVision::IsIgnored
-public Action Hook_SpyTransmit( int iMe, int iSubject )
-{
-    // Bots don't know where players are when they are disguised so neither should player bots
-    if ( !( 0 < iSubject <= MaxClients ) || iMe == iSubject )
-    {
-        return Plugin_Continue;
-    }
+        // An upgrade in MvM grants AE stealth where the player can fire
+		// while in stealth, and for a short period after it drops
+        if ( TF2_IsPlayerInCondition( iEntity, TFCond_StealthedUserBuffFade ) )
+        {
+            return TRUE;
+        }
 
-    if ( !IsClientInGame( iSubject ) )
-    {
-        return Plugin_Continue;
-    }
-
-    // Ignore everything but spies
-    if ( TF2_GetPlayerClass( iMe ) != TFClass_Spy )
-    {
-        return Plugin_Continue;
-    }
-
-    // Always transmit invader spies
-    if ( TF2_GetClientTeam( iSubject ) != TF_TEAM_PVE_INVADERS )
-    {
-        return Plugin_Continue;
-    }
-
-    if ( IsSpyIgnored( iMe ) )
-    {
-        return Plugin_Handled;
-    }
-
-    return Plugin_Continue;
-}
-
-stock bool IsSpyIgnored( int iSpy )
-{
-    if ( TF2_IsPlayerInCondition( iSpy, TFCond_OnFire )      ||
-         TF2_IsPlayerInCondition( iSpy, TFCond_Jarated )     ||
-         TF2_IsPlayerInCondition( iSpy, TFCond_CloakFlicker) ||
-         TF2_IsPlayerInCondition( iSpy, TFCond_Bleeding ) )
-    {
-        // always notice players with these conditions
-        return false;
-    }
-
-    // An upgrade in MvM grants AE stealth where the player can fire
-    // while in stealth, and for a short period after it drops
-    if ( TF2_IsPlayerInCondition( iSpy, TFCond_StealthedUserBuffFade ) )
-    {
-        return true;
-    }
-
-    // Spies are only ignored when more than 75% cloaked
-    if ( IsStealthed( iSpy ) )
-    {
-        if ( GetPercentInvisible( iSpy ) < 0.75 )
+        if ( IsStealthed( iEntity ) && GetPercentInvisible( iEntity ) < 0.75 )
         {
             // spy is partially cloaked, and therefore attracts our attention
-            return false;
+            return FALSE;
         }
 
-        // invisible!
-        return true;
-    }
+        // According to `CTFBotVision::IsVisibleEntityNoticed` we should ignore them
+        /*if ( IsPlacingSapper( iEntity ) )
+        {
+            return FALSE;
+        }*/
 
-    // Spies who are not fully disguised are not ignored
-    if (
-        !TF2_IsPlayerInCondition( iSpy, TFCond_Disguised ) ||
-        TF2_IsPlayerInCondition( iSpy, TFCond_Disguising )
-        )
+        if ( TF2_IsPlayerInCondition( iEntity, TFCond_Disguising ) )
+        {
+            return FALSE;
+        }
+
+        if ( TF2_IsPlayerInCondition( iEntity, TFCond_Disguised ) && TF2_GetClientDisguiseTeam( iEntity ) == TF2_GetClientTeam( iClient ) )
+        {
+            // spy is disguised as a member of my team
+            return TRUE;
+        }
+    }
+    else
     {
-        return true;
+        if ( TF2_GetObjectType( iEntity ) == TFObject_Teleporter )
+        {
+            return TRUE;
+        }
+
+        if ( TF2_GetObjectType( iEntity ) == TFObject_Sentry && IsBehaviorFlagSet( iClient, TFBOT_IGNORE_ENEMY_SENTRY_GUNS ) )
+        {
+            return TRUE;
+        }
     }
 
-    return false;
+    return FALSE;
+#undef TRUE
+#undef FALSE
 }
 
 stock bool IsStealthed( int iClient )
@@ -3149,7 +3242,7 @@ stock void TF2_KillBot( int iClient, int iAttacker = -1 )
 
     int iWeapon = iBot;
 
-    if ( 0 < iAttacker <= MaxClients && iAttacker != iBot )
+    if ( IsPlayerIndex( iAttacker ) && iAttacker != iBot )
     {
         // If the bot was controlled, and killed by a red sniper, this will fix the money not being auto-distribued
         iWeapon = TF2_GetClientActiveWeapon( iAttacker );
@@ -3472,7 +3565,7 @@ public Action Timer_ReplaceWeapons( Handle hTimer, int iClientSerial )
 
         if ( eDisguiseClass != TFClass_Unknown )
         {
-            if ( 0 < iDisguiseTarget <= MaxClients && IsClientInGame( iDisguiseTarget ) )
+            if ( IsPlayerIndex( iDisguiseTarget ) && IsClientInGame( iDisguiseTarget ) )
             {
                 TF2_DisguisePlayer( iPlayer, TF_TEAM_PVE_DEFENDERS, eDisguiseClass, iDisguiseTarget );
             }
@@ -3748,7 +3841,7 @@ stock bool TF2_ObservedIsValidClient( int iObserver )
     {
         int iObserverTarget = GetEntPropEnt( iObserver, Prop_Send, "m_hObserverTarget" );
         if (
-            0 < iObserverTarget <= MaxClients &&
+            IsPlayerIndex( iObserverTarget )  &&
             IsClientInGame( iObserverTarget ) &&
             IsFakeClient( iObserverTarget )   &&
             IsPlayerAlive( iObserverTarget )  &&
@@ -3813,9 +3906,9 @@ stock int TF2_FindTeleNearestToBombHole()
     {
         if (
             view_as< TFTeam >( GetEntProp( iEnt, Prop_Send, "m_iTeamNum" ) ) == TF_TEAM_PVE_INVADERS &&
-            !GetEntProp( iEnt, Prop_Send, "m_bHasSapper" )                                           &&
+            !HasSapper( iEnt )                                                                       &&
             !GetEntProp( iEnt, Prop_Send, "m_bBuilding" )                                            &&
-            !GetEntProp( iEnt, Prop_Send, "m_bPlacing" )                                             &&
+            !IsPlacing( iEnt )                                                                       &&
             !GetEntProp( iEnt, Prop_Send, "m_bDisabled" )
         )
         {
@@ -3854,7 +3947,7 @@ stock void TF2_TakeOverBuildings( int iReceiver, int iTarget )
 stock void SetBuilder( int iObject, int iClient )
 {
     int iBuilder = TF2_GetObjectBuilder( iObject );
-    if ( 0 < iBuilder <= MaxClients && IsClientInGame( iBuilder ) )
+    if ( IsPlayerIndex( iBuilder ) && IsClientInGame( iBuilder ) )
     {
         SDKCall( g_hfnRemoveObject, iBuilder, iObject );
     }
@@ -3865,9 +3958,7 @@ stock void SetBuilder( int iObject, int iClient )
 
 stock bool IsValidBuilding( int iBuilding )
 {
-    return iBuilding != -1                                   &&
-           !GetEntProp( iBuilding, Prop_Send, "m_bPlacing" ) &&
-           !GetEntProp( iBuilding, Prop_Send, "m_bCarried" );
+    return iBuilding != -1 && !IsPlacing( iBuilding ) && !IsCarried( iBuilding );
 }
 
 public int GiveItem(
@@ -3982,9 +4073,29 @@ stock bool IsSentryBuster( int iClient )
     }
 }
 
+stock bool IsPlayerIndex( int i )
+{
+    return 0 < i <= MaxClients;
+}
+
 stock bool IsMannVsMachineMode()
 {
     return view_as< bool >( GameRules_GetProp( "m_bPlayingMannVsMachine" ) );
+}
+
+stock bool HasSapper( int iObject )
+{
+    return view_as< bool >( GetEntProp( iObject, Prop_Send, "m_bHasSapper" ) );
+}
+
+stock bool IsPlacing( int iObject )
+{
+    return view_as< bool >( GetEntProp( iObject, Prop_Send, "m_bPlacing" ) );
+}
+
+stock bool IsCarried( int iObject )
+{
+    return view_as< bool >( GetEntProp( iObject, Prop_Send, "m_bCarried" ) );
 }
 
 stock bool HasWeaponRestriction( int iBot, WeaponRestrictionType eRestriction )
@@ -4034,4 +4145,22 @@ stock BombDeployingState_t GetDeployingBombState( int iClient )
 stock float GetSpawnTime( int iClient )
 {
     return GetEntDataFloat( iClient, g_flSpawnTime_Offset );
+}
+
+stock bool IsPlacingSapper( int iClient )
+{
+    return SDKCall( g_hfnIsPlacingSapper, iClient );
+}
+
+stock bool IsBehaviorFlagSet( int iClient, int iFlags )
+{
+    if ( IsFakeClient( iClient ) )
+    {
+        return SDKCall( g_hfnIsBehaviorFlagSet, iClient, iFlags );
+    }
+    else
+    {
+        int iBot = GetClientFromSerial( g_aAttributes[ iClient ].iBotSerial );
+        return SDKCall( g_hfnIsBehaviorFlagSet, iBot, iFlags );
+    }
 }
