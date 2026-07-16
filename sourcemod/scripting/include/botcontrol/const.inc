@@ -670,6 +670,7 @@ enum struct PLAYERATTRIBUTES
 {
     int   iBotSerial;
     int   iGetBotTypeHookId;
+    int   nInitialCurrency;
     float flTalkTimer; // Used for sentry busters
     bool  bIsGroupMember;
     bool  bBlockFlagEvent;

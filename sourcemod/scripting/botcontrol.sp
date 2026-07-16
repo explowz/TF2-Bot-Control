@@ -2134,6 +2134,13 @@ Action PlayerControlBot( int iClient, TFVoiceCommand eVoiceCommand )
     --------------------------------------------------------------------*/
 
     /*--------------------------------------------------------------------
+      We save the player's currency amount from before they took control
+      of the bot because `m_nCurrency` is overwritten when the game
+      tries to determine how much currency the invader should drop.
+    --------------------------------------------------------------------*/
+    g_aPlayerAttribs[ iClient ].nInitialCurrency = GetCurrency( iClient );
+
+    /*--------------------------------------------------------------------
       Only checking for the `TFCond_Zoomed` condition should not cause
       a crash unless some other plugin applies this condition on a bot
       that's not a Sniper for some reason.

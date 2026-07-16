@@ -446,7 +446,7 @@ MRESReturn CTFPlayer_Event_Killed_Pre( int iThis, DHookParam hParams )
         UnlockPlayer( iThis );
 
         // Prevent the bot from dropping currency
-        MarkAsMissionEnemy( iThis );
+        SetWaveSpawnPopulator( iThis, Address_Null );
     }
 
     return MRES_Ignored;
@@ -482,7 +482,13 @@ MRESReturn CTFPlayer_Event_Killed_Post( int iThis, DHookParam hParams )
         int iBot = GetClientFromSerial( g_aPlayerAttribs[ iThis ].iBotSerial );
 
         // This doesn't get cleared upon spawning, so we must manually null it
-        SetEntData( iThis, g_CTFPlayer_pWaveSpawnPopulator_Offset, Address_Null, PTRSIZ );
+        SetWaveSpawnPopulator( iThis, Address_Null );
+
+        /*--------------------------------------------------------------------
+          The player died as an invader and their currency was overwritten.
+          Restore the initial value so they don't end up with zero currency.
+        --------------------------------------------------------------------*/
+        SetCurrency( iThis, g_aPlayerAttribs[ iThis ].nInitialCurrency );
 
         // Restore the player's original name
         if ( !StrEmpty( g_aPlayerAttribs[ iThis ].szOriginalName ) )

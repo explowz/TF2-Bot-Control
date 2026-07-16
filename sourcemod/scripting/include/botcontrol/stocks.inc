@@ -194,7 +194,7 @@ stock void RestoreBot( int iClient )
     SetUseBossHealthBar( iClient, false );
 
     // This doesn't get cleared upon spawning, so we must manually null it
-    SetEntData( iClient, g_CTFPlayer_pWaveSpawnPopulator_Offset, Address_Null, PTRSIZ );
+    SetWaveSpawnPopulator( iClient, Address_Null );
 
     // Mirror the player's conditions
     TFCond eLastCond = TF2Util_GetLastCondition();
@@ -411,6 +411,7 @@ void ResetGlobals( int iClient )
 {
     g_aPlayerAttribs[ iClient ].iBotSerial              = 0;
     g_aPlayerAttribs[ iClient ].iGetBotTypeHookId       = INVALID_HOOK_ID;
+    g_aPlayerAttribs[ iClient ].nInitialCurrency        = 0;
     g_aPlayerAttribs[ iClient ].bIsGroupMember          = false;
     g_aPlayerAttribs[ iClient ].bBlockFlagEvent         = false;
     g_aPlayerAttribs[ iClient ].bInSpawn                = false;
@@ -1470,7 +1471,7 @@ stock void MarkAsLimitedSupportEnemy( int iClient )
   Summary:  This function sets a client's wave spawn populator.
 
   Args:     int iClient
-              Client index
+              Client index.
             Address pWave
               Memory address of a `CWaveSpawnPopulator` variable.
 
@@ -1480,6 +1481,61 @@ F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
 stock void SetWaveSpawnPopulator( int iClient, Address pWave )
 {
     SetEntData( iClient, g_CTFPlayer_pWaveSpawnPopulator_Offset, pWave, PTRSIZ );
+}
+
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: GetCurrency
+
+  Summary:  This function gets a client's currency amount.
+
+  Args:     int iClient
+              Client index.
+
+  Returns:  int
+              `iClient`'s currency amount.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
+stock int GetCurrency( int iClient )
+{
+    return GetEntProp( iClient, Prop_Send, "m_nCurrency" );
+}
+
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: SetCurrency
+
+  Summary:  This function sets a client's currency amount.
+
+  Args:     int iClient
+              Client index.
+            int nAmount
+              Currency amount.
+
+  Returns:  void
+              No return value.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
+stock void SetCurrency( int iClient, int nAmount )
+{
+    SetEntProp( iClient, Prop_Send, "m_nCurrency", nAmount );
+}
+
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: SetCustomCurrencyWorth
+
+  Summary:  This function sets the amount of money a client is worth
+            when killed. We reuse `m_nCurrency` because invaders
+            don't collect currency. This function is practically
+            identical to `SetCurrency`.
+
+  Args:     int iClient
+              Client index.
+            int nAmount
+              Currency amount.
+
+  Returns:  void
+              No return value.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
+stock void SetCustomCurrencyWorth( int iClient, int nAmount )
+{
+    SetEntProp( iClient, Prop_Send, "m_nCurrency", nAmount );
 }
 
 /*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
