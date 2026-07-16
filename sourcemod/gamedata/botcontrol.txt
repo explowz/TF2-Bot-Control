@@ -1,408 +1,635 @@
 "Games"
 {
-	/* Team Fortress 2 */
-	"tf"
-	{
-		"Signatures"
-		{
-			"CTFPlayer::PlaySpecificSequence"	// "primary_deploybomb"
-			{
-				"library"	"server"
-				"windows"	"\x55\x8B\xEC\x56\xFF\x75\x2A\x8B\xF1\xE8\x2A\x2A\x2A\x2A\x8B\xCE\x83\xF8\xFF"
-				"linux"		"@_ZN9CTFPlayer20PlaySpecificSequenceEPKc"
-			}
-			"CTFPlayer::RemoveObject" // "mvm_mission_update"
-			{
-				"library"	"server"
-				"windows"	"\x55\x8B\xEC\x56\x57\x8B\xF9\x8B\xB7\x2A\x2A\x2A\x2A\x83\xEE\x01"
-				"linux"		"@_ZN9CTFPlayer12RemoveObjectEP11CBaseObject"
-			}
-			"CTFBotMedicHeal::SelectPatient"	// "I'm now a squad leader! Going for the flag!"
-			{
-				"library"	"server"
-				"windows"	"\x55\x8B\xEC\x83\xEC\x54\x53\x8B\x5D\x2A\x56\x57\x6A\x00"
-				"linux"		"@_ZN15CTFBotMedicHeal13SelectPatientEP6CTFBotP9CTFPlayer"
-			}
-			"DispatchParticleEffect"	// "particle_spawn"
-			{
-				"library"	"server"
-				"windows"	"\x55\x8B\xEC\x56\x8B\x75\x2A\x57\x83\xCF\xFF\x85\xF6\x74\x2A\x8B\x06\x8B\xCE\xFF\x90\x2A\x2A\x2A\x2A\x85\xC0\x74\x2A\x8B\x06\x8B\xCE\xFF\x75\x2A\xFF\x90\x2A\x2A\x2A\x2A\x8B\xC8\xE8\x2A\x2A\x2A\x2A\x8B\xF8\x85\xFF\x7E\x2A\xFF\x75"
-				"linux"		"@_Z22DispatchParticleEffectPKc20ParticleAttachment_tP11CBaseEntityS0_b"
-			}
-			"CWeaponMedigun::AllowedToHealTarget"	// "weapon_blocks_healing"
-			{
-				"library"	"server"
-				"windows"	"\x55\x8B\xEC\x53\x8B\xD9\x56\x57\x8B\x93\x2A\x2A\x2A\x2A\x85\xD2\x0F\x84\x2A\x2A\x2A\x2A\xB9\xFF\x1F\x00\x00\x83\xFA\xFF\x74\x2A\x0F\xB7\xCA\xA1\x2A\x2A\x2A\x2A\xC1\xE1\x04\x8D\x78\x2A\x03\xF9\x0F\x84\x2A\x2A\x2A\x2A\xC1\xEA\x10\x39\x57\x2A\x0F\x85\x2A\x2A\x2A\x2A\x8B\x3F\x85\xFF\x0F\x84\x2A\x2A\x2A\x2A\x8B\x07\x8B\xCF\x8B\x80\x2A\x2A\x2A\x2A\xFF\xD0\x84\xC0\x0F\x84\x2A\x2A\x2A\x2A\x8B\x75\x2A\x85\xF6\x74"
-				"linux"		"@_ZN14CWeaponMedigun19AllowedToHealTargetEP11CBaseEntity"
-			}
-			"CTFPlayer::PostInventoryApplication"	// "post_inventory_application"
-			{
-				"library"	"server"
-				"windows"	"\x55\x8B\xEC\x83\xEC\x3C\x53\x8B\xD9\x56\x57"
-				"linux"		"@_ZN9CTFPlayer24PostInventoryApplicationEv"
-			}
-			"CTFReviveMarker::Create"	// "entity_revive_marker"
-			{
-				"library"	"server"
-				"windows"	"\x55\x8B\xEC\x83\xEC\x0C\x53\x57\x8B\x7D\x2A\x85\xFF"
-				"linux"		"@_ZN15CTFReviveMarker6CreateEP9CTFPlayer"
-			}
-			"CTFPlayer::CreateRagdollEntity"	// "tf_ragdoll"
-			{
-				"library"	"server"
-				"windows"	"\x55\x8B\xEC\x53\x56\x57\x8B\xF9\x8B\x8F\x2A\x2A\x2A\x2A\x85\xC9\x74\x2A\xBA\xFF\x1F\x00\x00"
-				"linux"		"@_ZN9CTFPlayer19CreateRagdollEntityEbbbbbbbbib"
-			}
-			"CTFBot::IsBarrageAndReloadWeapon"	// Find in `CTFBotTacticalMonitor::Update` with string "Moving to cover to reload"
-			{
-				"library"	"server"
-				"windows"	"\x55\x8B\xEC\x8B\x45\x2A\x85\xC0\x75\x2A\x81\xC1\xE8\x1A\x00\x00\xE8\x2A\x2A\x2A\x2A\x85\xC0\x74\x2A\x8B\x10\x8B\xC8\xFF\x92\x2A\x2A\x2A\x2A\x83\xC0\xF0"
-				"linux"		"@_ZNK6CTFBot24IsBarrageAndReloadWeaponEP13CTFWeaponBase"
-			}
-			"CTFPlayer::GetClosestCaptureZone"
-			{
-				"library"	"server"
-				"windows"	"\x55\x8B\xEC\x83\xEC\x0C\xF3\x0F\x10\x05\x2A\x2A\x2A\x2A\x53\x56"
-				"linux"		"_ZN9CTFPlayer21GetClosestCaptureZoneEv"
-			}
-			"CCaptureZone::Capture"	// Find with unique string "#TF_CTF_Cannot_Capture"
-			{
-				"library"	"server"
-				"windows"	"\x55\x8B\xEC\x51\x53\x57\x8B\x7D\x2A\x8B\xD9\x85\xFF\x0F\x84"
-				"linux"		"@_ZN12CCaptureZone7CaptureEP11CBaseEntity"
-			}
+    /* Team Fortress 2 */
+    "tf"
+    {
+        "Signatures"
+        {
+            "CTFPlayer::PlaySpecificSequence"	// "primary_deploybomb"
+            {
+                "library"   "server"
+                "windows"   "\x55\x8B\xEC\x56\xFF\x75\x2A\x8B\xF1\xE8\x2A\x2A\x2A\x2A\x8B\xCE\x83\xF8\xFF"
+                "linux"     "@_ZN9CTFPlayer20PlaySpecificSequenceEPKc"
+            }
+            "CTFPlayer::DoAnimationEvent"
+            {
+                "library"   "server"
+                "windows"   "\x55\x8B\xEC\x83\xEC\x2C\x53\x56\x8B\x35"
+                "linux"     "@_ZN9CTFPlayer16DoAnimationEventE17PlayerAnimEvent_ti"
+            }
+            "CTFPlayer::RemoveObject" // "mvm_mission_update"
+            {
+                "library"   "server"
+                "windows"   "\x55\x8B\xEC\x56\x57\x8B\xF9\x8B\xB7\x2A\x2A\x2A\x2A\x83\xEE\x01"
+                "linux"     "@_ZN9CTFPlayer12RemoveObjectEP11CBaseObject"
+            }
+            "DispatchParticleEffect(const char*, ParticleAttachment_t, CBaseEntity*, const char*, bool)"	// "particle_spawn"
+            {
+                "library"   "server"
+                "windows"   "\x55\x8B\xEC\x56\x8B\x75\x2A\x57\x83\xCF\xFF\x85\xF6\x74\x2A\x8B\x06\x8B\xCE\xFF\x90\x2A\x2A\x2A\x2A\x85\xC0\x74\x2A\x8B\x06\x8B\xCE\xFF\x75\x2A\xFF\x90\x2A\x2A\x2A\x2A\x8B\xC8\xE8\x2A\x2A\x2A\x2A\x8B\xF8\x85\xFF\x7E\x2A\xFF\x75"
+                "linux"     "@_Z22DispatchParticleEffectPKc20ParticleAttachment_tP11CBaseEntityS0_b"
+            }
+            "CTFPlayer::PostInventoryApplication"	// "post_inventory_application"
+            {
+                "library"   "server"
+                "windows"   "\x55\x8B\xEC\x83\xEC\x3C\x53\x8B\xD9\x56\x57"
+                "linux"     "@_ZN9CTFPlayer24PostInventoryApplicationEv"
+            }
+            "CTFBot::IsBarrageAndReloadWeapon"	// Find in `CTFBotTacticalMonitor::Update` with string "Moving to cover to reload"
+            {
+                "library"   "server"
+                "windows"   "\x55\x8B\xEC\x8B\x45\x2A\x85\xC0\x75\x2A\x81\xC1\xE8\x1A\x00\x00\xE8\x2A\x2A\x2A\x2A\x85\xC0\x74\x2A\x8B\x10\x8B\xC8\xFF\x92\x2A\x2A\x2A\x2A\x83\xC0\xF0"
+                "linux"     "@_ZNK6CTFBot24IsBarrageAndReloadWeaponEP13CTFWeaponBase"
+            }
+            "CTFPlayer::GetClosestCaptureZone"
+            {
+                "library"   "server"
+                "windows"   "\x55\x8B\xEC\x83\xEC\x0C\xF3\x0F\x10\x05\x2A\x2A\x2A\x2A\x53\x56"
+                "linux"     "@_ZN9CTFPlayer21GetClosestCaptureZoneEv"
+            }
+            "CCaptureZone::Capture"	// Find with unique string "#TF_CTF_Cannot_Capture"
+            {
+                "library"   "server"
+                "windows"   "\x55\x8B\xEC\x51\x53\x57\x8B\x7D\x2A\x8B\xD9\x85\xFF\x0F\x84"
+                "linux"     "@_ZN12CCaptureZone7CaptureEP11CBaseEntity"
+            }
+            "GetPlayerClassData"
+            {
+                "library"   "server"
+                "windows"   "\x55\x8B\xEC\x69\x4D\x2A\xF0\x08\x00\x00"
+                "linux"     "@_Z18GetPlayerClassDataj"
+            }
+            "CTFPlayer::ManageBuilderWeapons"
+            {
+                "library"   "server"
+                "windows"   "\x55\x8B\xEC\x83\xEC\x18\x53\x56\x8B\xC1"
+                "linux"     "@_ZN9CTFPlayer20ManageBuilderWeaponsEP19TFPlayerClassData_t"
+            }
+            "CTFPlayer::CanBuild"
+            {
+                "library"   "server"
+                "windows"   "\x55\x8B\xEC\x83\xEC\x0C\x53\x8B\x5D\x2A\x57\x8B\xF9\x83\xFB\x03"
+                "linux"     "@_ZN9CTFPlayer8CanBuildEii"
+            }
+            "CTFPlayer::HasTheFlag"
+            {
+                "library"   "server"
+                "windows"   "\x55\x8B\xEC\x56\x8B\xF1\x57\x8B\x86\x2A\x2A\x2A\x2A\x85\xC0\x0F\x84"
+                "linux"     "@_ZNK9CTFPlayer10HasTheFlagEP11ETFFlagTypei"
+            }
+            "CBasePlayer::UpdateClientData"
+            {
+                "library"   "server"
+                "windows"   "\x55\x8B\xEC\x83\xEC\x24\x53\x56\x8B\xF1\x8D\x4D"
+                "linux"     "@_ZN11CBasePlayer16UpdateClientDataEv"
+            }
+            "CTFPlayerShared::ResetRageBuffs"
+            {
+                "library"   "server"
+                "windows"   "\xC7\x81\x2A\x2A\x2A\x2A\x00\x00\x00\x00\xC7\x81\x2A\x2A\x2A\x2A\x00\x00\x00\x00\xC7\x81\x2A\x2A\x2A\x2A\x00\x00\x00\x00\xC7\x81\x2A\x2A\x2A\x2A\x00\x00\x00\x00\xC7\x81\x2A\x2A\x2A\x2A\x00\x00\x00\x00\xC7\x81\x2A\x2A\x2A\x2A\x00\x00\x00\x00\xC3"
+                "linux"     "@_ZN15CTFPlayerShared14ResetRageBuffsEv"
+            }
+            "CTFBotMvMEngineerHintFinder::FindHint"
+            {
+                "library"   "server"
+                "windows"   "\x55\x8B\xEC\x81\xEC\xB4\x04\x00\x00"
+                "linux"     "@_ZN27CTFBotMvMEngineerHintFinder8FindHintEbbP7CHandleI22CTFBotHintEngineerNestE"
+            }
+            "CMultiplayRules::HaveAllPlayersSpeakConceptIfAllowed"
+            {
+                "library"   "server"
+                "windows"   "\x55\x8B\xEC\xA1\x2A\x2A\x2A\x2A\x57\xBF\x01\x00\x00\x00\x39\x78\x2A\x7C\x2A\x53\x8B\x5D\x2A\x56\x57\xE8\x2A\x2A\x2A\x2A\x8B\xF0\x83\xC4\x04\x85\xF6\x74\x2A\x8B\x06"
+                "linux"     "@_ZN15CMultiplayRules35HaveAllPlayersSpeakConceptIfAllowedEiiPKc"
+            }
+            "CWeaponMedigun::GetResistType"
+            {
+                "library"   "server"
+                "windows"   "\x56\x57\x6A\x01\x6A\x00\x8B\xF1\x56\x68\x2A\x2A\x2A\x2A\x6A\x00\xE8\x2A\x2A\x2A\x2A\x6A\x01"
+                "linux"     "@_ZNK14CWeaponMedigun13GetResistTypeEv"
+            }
+            "CWeaponMedigun::CycleResistType"
+            {
+                "library"   "server"
+                "windows"   "\x55\x8B\xEC\x51\x57\x6A\x01\x6A\x00\x8B\xF9\x57"
+                "linux"     "@_ZN14CWeaponMedigun15CycleResistTypeEv"
+            }
+            "CTFBotDeliverFlag::OnStart"
+            {
+                "library"   "server"
+                "windows"   "\x55\x8B\xEC\x83\xEC\x08\x8B\xC1\x53\x8B\x5D\x2A\x8B\xCB"
+                "linux"     "@_ZN17CTFBotDeliverFlag7OnStartEP6CTFBotP6ActionIS0_E"
+            }
+            "CTFPlayer::HandleCommand_JoinTeam"
+            {
+                "library"   "server"
+                "windows"   "\x55\x8B\xEC\xA1\x2A\x2A\x2A\x2A\x83\xEC\x14\x83\xB8\x2A\x2A\x2A\x2A\x08"
+                "linux"     "@_ZN9CTFPlayer22HandleCommand_JoinTeamEPKc"
+            }
+            "CTeamplayRoundBasedRules::PlayThrottledAlert"
+            {
+                "library"   "server"
+                "windows"   "\x55\x8B\xEC\xA1\x2A\x2A\x2A\x2A\x56\x8B\xF1\xF3\x0F\x10\x40"
+                "linux"     "@_ZN24CTeamplayRoundBasedRules18PlayThrottledAlertEiPKcf"
+            }
+            "CTFBot::StartIdleSound"
+            {
+                "library"   "server"
+                "windows"   "\x55\x8B\xEC\x83\xEC\x20\x56\x8B\xF1\x83\xBE\x2A\x2A\x2A\x2A\x00\x74\x2A\xE8"
+                "linux"     "@_ZN6CTFBot14StartIdleSoundEv"
+            }
+            "CTraceFilterObject::ShouldHitEntity"
+            {
+                "library"   "server"
+                "windows"   "\x55\x8B\xEC\x51\x8B\xC1\x8B\x0D\x2A\x2A\x2A\x2A\x53\x56"
+                "linux"     "@_ZN18CTraceFilterObject15ShouldHitEntityEP13IHandleEntityi"
+            }
+            "CTFPlayerShared::OnConditionAdded"
+            {
+                "library"   "server"
+                "windows"   "\x55\x8B\xEC\x8B\x45\x2A\x83\xEC\x20\x48\x57\x8B\xF9\x83\xF8\x7F\x0F\x87\x2A\x2A\x2A\x2A\x0F\xB6\x80\x2A\x2A\x2A\x2A\x53"
+                "linux"     "@_ZN15CTFPlayerShared16OnConditionAddedE7ETFCond"
+            }
 
-			/*--------------------------------------------------------------------
-			  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-			  !!!!!!!!!!!!!!!!!!!!!! LINUX-ONLY SIGNATURES !!!!!!!!!!!!!!!!!!!!!
-			  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-			--------------------------------------------------------------------*/
+            /*--------------------------------------------------------------------
+              !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+              !!!!!!!!!!!!!!!!!!!!! WINDOWS-ONLY SIGNATURES !!!!!!!!!!!!!!!!!!!!
+              !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            --------------------------------------------------------------------*/
 
-			"CTFPlayer::RemoveAllItems"
-			{
-				"library"	"server"
-				"linux"		"@_ZN9CTFPlayer14RemoveAllItemsEv"
-			}
-			"CTFBotSquad::GetLeader"
-			{
-				"library"	"server"
-				"linux"		"@_ZNK11CTFBotSquad9GetLeaderEv"
-			}
-			"CTFPlayerShared::GetPercentInvisible"
-			{
-				"library"	"server"
-				"linux"		"@_ZNK15CTFPlayerShared19GetPercentInvisibleEv"
-			}
-		}
-		"Offsets"
-		{
-			"CBaseEntity::ShouldTransmit"
-			{
-				"windows"	"20"
-				"linux"		"21"
-			}
-			"CFilterTFBotHasTag::PassesFilterImpl"
-			{
-				"windows"	"199"
-				"linux"		"200"
-			}
-			"CTFPlayer::ShouldGib"
-			{
-				"windows"	"297"
-				"linux"		"298"
-			}
-			"CTFPlayer::IsValidObserverTarget"
-			{
-				"windows"	"392"
-				"linux"		"393"
-			}
-			"CCaptureFlag::PickUp"
-			{
-				"windows"	"232"
-				"linux"		"270"
-			}
-			"CCaptureFlag::Drop"
-			{
-				"windows"	"233"
-				"linux"		"271"
-			}
-			"CTFSniperRifle::ZoomOut"
-			{
-				"windows"	"491"
-				"linux"		"498"
-			}
-			"CBasePlayer::Jump"
-			{
-				"windows"	"342"
-				"linux"		"343"
-			}
-			"CTFPlayer::m_flSpawnTime"
-			{
-				"windows"	"9060"
-				"linux"		"9068"
-			}
-			"CTFPlayer::m_nDeployingBombState"
-			{
-				"windows"	"9280"
-				"linux"		"9288"
-			}
-			"CTFBot::m_squad"	// Find from `CTFBot::LeaveSquad`
-			{
-				"windows"	"10192"
-				"linux"		"10192"
-			}
-			"CTFBot::m_mission"	// Find `CTFBotScenarioMonitor::DesiredScenarioAndClassAction`
-			{
-				"windows"	"10396"
-				"linux"		"10396"
-			}
-			"CTFBot::m_teleportWhereName"	// Find function containing both "Engineer.MVM_AutoBuildingTeleporter02" and "Teleport exit built"
-			{
-				"windows"	"10492"
-				"linux"		"10492"
-			}
+            "CObjectTeleporter::SetTeleportWhere"
+            {
+                "library"   "server"
+                "windows"   "\x55\x8B\xEC\x83\xEC\x08\x8B\x45\x2A\x57\x8B\xF9\x33\xC9"
+            }
 
-			/*--------------------------------------------------------------------
-			  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-			  !!!!!!!!!!!!!!!!!!!!!!! WINDOWS-ONLY OFFSETS !!!!!!!!!!!!!!!!!!!!!
-			  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-			--------------------------------------------------------------------*/
+            /*--------------------------------------------------------------------
+              !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+              !!!!!!!!!!!!!!!!!!!!!! LINUX-ONLY SIGNATURES !!!!!!!!!!!!!!!!!!!!!
+              !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            --------------------------------------------------------------------*/
 
-			"CTFBotSquad::m_leader"	// Find from `CTFBotSquad::GetLeader`
-			{
-				"windows"	"24"
-			}
-			"CTFPlayerShared::m_flInvisibility"	// Find from `CTFRune::MyTouch` with string "#TF_Powerup_Pickup_Deny"
-			{
-				"windows"	"320"
-			}
-			"CTFBot::m_weaponRestrictionFlags"	// Find from `CTFBot::EquipRequiredWeapon`
-			{
-				"windows"	"10164"
-			}
-			"CTFBot::m_attributeFlags"	// Find from tf_bot_kick command definition
-			{
-				"windows"	"10168"
-			}
-		}
-		"Functions"
-		{
-			/*--------------------------------------------------------------------
-			  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-			  !!!!!!!!!!!!!!!!!!!!!!!!!! DHOOK DETOURS !!!!!!!!!!!!!!!!!!!!!!!!!
-			  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-			--------------------------------------------------------------------*/
+            "CTFBotSquad::GetLeader"
+            {
+                "library"   "server"
+                "linux"     "@_ZNK11CTFBotSquad9GetLeaderEv"
+            }
+            "CUtlStringList::CopyAndAddToTail"
+            {
+                "library"   "server"
+                "linux"     "@_ZN14CUtlStringList16CopyAndAddToTailEPKc"
+            }
+        }
+        "Offsets"
+        {
+            "CFilterTFBotHasTag::PassesFilterImpl"
+            {
+                "windows"   "199"
+                "linux"     "200"
+            }
+            "CTFPlayer::ShouldTransmit"
+            {
+                "windows"   "20"
+                "linux"     "21"
+            }
+            "CTFPlayer::ShouldGib"
+            {
+                "windows"   "297"
+                "linux"     "298"
+            }
+            "CTFPlayer::IsAllowedToPickUpFlag"
+            {
+                "windows"   "485"
+                "linux"     "486"
+            }
+            "CCaptureFlag::PickUp"
+            {
+                "windows"   "232"
+                "linux"     "270"
+            }
+            "CTFSniperRifle::ZoomOut"
+            {
+                "windows"   "491"
+                "linux"     "498"
+            }
+            "CTFWeaponBuilder::SetSubType"
+            {
+                "windows"   "233"
+                "linux"     "239"
+            }
+            "CBasePlayer::GetBotType"
+            {
+                "windows"   "457"
+                "linux"     "458"
+            }
+            "CObjectTeleporter::StartBuilding"
+            {
+                "windows"   "342"
+                "linux"     "344"
+            }
+            "CObjectSentrygun::StartBuilding"
+            {
+                "windows"   "342"
+                "linux"     "344"
+            }
+            "CBaseObject::GetMaxHealthForCurrentLevel"
+            {
+                "windows"   "392"
+                "linux"     "393"
+            }
+            "CObjectTeleporter::FinishedBuilding"
+            {
+                "windows"   "344"
+                "linux"     "346"
+            }
+            "CTFPlayer::SetObserverTarget"
+            {
+                "windows"   "387"
+                "linux"     "388"
+            }
+            "CTFGameRules::BroadcastSound"
+            {
+                "windows"   "219"
+                "linux"     "221"
+            }
+            "CTFPlayer::RemoveAllWeapons"
+            {
+                "windows"   "314"
+                "linux"     "315"
+            }
+            "CTFBot::GetLastKnownArea"
+            {
+                "windows"   "323"
+                "linux"     "324"
+            }
+            "CTFPlayer::Event_Killed"
+            {
+                "windows"   "68"
+                "linux"     "69"
+            }
+            "CTFPlayerShared::m_flInvisibility"
+            {
+                // Relative to `CTFPlayerShared::m_flInvisChangeCompleteTime`
+                "windows"   "-8"
+                "linux"     "-8"
+            }
+            "CTFPlayer::m_aObjects"
+            {
+                // Relative to `CTFPlayer::m_flMvMLastDamageTime`
+                "windows"   "48"
+                "linux"     "48"
+            }
+            "CTFPlayer::m_flSpawnTime"
+            {
+                // Relative to `CTFPlayer::m_aObjects`
+                "windows"   "36"
+                "linux"     "36"
+            }
+            "CTFPlayer::m_nDeployingBombState"
+            {
+                // Relative to `CTFPlayer::m_nCurrency`
+                "windows"   "-8"
+                "linux"     "-8"
+            }
+            "CTFPlayer::m_bIsMissionEnemy"
+            {
+                // Relative to `CTFPlayer::m_nDeployingBombState`
+                "windows"   "4"
+                "linux"     "4"
+            }
+            "CTFPlayer::m_bIsSupportEnemy"
+            {
+                // Relative to `CTFPlayer::m_bIsMissionEnemy`
+                "windows"   "1"
+                "linux"     "1"
+            }
+            "CTFPlayer::m_bIsLimitedSupportEnemy"
+            {
+                // Relative to `CTFPlayer::m_bIsSupportEnemy`
+                "windows"   "1"
+                "linux"     "1"
+            }
+            "CTFPlayer::m_pWaveSpawnPopulator"
+            {
+                // Relative to `CTFPlayer::m_bMatchSafeToLeave`
+                "windows"   "1"
+                "linux"     "1"
+            }
+            "CTFBot::m_squad"	// Find from `CTFBot::LeaveSquad`
+            {
+                "windows"	"10192"
+                "linux"		"10192"
+            }
+            "CTFBot::m_teleportWhereName"	// Find function containing both "Engineer.MVM_AutoBuildingTeleporter02" and "Teleport exit built"
+            {
+                "windows"   "10492"
+                "linux"     "10492"
+            }
+            "CObjectTeleporter::m_teleportWhereName"
+            {
+                "windows"   "2840"
+                "linux"     "2864"
+            }
+            "CBaseObject::m_bForceQuickBuild"
+            {
+                // Relative to `CBaseObject::m_bServerOverridePlacement`
+                "windows"   "28"
+                "linux"     "28"
+            }
+            "CPopulationManager::m_canBotsAttackWhileInSpawnRoom"
+            {
+                "windows"   "1477"
+                "linux"     "1501"
+            }
+            "CTFBotDeliverFlag::m_upgradeLevel"
+            {
+                "windows"   "18472"
+                "linux"     "18472"
+            }
+            "CTraceFilterSimple::m_pPassEnt"
+            {
+                "windows"   "4"
+                "linux"     "4"
+            }
 
-			"CTFBotMedicHeal::SelectPatient"
-			{
-				"signature"	"CTFBotMedicHeal::SelectPatient"
+            /*--------------------------------------------------------------------
+              !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+              !!!!!!!!!!!!!!!!!!!!!!! WINDOWS-ONLY OFFSETS !!!!!!!!!!!!!!!!!!!!!
+              !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            --------------------------------------------------------------------*/
 
-				"callconv"	"thiscall"
+            "CTFBotSquad::m_leader"	// Find from `CTFBotSquad::GetLeader`
+            {
+                "windows"	"24"
+            }
+        }
+        "Functions"
+        {
+            /*--------------------------------------------------------------------
+              !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+              !!!!!!!!!!!!!!!!!!!!!!!! DYNAMIC DETOURS !!!!!!!!!!!!!!!!!!!!!!!!!
+              !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            --------------------------------------------------------------------*/
 
-				"return"	"cbaseentity"
-				"this"		"ignore"
+            "CTFPlayer::CanBuild"
+            {
+                "signature" "CTFPlayer::CanBuild"
 
-				"arguments"
-				{
-					me
-					{
-						"type"	"cbaseentity"
-					}
-					current
-					{
-						"type"	"cbaseentity"
-					}
-				}
-			}
-			"CWeaponMedigun::AllowedToHealTarget"
-			{
-				"signature"	"CWeaponMedigun::AllowedToHealTarget"
+                "callconv"  "thiscall"
 
-				"callconv"	"thiscall"
+                "return"    "int"
+                "this"      "entity"
 
-				"return"	"bool"
-				"this"		"entity"
+                "arguments"
+                {
+                    iObjectType
+                    {
+                        "type"  "int"
+                    }
+                    iObjectMode
+                    {
+                        "type"  "int"
+                    }
+                }
+            }
+            "CTFPlayer::HandleCommand_JoinTeam"
+            {
+                "signature" "CTFPlayer::HandleCommand_JoinTeam"
 
-				"arguments"
-				{
-					pEntity
-					{
-						"type"	"cbaseentity"
-					}
-				}
-			}
-			"CTFReviveMarker::Create"
-			{
-				"signature"	"CTFReviveMarker::Create"
+                "callconv"  "thiscall"
 
-				"callconv"	"cdecl"
+                "return"    "void"
+                "this"      "entity"
 
-				"return"	"cbaseentity"
+                "arguments"
+                {
+                    pTeamName
+                    {
+                        "type"  "charptr"
+                    }
+                }
+            }
+            "CTraceFilterObject::ShouldHitEntity"
+            {
+                "signature" "CTraceFilterObject::ShouldHitEntity"
 
-				"arguments"
-				{
-					pOwner
-					{
-						"type"	"cbaseentity"
-					}
-				}
-			}
-			"CTFPlayer::CreateRagdollEntity"
-			{
-				"signature"	"CTFPlayer::CreateRagdollEntity"
+                "callconv"  "thiscall"
 
-				"callconv"	"thiscall"
+                "return"    "bool"
+                "this"      "address"
 
-				"return"	"void"
-				"this"		"entity"
+                "arguments"
+                {
+                    pHandleEntity
+                    {
+                        "type"  "int"
+                    }
+                    contentsMask
+                    {
+                        "type"  "int"
+                    }
+                }
+            }
+            "CTFPlayerShared::OnConditionAdded"
+            {
+                "signature" "CTFPlayerShared::OnConditionAdded"
 
-				"arguments"
-				{
-					bGib
-					{
-						"type"	"bool"
-						"flags"	"byval"
-					}
-					bBurning
-					{
-						"type"	"bool"
-						"flags"	"byval"
-					}
-					bElectrocuted
-					{
-						"type"	"bool"
-						"flags"	"byval"
-					}
-					bOnGround
-					{
-						"type"	"bool"
-						"flags"	"byval"
-					}
-					bCloakedCorpse
-					{
-						"type"	"bool"
-						"flags"	"byval"
-					}
-					bGoldRagdoll
-					{
-						"type"	"bool"
-						"flags"	"byval"
-					}
-					bIceRagdoll
-					{
-						"type"	"bool"
-						"flags"	"byval"
-					}
-					bBecomeAsh
-					{
-						"type"	"bool"
-						"flags"	"byval"
-					}
-					iDamageCustom
-					{
-						"type"	"int"
-						"flags" "byval"
-					}
-					bCritOnHardHit
-					{
-						"type"	"bool"
-						"flags"	"byval"
-					}
-				}
-			}
+                "callconv"  "thiscall"
 
-			/*--------------------------------------------------------------------
-			  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-			  !!!!!!!!!!!!!!!!!!!!!!!!!!!!! DHOOKS !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-			  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-			--------------------------------------------------------------------*/
+                "return"    "void"
+                "this"      "address"
 
-			"CTFPlayer::ShouldGib"
-			{
-				"offset"	"CTFPlayer::ShouldGib"
+                "arguments"
+                {
+                    eCond
+                    {
+                        "type"  "int"
+                    }
+                }
+            }
+            // "CTFBotDeliverFlag::OnStart"
+            // {
+            //     "signature" "CTFBotDeliverFlag::OnStart"
 
-				"hooktype"	"entity"
+            //     "callconv"  "thiscall"
 
-				"return"	"bool"
-				"this"		"entity"
+            //     "return"    "none fit... :("
+            //     "this"      "address"
 
-				"arguments"
-				{
-					info
-					{
-						"type"	"objectptr"
-						"flags"	"byref"
-					}
-				}
-			}
-			"CBaseEntity::ShouldTransmit"
-			{
-				"offset"	"CBaseEntity::ShouldTransmit"
+            //     "arguments"
+            //     {
+            //         me
+            //         {
+            //             "type"  "cbaseentity"
+            //         }
+            //         priorAction
+            //         {
+            //             "type"  "objectptr"
+            //         }
+            //     }
+            // }
 
-				"hooktype"	"entity"
+            /*--------------------------------------------------------------------
+              !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+              !!!!!!!!!!!!!!!!!!!!!!!!! DYNAMIC HOOKS !!!!!!!!!!!!!!!!!!!!!!!!!!
+              !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            --------------------------------------------------------------------*/
 
-				"return"	"int"
-				"this"		"entity"
+            "CObjectTeleporter::StartBuilding"
+            {
+                "offset"    "CObjectTeleporter::StartBuilding"
 
-				"arguments"
-				{
-					pInfo
-					{
-						"type"	"objectptr"
-						"flags"	"byref"
-					}
-				}
-			}
-			"CTFPlayer::IsValidObserverTarget"
-			{
-				"offset"	"CTFPlayer::IsValidObserverTarget"
+                "hooktype"   "entity"
 
-				"hooktype"	"entity"
+                "return"    "bool"
+                "this"      "entity"
 
-				"return"	"bool"
-				"this"		"entity"
+                "arguments"
+                {
+                    pBuilder
+                    {
+                        "type"  "cbaseentity"
+                    }
+                }
+            }
+            "CObjectTeleporter::FinishedBuilding"
+            {
+                "offset"    "CObjectTeleporter::FinishedBuilding"
 
-				"arguments"
-				{
-					target
-					{
-						"type"	"cbaseentity"
-						"flags"	"byref"
-					}
-				}
-			}
-			"CFilterTFBotHasTag::PassesFilterImpl"
-			{
-				"offset"	"CFilterTFBotHasTag::PassesFilterImpl"
+                "hooktype"  "entity"
 
-				"hooktype"	"entity"
+                "return"    "void"
+                "this"      "entity"
+            }
+            "CObjectSentrygun::StartBuilding"
+            {
+                "offset"    "CObjectSentrygun::StartBuilding"
 
-				"return"	"bool"
-				"this"		"entity"
+                "hooktype"  "entity"
 
-				"arguments"
-				{
-					pCaller
-					{
-						"type"	"cbaseentity"
-						"flags"	"byref"
-					}
-					pEntity
-					{
-						"type"	"cbaseentity"
-						"flags"	"byref"
-					}
-				}
-			}
-			"CBasePlayer::Jump"
-			{
-				"offset"	"CBasePlayer::Jump"
+                "return"    "bool"
+                "this"      "entity"
 
-				"hooktype"	"entity"
+                "arguments"
+                {
+                    pBuilder
+                    {
+                        "type"  "cbaseentity"
+                    }
+                }
+            }
+            "CBasePlayer::GetBotType"
+            {
+                "offset"    "CBasePlayer::GetBotType"
 
-				"return"	"void"
-				"this"		"entity"
-			}
-		}
-	}
+                "hooktype"  "entity"
+
+                "return"    "int"
+                "this"      "entity"
+            }
+            "CFilterTFBotHasTag::PassesFilterImpl"
+            {
+                "offset"	"CFilterTFBotHasTag::PassesFilterImpl"
+
+                "hooktype"	"entity"
+
+                "return"	"bool"
+                "this"		"entity"
+
+                "arguments"
+                {
+                    pCaller
+                    {
+                        "type"	"cbaseentity"
+                    }
+                    pEntity
+                    {
+                        "type"	"cbaseentity"
+                    }
+                }
+            }
+            "CTFPlayer::ShouldTransmit"
+            {
+                "offset"    "CTFPlayer::ShouldTransmit"
+
+                "hooktype"  "entity"
+
+                "return"    "int"
+                "this"      "entity"
+
+                "arguments"
+                {
+                    pInfo
+                    {
+                        "type"  "objectptr"
+                    }
+                }
+            }
+            "CTFPlayer::ShouldGib"
+            {
+                "offset"	"CTFPlayer::ShouldGib"
+
+                "hooktype"	"entity"
+
+                "return"	"bool"
+                "this"		"entity"
+
+                "arguments"
+                {
+                    info
+                    {
+                        "type"	"objectptr"
+                        "flags"	"byref"
+                    }
+                }
+            }
+            "CTFPlayer::IsAllowedToPickUpFlag"
+            {
+                "offset"    "CTFPlayer::IsAllowedToPickUpFlag"
+
+                "hooktype"  "entity"
+
+                "return"    "bool"
+                "this"      "entity"
+            }
+            "CCaptureFlag::PickUp"
+            {
+                "offset"    "CCaptureFlag::PickUp"
+
+                "hooktype"  "entity"
+
+                "return"    "void"
+                "this"      "entity"
+
+                "arguments"
+                {
+                    pPlayer
+                    {
+                        "type"  "cbaseentity"
+                    }
+                    bInvisible
+                    {
+                        "type"  "bool"
+                    }
+                }
+            }
+            "CTFPlayer::Event_Killed"
+            {
+                "offset"    "CTFPlayer::Event_Killed"
+
+                "hooktype"  "entity"
+
+                "return"    "void"
+                "this"      "entity"
+
+                "arguments"
+                {
+                    info
+                    {
+                        "type"  "objectptr"
+                        "flags" "byref"
+                    }
+                }
+            }
+        }
+    }
 }
