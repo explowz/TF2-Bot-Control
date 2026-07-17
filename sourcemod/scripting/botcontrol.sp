@@ -3469,7 +3469,6 @@ void CaptureZone_StartTouchPost( int iCaptureZone, int iEntity )
     }
 }
 
-
 /*F+F+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   Function: UpgradeOverTime
 

@@ -34,7 +34,7 @@ If you do not wish to compile the plugin yourself, you can find precompiled vers
 ### Limiting number of players
 This plugins supports limiting the minimum amount of players on the defending team and the maximum amount of controlling players on the invading team for a player to be able to take control of a bot through the console variables `sm_botcontrol_min_defenders` and `sm_botcontrol_max_invaders`.
 
-### Bot resctrictions
+### Bot restrictions
 This plugin supports three types of bot restrictions:
 1. "block": This restriction prevents all players from controlling this bot.
 2. "premium": This restriction only allows players with the flags defined by `sm_botcontrol_premium_flags` to control this bot.
