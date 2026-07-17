@@ -1901,6 +1901,8 @@ stock void CObjectTeleporter_SetTeleportWhere( int iObjectTeleporter, Address CT
 #if defined WIN32
     SDKCall( g_hfnCObjectTeleporter_SetTeleportWhere, iObjectTeleporter, CTFBot_pTeleportWhereName );
 #else
+#pragma unused CTFBot_pTeleportWhereName
+
     int iBuilder = TF2_GetObjectBuilder( iObjectTeleporter );
     int iBot     = GetClientFromSerial( g_aPlayerAttribs[ iBuilder ].iBotSerial );
 

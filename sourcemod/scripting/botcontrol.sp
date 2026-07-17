@@ -143,6 +143,9 @@ public void OnPluginStart()
     PSM_AddPluginStateChangedHook( RestoreAllBots );
     PSM_AddPluginStateChangedHook( ProcessAllEntities );
 
+    char szMaxPlayers[ 4 ];
+    IntToString( ( MAXPLAYERS - 1 ), szMaxPlayers, sizeof( szMaxPlayers ) );
+
     sm_botcontrol_premium_flags = CreateConVar(
                                                "sm_botcontrol_premium_flags",
                                                "o",
@@ -157,6 +160,26 @@ public void OnPluginStart()
                                                FCVAR_ARCHIVE | FCVAR_NEVER_AS_STRING,
                                                true,
                                                0.0
+                                              );
+    sm_botcontrol_min_defenders = CreateConVar(
+                                               "sm_botcontrol_min_defenders",
+                                               "0",
+                                               "The minimum amount of players on the defending team for a player to be allowed to control a bot.",
+                                               FCVAR_ARCHIVE | FCVAR_NOTIFY | FCVAR_NEVER_AS_STRING,
+                                               true,
+                                               0.0,
+                                               true,
+                                               float( MAXPLAYERS - 1 )
+                                              );
+    sm_botcontrol_max_invaders  = CreateConVar(
+                                               "sm_botcontrol_max_invaders",
+                                               szMaxPlayers,
+                                               "The maximum amount of human players allowed on the invading team.",
+                                               FCVAR_ARCHIVE | FCVAR_NOTIFY | FCVAR_NEVER_AS_STRING,
+                                               true,
+                                               0.0,
+                                               true,
+                                               float( MAXPLAYERS - 1 )
                                               );
     sm_botcontrol_mirror_name   = CreateConVar(
                                                "sm_botcontrol_mirror_name",
@@ -1198,6 +1221,45 @@ void UpdateUsersGroupStatus( Handle hTimer )
 }
 
 /*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: OnGameFrame
+
+  Summary:  Called before every server frame. Note that you should
+            avoid doing expensive computations or declaring large
+            local arrays.
+
+            We use this function to keep track of the number of
+            defending and invading players.
+
+  Returns:  void
+              No return value.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
+public void OnGameFrame()
+{
+    if ( !PSM_IsEnabled() )
+    {
+        return;
+    }
+
+    g_nDefenders = 0;
+    g_nInvaders  = 0;
+
+    for ( int i = 1; i <= MaxClients; i++ )
+    {
+        if ( IsClientInGame( i ) )
+        {
+            if ( TF2_GetClientTeam( i ) == TF_TEAM_PVE_DEFENDERS )
+            {
+                g_nDefenders++;
+            }
+            else if ( g_aPlayerAttribs[ i ].IsControlling() )
+            {
+                g_nInvaders++;
+            }
+        }
+    }
+}
+
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
   Function: OnEntityCreated
 
   Summary:  This function is called every time an entity is created.
@@ -1823,6 +1885,20 @@ public void OnPlayerRunCmdPost(
         return;
     }
 
+    if ( g_nDefenders < sm_botcontrol_min_defenders.IntValue )
+    {
+        c_iPrevObserverTargetSerial = 0; // Force redraw
+        ClearSyncHud( iClient, g_hSyncObj );
+        return;
+    }
+
+    if ( g_nInvaders >= sm_botcontrol_max_invaders.IntValue  )
+    {
+        c_iPrevObserverTargetSerial = 0; // Force redraw
+        ClearSyncHud( iClient, g_hSyncObj );
+        return;
+    }
+
     if ( TF2_IsPlayerInCondition( iObserverTarget, TFCond_Taunting ) )
     {
         c_iPrevObserverTargetSerial = 0; // Force redraw
@@ -2034,6 +2110,18 @@ Action PlayerControlBot( int iClient, TFVoiceCommand eVoiceCommand )
 
     if ( !IsPlayerAlive( iObserverTarget ) )
     {
+        return Plugin_Continue;
+    }
+
+    if ( g_nDefenders < sm_botcontrol_min_defenders.IntValue )
+    {
+        PrintHintText( iClient, "Insufficient defending players. (%d/%d)", g_nDefenders, sm_botcontrol_min_defenders.IntValue );
+        return Plugin_Continue;
+    }
+
+    if ( g_nInvaders >= sm_botcontrol_max_invaders.IntValue  )
+    {
+        PrintHintText( iClient, "Maximum invader slots already in use. (%d/%d)", g_nInvaders, sm_botcontrol_max_invaders.IntValue );
         return Plugin_Continue;
     }
 

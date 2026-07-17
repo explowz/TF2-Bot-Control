@@ -30,6 +30,9 @@ BOTATTRIBUTES    g_aBotAttribs[ MAXPLAYERS_ARRAY_SAFE ];
 
 CARRIERATTRIBUTES g_CarrierAttribs;
 
+int g_nDefenders;
+int g_nInvaders;
+
 /*--------------------------------------------------------------------
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !!!!!!!!!!!!!!!!!!!!!!! CONSOLE VARIABLES !!!!!!!!!!!!!!!!!!!!!!!!
@@ -38,6 +41,8 @@ CARRIERATTRIBUTES g_CarrierAttribs;
 
 ConVar sm_botcontrol_premium_flags;
 ConVar sm_botcontrol_groupid;
+ConVar sm_botcontrol_min_defenders;
+ConVar sm_botcontrol_max_invaders;
 ConVar sm_botcontrol_mirror_name;
 
 ConVar spec_freeze_traveltime;
