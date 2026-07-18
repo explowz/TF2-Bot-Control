@@ -3921,7 +3921,7 @@ void RestoreAllBots( bool bEnabled )
 }
 
 /*F+F+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  Function: HookAllEntities
+  Function: ProcessAllEntities
 
   Summary:  This function is called every time the plugin's state
             is changed. If the plugin has just been turned on, the
