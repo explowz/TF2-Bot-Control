@@ -1,0 +1,98 @@
+"Phrases"
+{
+    "Unsupported_Engine"
+    {
+        "en"    "This plugin only supports the game Team Fortress 2."
+    }
+
+    "Unsupported_Server"
+    {
+        "en"    "This plugin only supports dedicated servers."
+    }
+
+    "Gamedata_Not_Found"
+    {
+        "en"    "Could not find gamedata file \"botcontrol.txt\"."
+    }
+
+    "SDKCall_Prep_Failed"
+    {
+        "#format"   "{1:s}"
+        "en"        "Failed to prepare {1} SDK call."
+    }
+
+    "SDKCall_Prep_Failed_VScript"
+    {
+        "#format"   "{1:s}"
+        "en"        "Failed to create SDKCall for {1} from VScript function."
+    }
+
+    "Missing_Library"
+    {
+        "#format"   "{1:s},{2:s}"
+        "en"        "This plugin requires \"{1}\" by \"{2}\"."
+    }
+
+    "Server_Not_Connected"
+    {
+        "en"    "Could not initiate a group status update. The server is not connected to Steam."
+    }
+
+    "Group_Status_Request_Failed"
+    {
+        "#format"   "{1:s}"
+        "en"        "Failed to request group status for user {1}. Please make sure the group ID is valid."
+    }
+
+    "Bot_Block"
+    {
+        "en"    "This bot is blocked"
+    }
+
+    "Bot_Premium"
+    {
+        "en"    "This bot is premium-only"
+    }
+
+    "Bot_Group"
+    {
+        "en"    "This bot is for group members only"
+    }
+
+    "Control_Bot"
+    {
+        "en"    "Call for a MEDIC! to control this bot"
+    }
+
+    "Cannot_Control_Insufficient_Defenders"
+    {
+        "#format"   "{1:d},{2:d}"
+        "en"        "Insufficient defending players. ({1}/{2]})"
+    }
+
+    "Cannot_Control_Maximum_Invaders"
+    {
+        "#format"   "{1:d},{2:d}"
+        "en"        "Maximum invader slots already in use. ({1}/{2})"
+    }
+
+    "Cannot_Control_Taunting"
+    {
+        "en"    "Please wait until the bot finishes taunting."
+    }
+
+    "Cannot_Control_Charging"
+    {
+        "en"    "Please wait until the bot finishes charging."
+    }
+
+    "Cannot_Control_Stunned"
+    {
+        "en"    "Please wait until the bot is no longer stunned."
+    }
+
+    "Cannot_Control_In_Spawn"
+    {
+        "en"    "Please wait until the bot gets teleported out of spawn."
+    }
+}

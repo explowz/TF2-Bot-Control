@@ -45,7 +45,7 @@ public Plugin myinfo =
     name        = "[TF2] MvM Bot Control",
     author      = "Bintr",
     description = "Allows players to take control of a robot in the Mann vs. Machine gamemode.",
-    version     = "0.5",
+    version     = "0.6",
     url         = "https://github.com/explowz/TF2-Bot-Control"
 };
 
@@ -76,15 +76,17 @@ public Plugin myinfo =
 F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
 public APLRes AskPluginLoad2( Handle hMyself, bool bLate, char[] szError, int cch )
 {
+    LoadTranslations( "botcontrol.phrases" );
+
     if ( GetEngineVersion() != Engine_TF2 )
     {
-        strcopy( szError, cch, "This plugin only supports the game Team Fotress 2." );
+        FormatEx( szError, cch, "%T", "Unsupported_Engine", LANG_SERVER );
         return APLRes_Failure;
     }
 
     if ( !IsDedicatedServer() )
     {
-        strcopy( szError, cch, "This plugin only supports dedicated servers." );
+        FormatEx( szError, cch, "%T", "Unsupported_Server", LANG_SERVER );
         return APLRes_Failure;
     }
 
@@ -120,7 +122,7 @@ public void OnPluginStart()
     GameData hConf = new GameData( "botcontrol" );
     if ( !hConf )
     {
-        SetFailState( "Could not find gamedata file \"botcontrol.txt\"." );
+        SetFailState( "%T", "Gamedata_Not_Found", LANG_SERVER );
     }
 
     ConVar hEnabled = CreateConVar(
@@ -219,7 +221,7 @@ public void OnPluginStart()
     g_hfnCTFWeaponBuilder_SetSubType = EndPrepSDKCall();
     if ( !g_hfnCTFWeaponBuilder_SetSubType )
     {
-        SetFailState( "Failed to prepare CTFWeaponBuilder::SetSubType SDK call." );
+        SetFailState( "%T", "SDKCall_Prep_Failed", LANG_SERVER, "CTFWeaponBuilder::SetSubType" );
     }
 
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
@@ -231,7 +233,7 @@ public void OnPluginStart()
     g_hfnGetPlayerClassData = EndPrepSDKCall();
     if ( !g_hfnGetPlayerClassData )
     {
-        SetFailState( "Failed to prepare GetPlayerClassData SDK call." );
+        SetFailState( "%T", "SDKCall_Prep_Failed", LANG_SERVER, "GetPlayerClassData" );
     }
 
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
@@ -242,7 +244,7 @@ public void OnPluginStart()
     g_hfnCTFPlayer_ManageBuilderWeapons = EndPrepSDKCall();
     if ( !g_hfnCTFPlayer_ManageBuilderWeapons )
     {
-        SetFailState( "Failed to prepare CTFPlayer::ManageBuilderWeapons SDK call." );
+        SetFailState( "%T", "SDKCall_Prep_Failed", LANG_SERVER, "CTFPlayer::ManageBuilderWeapons" );
     }
 
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
@@ -252,7 +254,7 @@ public void OnPluginStart()
     g_hfnCTFPlayer_PostInventoryApplication = EndPrepSDKCall();
     if ( !g_hfnCTFPlayer_PostInventoryApplication )
     {
-        SetFailState( "Failed to prepare CTFPlayer::PostInventoryApplication SDK call." );
+        SetFailState( "%T", "SDKCall_Prep_Failed", LANG_SERVER, "CTFPlayer::PostInventoryApplication" );
     }
 
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
@@ -263,7 +265,7 @@ public void OnPluginStart()
     g_hfnCTFPlayer_RemoveObject = EndPrepSDKCall();
     if ( !g_hfnCTFPlayer_RemoveObject )
     {
-        SetFailState( "Failed to prepare CTFPlayer::RemoveObject SDK call." );
+        SetFailState( "%T", "SDKCall_Prep_Failed", LANG_SERVER, "CTFPlayer::RemoveObject" );
     }
 
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
@@ -275,7 +277,7 @@ public void OnPluginStart()
     g_hfnCObjectTeleporter_SetTeleportWhere = EndPrepSDKCall();
     if ( !g_hfnCObjectTeleporter_SetTeleportWhere )
     {
-        SetFailState( "Failed to prepare CObjectTeleporter::SetTeleportWhere SDK call." );
+        SetFailState( "%T", "SDKCall_Prep_Failed", LANG_SERVER, "CObjectTeleporter::SetTeleportWhere" );
     }
 #endif
 
@@ -288,7 +290,7 @@ public void OnPluginStart()
     g_hfnCUtlStringList_CopyAndAddToTail = EndPrepSDKCall();
     if ( !g_hfnCUtlStringList_CopyAndAddToTail )
     {
-        SetFailState( "Failed to prepare CUtlStringList::CopyAndAddToTail SDK call." );
+        SetFailState( "%T", "SDKCall_Prep_Failed", LANG_SERVER, "CUtlStringList::CopyAndAddToTail" );
     }
 #endif
 
@@ -300,7 +302,7 @@ public void OnPluginStart()
     g_hfnCBaseObject_GetMaxHealthForCurrentLevel = EndPrepSDKCall();
     if ( !g_hfnCBaseObject_GetMaxHealthForCurrentLevel )
     {
-        SetFailState( "Failed to prepare CBaseObject::GetMaxHealthForCurrentLevel SDK call." );
+        SetFailState( "%T", "SDKCall_Prep_Failed", LANG_SERVER, "CBaseObject::GetMaxHealthForCurrentLevel" );
     }
 
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
@@ -315,7 +317,7 @@ public void OnPluginStart()
     g_hfnDispatchParticleEffect = EndPrepSDKCall();
     if ( !g_hfnDispatchParticleEffect )
     {
-        SetFailState( "Failed to prepare DispatchParticleEffect SDK call." );
+        SetFailState( "%T", "SDKCall_Prep_Failed", LANG_SERVER, "DispatchParticleEffect" );
     }
 
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
@@ -325,7 +327,7 @@ public void OnPluginStart()
     g_hfnCTFSniperRifle_ZoomOut = EndPrepSDKCall();
     if ( !g_hfnCTFSniperRifle_ZoomOut )
     {
-        SetFailState( "Failed to prepare CTFSniperRifle::ZoomOut SDK call." );
+        SetFailState( "%T", "SDKCall_Prep_Failed", LANG_SERVER, "CTFSniperRifle::ZoomOut" );
     }
 
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
@@ -339,7 +341,7 @@ public void OnPluginStart()
     g_hfnCTFPlayer_HasTheFlag = EndPrepSDKCall();
     if ( !g_hfnCTFPlayer_HasTheFlag )
     {
-        SetFailState( "Failed to prepare CTFPlayer::HasTheFlag SDK call." );
+        SetFailState( "%T", "SDKCall_Prep_Failed", LANG_SERVER, "CTFPlayer::HasTheFlag" );
     }
 
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
@@ -351,7 +353,7 @@ public void OnPluginStart()
     g_hfnCCaptureFlag_PickUp = EndPrepSDKCall();
     if ( !g_hfnCCaptureFlag_PickUp )
     {
-        SetFailState( "Failed to prepare CCaptureFlag::PickUp SDK call." );
+        SetFailState( "%T", "SDKCall_Prep_Failed", LANG_SERVER, "CCaptureFlag::PickUp" );
     }
 
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
@@ -361,7 +363,7 @@ public void OnPluginStart()
     g_hfnCBasePlayer_UpdateClientData = EndPrepSDKCall();
     if ( !g_hfnCBasePlayer_UpdateClientData )
     {
-        SetFailState( "Failed to prepare CBasePlayer::UpdateClientData SDK call." );
+        SetFailState( "%T", "SDKCall_Prep_Failed", LANG_SERVER, "CBasePlayer::UpdateClientData" );
     }
 
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
@@ -373,7 +375,7 @@ public void OnPluginStart()
     g_hfnCTFPlayer_SetObserverTarget = EndPrepSDKCall();
     if ( !g_hfnCTFPlayer_SetObserverTarget )
     {
-        SetFailState( "Failed to prepare CTFPlayer::SetObserverTarget SDK call." );
+        SetFailState( "%T", "SDKCall_Prep_Failed", LANG_SERVER, "CTFPlayer::SetObserverTarget" );
     }
 
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
@@ -383,7 +385,7 @@ public void OnPluginStart()
     g_hfnCTFPlayerShared_ResetRageBuffs = EndPrepSDKCall();
     if ( !g_hfnCTFPlayerShared_ResetRageBuffs )
     {
-        SetFailState( "Failed to prepare CTFPlayerShared::ResetRageBuffs SDK call." );
+        SetFailState( "%T", "SDKCall_Prep_Failed", LANG_SERVER, "CTFPlayerShared::ResetRageBuffs" );
     }
 
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
@@ -397,7 +399,7 @@ public void OnPluginStart()
     g_hfnCTFGameRules_BroadcastSound = EndPrepSDKCall();
     if ( !g_hfnCTFGameRules_BroadcastSound )
     {
-        SetFailState( "Failed to prepare CTFGameRules::BroadcastSound SDK call." );
+        SetFailState( "%T", "SDKCall_Prep_Failed", LANG_SERVER, "CTFGameRules::BroadcastSound" );
     }
 
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
@@ -411,7 +413,7 @@ public void OnPluginStart()
     g_hfnCTFBotMvMEngineerHintFinder_FindHint = EndPrepSDKCall();
     if ( !g_hfnCTFBotMvMEngineerHintFinder_FindHint )
     {
-        SetFailState( "Failed to prepare CTFBotMvMEngineerHintFinder::FindHint SDK call." );
+        SetFailState( "%T", "SDKCall_Prep_Failed", LANG_SERVER, "CTFBotMvMEngineerHintFinder::FindHint" );
     }
 
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
@@ -424,7 +426,7 @@ public void OnPluginStart()
     g_hfnCMultiplayRules_HaveAllPlayersSpeakConceptIfAllowed = EndPrepSDKCall();
     if ( !g_hfnCMultiplayRules_HaveAllPlayersSpeakConceptIfAllowed )
     {
-        SetFailState( "Failed to prepare CMultiplayRules::HaveAllPlayersSpeakConceptIfAllowed SDK call." );
+        SetFailState( "%T", "SDKCall_Prep_Failed", LANG_SERVER, "CMultiplayRules::HaveAllPlayersSpeakConceptIfAllowed" );
     }
 
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
@@ -436,7 +438,7 @@ public void OnPluginStart()
     g_hfnCTFBot_IsBarrageAndReloadWeapon = EndPrepSDKCall();
     if ( !g_hfnCTFBot_IsBarrageAndReloadWeapon )
     {
-        SetFailState( "Failed to prepare CTFBot::IsBarrageAndReloadWeapon SDK call." );
+        SetFailState( "%T", "SDKCall_Prep_Failed", LANG_SERVER, "CTFBot::IsBarrageAndReloadWeapon" );
     }
 
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
@@ -446,7 +448,7 @@ public void OnPluginStart()
     g_hfnCWeaponMedigun_CycleResistType = EndPrepSDKCall();
     if ( !g_hfnCWeaponMedigun_CycleResistType )
     {
-        SetFailState( "Failed to prepare CWeaponMedigun::CycleResistType SDK call." );
+        SetFailState( "%T", "SDKCall_Prep_Failed", LANG_SERVER, "CWeaponMedigun::CycleResistType" );
     }
 
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
@@ -457,7 +459,7 @@ public void OnPluginStart()
     g_hfnCWeaponMedigun_GetResistType = EndPrepSDKCall();
     if ( !g_hfnCWeaponMedigun_GetResistType )
     {
-        SetFailState( "Failed to prepare CWeaponMedigun::GetResistType SDK call." );
+        SetFailState( "%T", "SDKCall_Prep_Failed", LANG_SERVER, "CWeaponMedigun::GetResistType" );
     }
 
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
@@ -468,7 +470,7 @@ public void OnPluginStart()
     g_hfnCTFPlayer_GetClosestCaptureZone = EndPrepSDKCall();
     if ( !g_hfnCTFPlayer_GetClosestCaptureZone )
     {
-        SetFailState( "Failed to prepare CTFPlayer::GetClosestCaptureZone SDK call." );
+        SetFailState( "%T", "SDKCall_Prep_Failed", LANG_SERVER, "CTFPlayer::GetClosestCaptureZone" );
     }
 
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
@@ -480,7 +482,7 @@ public void OnPluginStart()
     g_hfnCTFPlayer_PlaySpecificSequence = EndPrepSDKCall();
     if ( !g_hfnCTFPlayer_PlaySpecificSequence )
     {
-        SetFailState( "Failed to prepare CTFPlayer::PlaySpecificSequence SDK call." );
+        SetFailState( "%T", "SDKCall_Prep_Failed", LANG_SERVER, "CTFPlayer::PlaySpecificSequence" );
     }
 
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
@@ -494,7 +496,7 @@ public void OnPluginStart()
     g_hfnCTeamplayRoundBasedRules_PlayThrottledAlert = EndPrepSDKCall();
     if ( !g_hfnCTeamplayRoundBasedRules_PlayThrottledAlert )
     {
-        SetFailState( "Failed to prepare CTeamplayRoundBasedRules::PlayThrottledAlert SDK call." );
+        SetFailState( "%T", "SDKCall_Prep_Failed", LANG_SERVER, "CTeamplayRoundBasedRules::PlayThrottledAlert" );
     }
 
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
@@ -505,7 +507,7 @@ public void OnPluginStart()
     g_hfnCCaptureZone_Capture = EndPrepSDKCall();
     if ( !g_hfnCCaptureZone_Capture )
     {
-        SetFailState( "Failed to prepare CCaptureZone::Capture SDK call." );
+        SetFailState( "%T", "SDKCall_Prep_Failed", LANG_SERVER, "CCaptureZone::Capture" );
     }
 
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
@@ -515,7 +517,7 @@ public void OnPluginStart()
     g_hfnCTFPlayer_RemoveAllWeapons = EndPrepSDKCall();
     if ( !g_hfnCTFPlayer_RemoveAllWeapons )
     {
-        SetFailState( "Failed to prepare CTFPlayer::RemoveAllWeapons SDK call." );
+        SetFailState( "%T", "SDKCall_Prep_Failed", LANG_SERVER, "CTFPlayer::RemoveAllWeapons" );
     }
 
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
@@ -527,7 +529,7 @@ public void OnPluginStart()
     g_hfnCTFPlayer_DoAnimationEvent = EndPrepSDKCall();
     if ( !g_hfnCTFPlayer_DoAnimationEvent )
     {
-        SetFailState( "Failed to prepare CTFPlayer::DoAnimationEvent SDK call." );
+        SetFailState( "%T", "SDKCall_Prep_Failed", LANG_SERVER, "CTFPlayer::DoAnimationEvent" );
     }
 
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
@@ -537,7 +539,7 @@ public void OnPluginStart()
     g_hfnCTFBot_StartIdleSound = EndPrepSDKCall();
     if ( !g_hfnCTFBot_StartIdleSound )
     {
-        SetFailState( "Failed to prepare CTFBot::StartIdleSound SDK call." );
+        SetFailState( "%T", "SDKCall_Prep_Failed", LANG_SERVER, "CTFBot::StartIdleSound" );
     }
 
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
@@ -548,7 +550,7 @@ public void OnPluginStart()
     g_hfnCTFBot_GetLastKnownArea = EndPrepSDKCall();
     if ( !g_hfnCTFBot_GetLastKnownArea )
     {
-        SetFailState( "Failed to prepare CTFBot::GetLastKnownArea SDK call." );
+        SetFailState( "%T", "SDKCall_Prep_Failed", LANG_SERVER, "CTFBot::GetLastKnownArea" );
     }
 
     /*--------------------------------------------------------------------
@@ -664,22 +666,22 @@ public void OnAllPluginsLoaded()
 
     if ( !LibraryExists( "nosoop_tf2utils" ) )
     {
-        SetFailState( "This plugin requires \"TF2 Utils\" by \"nosoop\"." );
+        SetFailState( "%T", "Missing_Library", LANG_SERVER, "TF2 Utils", "nosoop" );
     }
 
     if ( !LibraryExists( "tf2attributes" ) )
     {
-        SetFailState( "This plugin requires \"[TF2] TF2Attributes\" by \"FlaminSarge\"." );
+        SetFailState( "%T", "Missing_Library", LANG_SERVER, "[TF2] TF2Attributes", "FlaminSarge" );
     }
 
     if ( !LibraryExists( "vscript" ) )
     {
-        SetFailState( "This plugin requires \"VScript\" by \"42\"." );
+        SetFailState( "%T", "Missing_Library", LANG_SERVER, "VScript", "42" );
     }
 
     if ( !LibraryExists( "tf_econ_data" ) )
     {
-        SetFailState( "This plugin requires \"[TF2] Econ Data\" by \"nosoop\"." );
+        SetFailState( "%T", "Missing_Library", LANG_SERVER, "[TF2] Econ Data", "nosoop" );
     }
 
     /*--------------------------------------------------------------------
@@ -703,7 +705,7 @@ public void OnAllPluginsLoaded()
     g_hfnCTFBot_LeaveSquad = EndPrepSDKCall();
     if ( !g_hfnCTFBot_LeaveSquad )
     {
-        SetFailState( "Failed to create SDKCall for CTFBot::LeaveSquad from VScript function." );
+        SetFailState( "%T", "SDKCall_Prep_Failed_VScript", LANG_SERVER, "CTFBot::LeaveSquad" );
     }
 
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
@@ -716,7 +718,7 @@ public void OnAllPluginsLoaded()
     g_hfnCTFBot_SetAttribute = EndPrepSDKCall();
     if ( !g_hfnCTFBot_SetAttribute )
     {
-        SetFailState( "Failed to create SDKCall for CTFBot::SetAttribute from VScript function." );
+        SetFailState( "%T", "SDKCall_Prep_Failed_VScript", LANG_SERVER, "CTFBot::SetAttribute" );
     }
 
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
@@ -729,7 +731,7 @@ public void OnAllPluginsLoaded()
     g_hfnCTFBot_ClearAttribute = EndPrepSDKCall();
     if ( !g_hfnCTFBot_ClearAttribute )
     {
-        SetFailState( "Failed to create SDKCall for CTFBot::ClearAttribute from VScript function." );
+        SetFailState( "%T", "SDKCall_Prep_Failed_VScript", LANG_SERVER, "CTFBot::ClearAttribute" );
     }
 
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
@@ -741,7 +743,7 @@ public void OnAllPluginsLoaded()
     g_hfnCTFBot_ClearAllAttributes = EndPrepSDKCall();
     if ( !g_hfnCTFBot_ClearAllAttributes )
     {
-        SetFailState( "Failed to create SDKCall for CTFBot::ClearAllAttributes from VScript function." );
+        SetFailState( "%T", "SDKCall_Prep_Failed_VScript", LANG_SERVER, "CTFBot::ClearAllAttributes" );
     }
 
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
@@ -755,7 +757,7 @@ public void OnAllPluginsLoaded()
     g_hfnCTFBot_HasAttribute = EndPrepSDKCall();
     if ( !g_hfnCTFBot_HasAttribute )
     {
-        SetFailState( "Failed to create SDKCall for CTFBot::HasAttribute from VScript function." );
+        SetFailState( "%T", "SDKCall_Prep_Failed_VScript", LANG_SERVER, "CTFBot::HasAttribute" );
     }
 
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
@@ -769,7 +771,7 @@ public void OnAllPluginsLoaded()
     g_hfnCTFBot_SetMission = EndPrepSDKCall();
     if ( !g_hfnCTFBot_SetMission )
     {
-        SetFailState( "Failed to create SDKCall for CTFBot::SetMission from VScript function." );
+        SetFailState( "%T", "SDKCall_Prep_Failed_VScript", LANG_SERVER, "CTFBot::SetMission" );
     }
 
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
@@ -782,7 +784,7 @@ public void OnAllPluginsLoaded()
     g_hfnCTFBot_SetPrevMission = EndPrepSDKCall();
     if ( !g_hfnCTFBot_SetPrevMission )
     {
-        SetFailState( "Failed to create SDKCall for CTFBot::SetPrevMission from VScript function." );
+        SetFailState( "%T", "SDKCall_Prep_Failed_VScript", LANG_SERVER, "CTFBot::SetPrevMission" );
     }
 
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
@@ -795,7 +797,7 @@ public void OnAllPluginsLoaded()
     g_hfnCTFBot_GetMission = EndPrepSDKCall();
     if ( !g_hfnCTFBot_GetMission )
     {
-        SetFailState( "Failed to create SDKCall for CTFBot::GetMission from VScript function." );
+        SetFailState( "%T", "SDKCall_Prep_Failed_VScript", LANG_SERVER, "CTFBot::GetMission" );
     }
 
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
@@ -808,7 +810,7 @@ public void OnAllPluginsLoaded()
     g_hfnCTFBot_GetPrevMission = EndPrepSDKCall();
     if ( !g_hfnCTFBot_GetPrevMission )
     {
-        SetFailState( "Failed to create SDKCall for CTFBot::GetPrevMission from VScript function." );
+        SetFailState( "%T", "SDKCall_Prep_Failed_VScript", LANG_SERVER, "CTFBot::GetPrevMission" );
     }
 
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
@@ -821,7 +823,7 @@ public void OnAllPluginsLoaded()
     g_hfnCTFBot_HasMission = EndPrepSDKCall();
     if ( !g_hfnCTFBot_HasMission )
     {
-        SetFailState( "Failed to create SDKCall for CTFBot::HasMission from VScript function." );
+        SetFailState( "%T", "SDKCall_Prep_Failed_VScript", LANG_SERVER, "CTFBot::HasMission" );
     }
 
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
@@ -834,7 +836,7 @@ public void OnAllPluginsLoaded()
     g_hfnCTFBot_IsOnAnyMission = EndPrepSDKCall();
     if ( !g_hfnCTFBot_IsOnAnyMission )
     {
-        SetFailState( "Failed to create SDKCall for CTFBot::IsOnAnyMission from VScript function." );
+        SetFailState( "%T", "SDKCall_Prep_Failed_VScript", LANG_SERVER, "CTFBot::IsOnAnyMission" );
     }
 
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
@@ -847,7 +849,7 @@ public void OnAllPluginsLoaded()
     g_hfnCTFBot_ShouldQuickBuild = EndPrepSDKCall();
     if ( !g_hfnCTFBot_ShouldQuickBuild )
     {
-        SetFailState( "Failed to create SDKCall for CTFBot::ShouldQuickBuild from VScript function." );
+        SetFailState( "%T", "SDKCall_Prep_Failed_VScript", LANG_SERVER, "CTFBot::ShouldQuickBuild" );
     }
 
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
@@ -861,7 +863,7 @@ public void OnAllPluginsLoaded()
     g_hfnCTFBot_IsWeaponRestricted = EndPrepSDKCall();
     if ( !g_hfnCTFBot_IsWeaponRestricted )
     {
-        SetFailState( "Failed to create SDKCall for CTFBot::IsWeaponRestricted from VScript function." );
+        SetFailState( "%T", "SDKCall_Prep_Failed_VScript", LANG_SERVER, "CTFBot::IsWeaponRestricted" );
     }
 
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
@@ -874,7 +876,7 @@ public void OnAllPluginsLoaded()
     g_hfnCTFPlayer_DropFlag = EndPrepSDKCall();
     if ( !g_hfnCTFPlayer_DropFlag )
     {
-        SetFailState( "Failed to create SDKCall for CTFPlayer::DropFlag from VScript function." );
+        SetFailState( "%T", "SDKCall_Prep_Failed_VScript", LANG_SERVER, "CTFPlayer::DropFlag" );
     }
 
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
@@ -887,7 +889,7 @@ public void OnAllPluginsLoaded()
     g_hfnCTFPlayer_HandleTauntCommand = EndPrepSDKCall();
     if ( !g_hfnCTFPlayer_HandleTauntCommand )
     {
-        SetFailState( "Failed to create SDKCall for CTFPlayer::HandleTauntCommand from VScript function." );
+        SetFailState( "%T", "SDKCall_Prep_Failed_VScript", LANG_SERVER, "CTFPlayer::HandleTauntCommand" );
     }
 
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
@@ -900,7 +902,7 @@ public void OnAllPluginsLoaded()
     g_hfnCTFBot_ShouldAutoJump = EndPrepSDKCall();
     if ( !g_hfnCTFBot_ShouldAutoJump )
     {
-        SetFailState( "Failed to create SDKCall for CTFBot::ShouldAutoJump from VScript function." );
+        SetFailState( "%T", "SDKCall_Prep_Failed_VScript", LANG_SERVER, "CTFBot::ShouldAutoJump" );
     }
 
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
@@ -913,7 +915,7 @@ public void OnAllPluginsLoaded()
     g_hfnCTFBot_SetBehaviorFlag = EndPrepSDKCall();
     if ( !g_hfnCTFBot_SetBehaviorFlag )
     {
-        SetFailState( "Failed to create SDKCall for CTFBot::SetBehaviorFlag from VScript function." );
+        SetFailState( "%T", "SDKCall_Prep_Failed_VScript", LANG_SERVER, "CTFBot::SetBehaviorFlag" );
     }
 
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
@@ -926,7 +928,7 @@ public void OnAllPluginsLoaded()
     g_hfnCTFBot_ClearBehaviorFlag = EndPrepSDKCall();
     if ( !g_hfnCTFBot_ClearBehaviorFlag )
     {
-        SetFailState( "Failed to create SDKCall for CTFBot::ClearBehaviorFlag from VScript function." );
+        SetFailState( "%T", "SDKCall_Prep_Failed_VScript", LANG_SERVER, "CTFBot::ClearBehaviorFlag" );
     }
 
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
@@ -940,7 +942,7 @@ public void OnAllPluginsLoaded()
     g_hfnCTFBot_IsBehaviorFlagSet = EndPrepSDKCall();
     if ( !g_hfnCTFBot_IsBehaviorFlagSet )
     {
-        SetFailState( "Failed to create SDKCall for CTFBot::IsBehaviorFlagSet from VScript function." );
+        SetFailState( "%T", "SDKCall_Prep_Failed_VScript", LANG_SERVER, "CTFBot::IsBehaviorFlagSet" );
     }
 
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
@@ -953,7 +955,7 @@ public void OnAllPluginsLoaded()
     g_hfnCTFPlayerShared_IsStealthed = EndPrepSDKCall();
     if ( !g_hfnCTFPlayerShared_IsStealthed )
     {
-        SetFailState( "Failed to create SDKCall for CTFPlayerShared::IsStealthed from VScript function." );
+        SetFailState( "%T", "SDKCall_Prep_Failed_VScript", LANG_SERVER, "CTFPlayerShared::IsStealthed" );
     }
 
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
@@ -966,7 +968,7 @@ public void OnAllPluginsLoaded()
     g_hfnCTFBot_SetMaxVisionRangeOverride = EndPrepSDKCall();
     if ( !g_hfnCTFBot_SetMaxVisionRangeOverride )
     {
-        SetFailState( "Failed to create SDKCall for CTFBot::SetMaxVisionRangeOverride from VScript function." );
+        SetFailState( "%T", "SDKCall_Prep_Failed_VScript", LANG_SERVER, "CTFBot::SetMaxVisionRangeOverride" );
     }
 
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
@@ -979,7 +981,7 @@ public void OnAllPluginsLoaded()
     g_hfnCTFBot_GetMaxVisionRangeOverride = EndPrepSDKCall();
     if ( !g_hfnCTFBot_GetMaxVisionRangeOverride )
     {
-        SetFailState( "Failed to create SDKCall for CTFBot::GetMaxVisionRangeOverride from VScript function." );
+        SetFailState( "%T", "SDKCall_Prep_Failed_VScript", LANG_SERVER, "CTFBot::GetMaxVisionRangeOverride" );
     }
 
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
@@ -992,7 +994,7 @@ public void OnAllPluginsLoaded()
     g_hfnCTFPlayerShared_IsAllowedToTaunt = EndPrepSDKCall();
     if ( !g_hfnCTFPlayerShared_IsAllowedToTaunt )
     {
-        SetFailState( "Failed to create SDKCall for CTFPlayerShared::IsAllowedToTaunt from VScript function." );
+        SetFailState( "%T", "SDKCall_Prep_Failed_VScript", LANG_SERVER, "CTFPlayerShared::IsAllowedToTaunt" );
     }
 
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
@@ -1005,7 +1007,7 @@ public void OnAllPluginsLoaded()
     g_hfnCBaseEntity_WorldSpaceCenter = EndPrepSDKCall();
     if ( !g_hfnCBaseEntity_WorldSpaceCenter )
     {
-        SetFailState( "Failed to create SDKCall for CBaseEntity::WorldSpaceCenter from VScript function." );
+        SetFailState( "%T", "SDKCall_Prep_Failed_VScript", LANG_SERVER, "CBaseEntity::WorldSpaceCenter" );
     }
 
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
@@ -1018,7 +1020,7 @@ public void OnAllPluginsLoaded()
     g_hfnCBasePlayer_SnapEyeAngles = EndPrepSDKCall();
     if ( !g_hfnCBasePlayer_SnapEyeAngles )
     {
-        SetFailState( "Failed to create SDKCall for CBasePlayer::SnapEyeAngles from VScript function." );
+        SetFailState( "%T", "SDKCall_Prep_Failed_VScript", LANG_SERVER, "CBasePlayer::SnapEyeAngles" );
     }
 
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
@@ -1032,7 +1034,7 @@ public void OnAllPluginsLoaded()
     g_hfnCTFNavArea_HasAttributeTF = EndPrepSDKCall();
     if ( !g_hfnCTFNavArea_HasAttributeTF )
     {
-        SetFailState( "Failed to create SDKCall for CTFNavArea::HasAttributeTF from VScript function." );
+        SetFailState( "%T", "SDKCall_Prep_Failed_VScript", LANG_SERVER, "CTFNavArea::HasAttributeTF" );
     }
 }
 
@@ -1204,7 +1206,7 @@ void UpdateUsersGroupStatus( Handle hTimer )
 
     if ( !SteamWorks_IsConnected() )
     {
-        LogMessage( "Could not initiate a group status update. The server is not connected to Steam." );
+        LogMessage( "%T", "Server_Not_Connected", LANG_SERVER );
         return;
     }
 
@@ -1214,7 +1216,9 @@ void UpdateUsersGroupStatus( Handle hTimer )
         {
             if ( !SteamWorks_GetUserGroupStatus( i, sm_botcontrol_groupid.IntValue ) )
             {
-                LogError( "Failed to request group status for user %L. Please make sure the group ID is valid.", i );
+                char szUserInfo[ 256 ];
+                FormatEx( szUserInfo, sizeof( szUserInfo ), "%L", i );
+                LogError( "%T", "Group_Status_Request_Failed", LANG_SERVER, szUserInfo );
             }
         }
     }
@@ -1988,7 +1992,7 @@ public void OnPlayerRunCmdPost(
         if ( StrEqual( szDesc, "block", false ) )
         {
             // Players can't control this bot
-            ShowSyncHudText( iClient, g_hSyncObj, "This bot is blocked" );
+            ShowSyncHudText( iClient, g_hSyncObj, "%t", "Bot_Block" );
             return;
         }
         else if ( StrEqual( szDesc, "premium", false ) )
@@ -1998,7 +2002,7 @@ public void OnPlayerRunCmdPost(
             if ( !( GetUserFlagBits( iClient ) & ReadFlagString( szFlags ) ) )
             {
                 // Only players with the required flag(s) can control this bot
-                ShowSyncHudText( iClient, g_hSyncObj, "This bot is premium-only" );
+                ShowSyncHudText( iClient, g_hSyncObj, "%t", "Bot_Premium" );
                 return;
             }
         }
@@ -2007,13 +2011,13 @@ public void OnPlayerRunCmdPost(
             if ( !g_aPlayerAttribs[ iClient ].bIsGroupMember )
             {
                 // Only players that are members of the Steam group can control this bot
-                ShowSyncHudText( iClient, g_hSyncObj, "This bot is for group members only" );
+                ShowSyncHudText( iClient, g_hSyncObj, "%t", "Bot_Group" );
                 return;
             }
         }
     }
 
-    ShowSyncHudText( iClient, g_hSyncObj, "Call for a MEDIC! to control this bot" );
+    ShowSyncHudText( iClient, g_hSyncObj, "%t", "Control_Bot" );
 }
 
 /*F+F+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -2115,19 +2119,19 @@ Action PlayerControlBot( int iClient, TFVoiceCommand eVoiceCommand )
 
     if ( g_nDefenders < sm_botcontrol_min_defenders.IntValue )
     {
-        PrintHintText( iClient, "Insufficient defending players. (%d/%d)", g_nDefenders, sm_botcontrol_min_defenders.IntValue );
+        PrintHintText( iClient, "%t", "Cannot_Control_Insufficient_Defenders", g_nDefenders, sm_botcontrol_min_defenders.IntValue );
         return Plugin_Continue;
     }
 
     if ( g_nInvaders >= sm_botcontrol_max_invaders.IntValue  )
     {
-        PrintHintText( iClient, "Maximum invader slots already in use. (%d/%d)", g_nInvaders, sm_botcontrol_max_invaders.IntValue );
+        PrintHintText( iClient, "%t", "Cannot_Control_Maximum_Invaders", g_nInvaders, sm_botcontrol_max_invaders.IntValue );
         return Plugin_Continue;
     }
 
     if ( TF2_IsPlayerInCondition( iObserverTarget, TFCond_Taunting ) )
     {
-        PrintHintText( iClient, "Please wait until the bot finishes taunting." );
+        PrintHintText( iClient, "%t", "Cannot_Control_Taunting" );
         return Plugin_Continue;
     }
 
@@ -2138,7 +2142,7 @@ Action PlayerControlBot( int iClient, TFVoiceCommand eVoiceCommand )
           have to implement logic to force a charge with a non-full charge
           meter.
         --------------------------------------------------------------------*/
-        PrintHintText( iClient, "Please wait until the bot finishes charging." );
+        PrintHintText( iClient, "%t", "Cannot_Control_Charging" );
         return Plugin_Continue;
     }
 
@@ -2150,7 +2154,7 @@ Action PlayerControlBot( int iClient, TFVoiceCommand eVoiceCommand )
           work correctly is a bit of a hassle. We'll just do it sometime in
           the future.
         --------------------------------------------------------------------*/
-        PrintHintText( iClient, "Please wait until the bot is no longer stunned." );
+        PrintHintText( iClient, "%t", "Cannot_Control_Stunned" );
         return Plugin_Continue;
     }
 
@@ -2171,7 +2175,7 @@ Action PlayerControlBot( int iClient, TFVoiceCommand eVoiceCommand )
         // The game needs to teleport these bots out of their spawn room
         if ( TF2_IsPlayerInSpawnRoom( iObserverTarget ) )
         {
-            PrintHintText( iClient, "Please wait until the bot gets teleported out of spawn." );
+            PrintHintText( iClient, "%t", "Cannot_Control_In_Spawn" );
             return Plugin_Continue;
         }
     }
@@ -3917,7 +3921,7 @@ void RestoreAllBots( bool bEnabled )
 }
 
 /*F+F+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  Function: HookAllEntities
+  Function: ProcessAllEntities
 
   Summary:  This function is called every time the plugin's state
             is changed. If the plugin has just been turned on, the
