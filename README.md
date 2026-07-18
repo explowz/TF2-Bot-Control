@@ -21,14 +21,15 @@ This plugin is still in beta and may contain bugs. If you find any, please open 
 3. Clone this project and copy the `sourcemod` folder into your Team Fortress 2 Dedicated Servers's `addons` folder.
 4. If building for Windows, `WIN32` must be defined.
 ```batch
-.\spcomp64.exe .\botcontrol.sp -o .\..\plugins\botcontrol.smx WIN32=1
+.\spcomp64 .\botcontrol.sp -o .\..\plugins\botcontrol.smx WIN32=1
 ```
 Otherwise no other defines are required:
 ```bash
 ./spcomp64 ./botcontrol.sp -o ./../plugins/botcontrol.smx
 ```
 
-If you do not wish to compile the plugin yourself, you can find precompiled versions in the [Releases](https://github.com/explowz/TF2-Bot-Control/releases) tab.
+If you do not wish to compile the plugin yourself, you can find precompiled versions in the [Releases](https://github.com/explowz/TF2-Bot-Control/releases) tab.<br>
+_Note: Dependencies must still be installed._
 
 ## Features
 ### Limiting number of players
