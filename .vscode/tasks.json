@@ -1,0 +1,17 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Copy plugin",
+            "type": "shell",
+            "command": "xcopy",
+            "args": [
+                "${workspaceFolder}\\sourcemod",
+                "${env:TF2DS}\\tf\\addons\\sourcemod",
+                "/S",
+                "/Q",
+                "/Y"
+            ]
+        }
+    ]
+}
