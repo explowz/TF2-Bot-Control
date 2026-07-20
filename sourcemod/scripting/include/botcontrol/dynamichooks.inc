@@ -353,7 +353,7 @@ MRESReturn CTFPlayer_IsAllowedToPickUpFlag_Post( int iThis, DHookReturn hReturn 
     // TODO: Add squad check once we've got a working squad implementation
 
     // Mission bots can't pick up the flag
-    hReturn.Value = !IsOnAnyMission( iBot ); // We add "cannot pick up intelligence" to human sentry busters
+    hReturn.Value = !IsOnAnyMission( iBot );
     return MRES_Supercede;
 }
 

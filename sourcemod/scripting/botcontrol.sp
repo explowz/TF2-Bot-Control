@@ -22,6 +22,7 @@
 #include <vscript>
 #include <SteamWorks>
 #include <pluginstatemanager>
+#include <actions>
 #include <stocksoup/log_server>
 #include <stocksoup/string>
 #include <stocksoup/tf/client>
@@ -36,6 +37,7 @@
 #include <botcontrol/stocks>
 #include <botcontrol/dynamichooks>
 #include <botcontrol/dynamicdetours>
+#include <botcontrol/actionhooks>
 
 #pragma newdecls required
 #pragma semicolon 1
@@ -45,7 +47,7 @@ public Plugin myinfo =
     name        = "[TF2] MvM Bot Control",
     author      = "Bintr",
     description = "Allows players to take control of a robot in the Mann vs. Machine gamemode.",
-    version     = "0.6",
+    version     = "0.7",
     url         = "https://github.com/explowz/TF2-Bot-Control"
 };
 
@@ -125,19 +127,19 @@ public void OnPluginStart()
         SetFailState( "%T", "Gamedata_Not_Found", LANG_SERVER );
     }
 
-    ConVar hEnabled = CreateConVar(
-                                   "sm_botcontrol_enabled",
-                                   "1",
-                                   "Enables the plugin and allows players to control invader bots.",
-                                   FCVAR_ARCHIVE | FCVAR_NOTIFY | FCVAR_NEVER_AS_STRING,
-                                   true,
-                                   0.0,
-                                   true,
-                                   1.0
-                                  );
+    ConVar sm_botcontrol_enabled = CreateConVar(
+                                                "sm_botcontrol_enabled",
+                                                "1",
+                                                "Enables the plugin and allows players to control invader bots.",
+                                                FCVAR_ARCHIVE | FCVAR_NOTIFY | FCVAR_NEVER_AS_STRING,
+                                                true,
+                                                0.0,
+                                                true,
+                                                1.0
+                                               );
 
     char szName[ 32 ];
-    hEnabled.GetName( szName, sizeof( szName ) );
+    sm_botcontrol_enabled.GetName( szName, sizeof( szName ) );
 
     PSM_Init( szName, hConf );
     PSM_AddShouldEnableCallback( IsMannVsMachineMode );
@@ -563,7 +565,6 @@ public void OnPluginStart()
     PSM_AddDynamicHookFromConf( "CObjectTeleporter::StartBuilding" );
     PSM_AddDynamicHookFromConf( "CObjectTeleporter::FinishedBuilding" );
     PSM_AddDynamicHookFromConf( "CObjectSentrygun::StartBuilding" );
-    PSM_AddDynamicHookFromConf( "CBasePlayer::CommitSuicide(bool, bool)" );
     PSM_AddDynamicHookFromConf( "CFilterTFBotHasTag::PassesFilterImpl" );
     PSM_AddDynamicHookFromConf( "CTFPlayer::ShouldTransmit" );
     PSM_AddDynamicHookFromConf( "CTFPlayer::ShouldGib" );
@@ -682,6 +683,11 @@ public void OnAllPluginsLoaded()
     if ( !LibraryExists( "tf_econ_data" ) )
     {
         SetFailState( "%T", "Missing_Library", LANG_SERVER, "[TF2] Econ Data", "nosoop" );
+    }
+
+    if ( !LibraryExists( "actionslib" ) )
+    {
+        SetFailState( "%T", "Missing_Library", LANG_SERVER, "Actions", "BHaType" );
     }
 
     /*--------------------------------------------------------------------
@@ -1356,7 +1362,6 @@ public void OnClientPutInServer( int iClient )
 
     PSM_SDKHook( iClient, SDKHook_SetTransmit, SetTransmit );
 
-    // PSM_DHookEntityByName( "CBasePlayer::CommitSuicide(bool, bool)", Hook_Post, iClient, CBasePlayer_CommitSuicide_Post );
     PSM_DHookEntityByName( "CTFPlayer::Event_Killed", Hook_Pre, iClient, CTFPlayer_Event_Killed_Pre );
     PSM_DHookEntityByName( "CTFPlayer::Event_Killed", Hook_Post, iClient, CTFPlayer_Event_Killed_Post );
     if ( !IsFakeClient( iClient ) )
@@ -1391,6 +1396,30 @@ public void OnClientDisconnect( int iClient )
     {
         // The bot got kicked; let's avoid crashes
         RestoreBot( GetClientFromSerial( g_aBotAttribs[ iClient ].iPlayerSerial ) );
+    }
+}
+
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: OnActionCreated
+
+  Summary:  This function is called when a NextBot entity's action
+            changes.
+
+  Args:     BehaviorAction BotAction
+              Action being created.
+            int iClient
+              NextBot entity index whose action changed.
+            const char[] szName
+              Action name.
+
+  Returns:  void
+              No return value.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
+public void OnActionCreated( BehaviorAction BotAction, int iClient, const char[] szName )
+{
+    if ( StrEqual( szName, "MissionSuicideBomber" ) )
+    {
+        BotAction.Update = CTFBotMissionSuicideBomber_Update;
     }
 }
 
@@ -1519,13 +1548,23 @@ public void OnPlayerRunCmdPre(
         }
     }
 
-    if ( GetPrevMission( iBot ) == MISSION_DESTROY_SENTRIES )
+    if ( HasMission( iBot, MISSION_DESTROY_SENTRIES ) )
     {
         // Prevent other plugins from unsetting this flag
         DebugOverlayBits_t fDebugOverlays = view_as< DebugOverlayBits_t >( GetEntProp( iClient, Prop_Data, "m_debugOverlays" ) );
         if ( !( fDebugOverlays & OVERLAY_BUDDHA_MODE ) )
         {
             SetEntProp( iClient, Prop_Data, "m_debugOverlays", fDebugOverlays | OVERLAY_BUDDHA_MODE );
+        }
+
+        // This handles the bug described in https://developer.valvesoftware.com/wiki/Buddha
+        if ( GetClientHealth( iClient ) == 1 && HasMission( iBot, MISSION_DESTROY_SENTRIES ) )
+        {
+            // Prevent the player from getting kicked for spamming commands
+            if ( IsAllowedToTaunt( iClient ) )
+            {
+                FakeClientCommand( iClient, "taunt" );
+            }
         }
 
         if ( GetGameTime() > g_aPlayerAttribs[ iClient ].flTalkTimer )
@@ -2615,16 +2654,6 @@ Action PlayerControlBot( int iClient, TFVoiceCommand eVoiceCommand )
     }
 
     /*--------------------------------------------------------------------
-      Sentry busters automatically detonate if they're stuck, so we need
-      to remove their mission while they're shelved. We set this back
-      when we unshelve them.
-    --------------------------------------------------------------------*/
-    if ( HasMission( iObserverTarget, MISSION_DESTROY_SENTRIES ) )
-    {
-        SetMission( iObserverTarget, NO_MISSION );
-    }
-
-    /*--------------------------------------------------------------------
       Human invaders get just enough respawn time to watch the death
       animation and freezecam.
     --------------------------------------------------------------------*/
@@ -2653,7 +2682,6 @@ Action PlayerControlBot( int iClient, TFVoiceCommand eVoiceCommand )
     StartIdleSound( iClient );
 
     PSM_SDKHook( iClient, SDKHook_OnTakeDamage, OnTakeDamage );
-    PSM_SDKHook( iClient, SDKHook_OnTakeDamagePost, OnTakeDamagePost );
 
     if ( pNavArea && HasAttributeTF( pNavArea, TF_NAV_SPAWN_ROOM_BLUE ) && !( GetEntityFlags( iObserverTarget ) & FL_ONGROUND ) )
     {
@@ -2729,7 +2757,7 @@ Action HandleTaunt( int iClient, const char[] szCommand, int argc )
         }
 
         int iBot = GetClientFromSerial( g_aPlayerAttribs[ iClient ].iBotSerial );
-        if ( GetPrevMission( iBot ) == MISSION_DESTROY_SENTRIES )
+        if ( HasMission( iBot, MISSION_DESTROY_SENTRIES ) )
         {
             RestoreBot( iClient );
             /*--------------------------------------------------------------------
@@ -3195,12 +3223,7 @@ Action SetTransmit( int iEntity, int iClient )
                 return Plugin_Stop;
             }
 
-            /*--------------------------------------------------------------------
-              We set sentry busters' mission to `NO_MISSION` to avoid problems
-              with auto-detonation, so if we need to check if the bot we control
-              is a sentry buster we use `GetPrevMission()`.
-            --------------------------------------------------------------------*/
-            if ( GetPrevMission( iBot ) == MISSION_DESTROY_SENTRIES )
+            if ( HasMission( iBot, MISSION_DESTROY_SENTRIES ) )
             {
                 return Plugin_Stop;
             }
@@ -3278,75 +3301,6 @@ Action OnTakeDamage(
     }
 
     return Plugin_Continue;
-}
-
-/*F+F+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  Function: OnTakeDamagePost
-
-  Summary:  This function is called after every `OnTakeDamage` call
-            on the hooked entity. Its main purpose is to detonate
-            human sentry busters if their health is `1`.
-
-  Args:     int iVictim
-              Entity index that took damage.
-            int iAttacker
-              Entity index of the attacker.
-            int iInflictor
-              Entity index of the inflictor
-            float flDamage
-              Amount of damage applied to `iVictim`.
-            int iDamageType
-              Type of damage applied to `iVictim`.
-            int iWeapon
-              Weapon index that dealt the damage to `iVictim`. If
-              unspecified, this value is `-1`.
-            const float vecDamageForce[ 3 ]
-              Vector representing the velocity of the damage applied
-              to `iVictim`.
-            const float vecDamagePosition[ 3 ]
-              Vector representing the origin of the damage applied
-              to `iVictim`.
-            int iDamageCustom
-              Custom kill identifier.
-
-  Returns:  void
-              No return value.
------------------------------------------------------------------F-F*/
-void OnTakeDamagePost(
-    int         iVictim,
-    int         iAttacker,
-    int         iInflictor,
-    float       flDamage,
-    int         iDamageType,
-    int         iWeapon,
-    const float vecDamageForce[ 3 ],
-    const float vecDamagePosition[ 3 ],
-    int         iDamageCustom
-    )
-{
-    if ( !g_aPlayerAttribs[ iVictim ].IsControlling() )
-    {
-        return;
-    }
-
-    /*--------------------------------------------------------------------
-      We handle death in `OnTakeDamagePost` because `OnTakeDamage` is
-      very complex and the amount of damage that ends up being applied
-      to the victim is actually based on a myriad of attributes, flags,
-      conditions, etc.
-    --------------------------------------------------------------------*/
-
-    int iBot = GetClientFromSerial( g_aPlayerAttribs[ iVictim ].iBotSerial );
-
-    // This handles the bug described in https://developer.valvesoftware.com/wiki/Buddha
-    if ( GetClientHealth( iVictim ) == 1 && GetPrevMission( iBot ) == MISSION_DESTROY_SENTRIES )
-    {
-        // Prevent the player from getting kicked for spamming commands
-        if ( IsAllowedToTaunt( iVictim ) )
-        {
-            FakeClientCommand( iVictim, "taunt" );
-        }
-    }
 }
 
 /*F+F+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -3809,7 +3763,7 @@ void HandleAttack(
     }
 
     // We apply the "no_attack" attribute the these players
-    /*if ( GetPrevMission( iBot ) == MISSION_DESTROY_SENTRIES ) )
+    /*if ( HasMission( iBot, MISSION_DESTROY_SENTRIES ) ) )
     {
         // Sentry busters don't attack
         iButtons &= ~IN_ATTACK;

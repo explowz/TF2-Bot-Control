@@ -154,7 +154,7 @@ MRESReturn CTraceFilterObject_ShouldHitEntity_Pre( Address pThis, DHookReturn hR
         if ( g_aPlayerAttribs[ iEntity ].IsControlling() )
         {
             iBot = GetClientFromSerial( g_aPlayerAttribs[ iEntity ].iBotSerial );
-            if ( GetPrevMission( iBot ) == MISSION_DESTROY_SENTRIES )
+            if ( HasMission( iBot, MISSION_DESTROY_SENTRIES ) )
             {
                 // Don't collide with sentry busters since they don't collide with us
                 hReturn.Value = false;
@@ -165,7 +165,7 @@ MRESReturn CTraceFilterObject_ShouldHitEntity_Pre( Address pThis, DHookReturn hR
         if ( g_aPlayerAttribs[ iMe ].IsControlling() )
         {
             iBot = GetClientFromSerial( g_aPlayerAttribs[ iMe ].iBotSerial );
-            if ( GetPrevMission( iBot ) == MISSION_DESTROY_SENTRIES )
+            if ( HasMission( iBot, MISSION_DESTROY_SENTRIES ) )
             {
                 // Sentry Busters don't collide with enemies (so they can't be body-blocked)
                 hReturn.Value = false;

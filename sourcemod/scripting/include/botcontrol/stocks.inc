@@ -368,13 +368,11 @@ stock void RestoreBot( int iClient )
         ApplyPreviousUpgrades( iBot );*/
     }
 
-    if ( GetPrevMission( iBot ) == MISSION_DESTROY_SENTRIES )
+    if ( HasMission( iBot, MISSION_DESTROY_SENTRIES ) )
     {
         // Remove buddha so the player doesn't remain immortal
         DebugOverlayBits_t fDebugOverlays = view_as< DebugOverlayBits_t >( GetEntProp( iClient, Prop_Data, "m_debugOverlays" ) );
         SetEntProp( iClient, Prop_Data, "m_debugOverlays", fDebugOverlays & ~OVERLAY_BUDDHA_MODE );
-
-        SetMission( iBot, MISSION_DESTROY_SENTRIES );
     }
 
     TF2Attrib_RemoveAll( iClient );
@@ -418,6 +416,7 @@ void ResetGlobals( int iClient )
     g_aPlayerAttribs[ iClient ].bPendingTaunt           = false;
     g_aPlayerAttribs[ iClient ].bIsWaitingForFullReload = false;
     g_aPlayerAttribs[ iClient ].szOriginalName[ 0 ]     = EOS;
+    g_aPlayerAttribs[ iClient ].szIdleSound[ 0 ]        = EOS;
 
     g_aBotAttribs[ iClient ].iPlayerSerial   = 0;
     g_aBotAttribs[ iClient ].bBlockFlagEvent = false;
@@ -3021,35 +3020,34 @@ stock void StartIdleSound( int iClient )
         {
             int iBot = GetClientFromSerial( g_aPlayerAttribs[ iClient ].iBotSerial );
 
-            char szSoundName[ 32 ] = "";
             switch ( TF2_GetPlayerClass( iClient ) )
             {
             case TFClass_Heavy:
-                strcopy( szSoundName, sizeof( szSoundName ), "MVM.GiantHeavyLoop" );
+                strcopy( g_aPlayerAttribs[ iClient ].szIdleSound, sizeof( g_aPlayerAttribs[ iClient ].szIdleSound ), "MVM.GiantHeavyLoop" );
 
             case TFClass_Soldier:
-                strcopy( szSoundName, sizeof( szSoundName ), "MVM.GiantSoldierLoop" );
+                strcopy( g_aPlayerAttribs[ iClient ].szIdleSound, sizeof( g_aPlayerAttribs[ iClient ].szIdleSound ), "MVM.GiantSoldierLoop" );
 
             case TFClass_DemoMan:
-                if ( GetPrevMission( iBot ) == MISSION_DESTROY_SENTRIES )
+                if ( HasMission( iBot, MISSION_DESTROY_SENTRIES ) )
                 {
-                    strcopy( szSoundName, sizeof( szSoundName ), "MVM.SentryBusterLoop" );
+                    strcopy( g_aPlayerAttribs[ iClient ].szIdleSound, sizeof( g_aPlayerAttribs[ iClient ].szIdleSound ), "MVM.SentryBusterLoop" );
                 }
                 else
                 {
-                    strcopy( szSoundName, sizeof( szSoundName ), "MVM.GiantDemomanLoop" );
+                    strcopy( g_aPlayerAttribs[ iClient ].szIdleSound, sizeof( g_aPlayerAttribs[ iClient ].szIdleSound ), "MVM.GiantDemomanLoop" );
                 }
 
             case TFClass_Scout:
-                strcopy( szSoundName, sizeof( szSoundName ), "MVM.GiantScoutLoop" );
+                strcopy( g_aPlayerAttribs[ iClient ].szIdleSound, sizeof( g_aPlayerAttribs[ iClient ].szIdleSound ), "MVM.GiantScoutLoop" );
 
             case TFClass_Pyro:
-                strcopy( szSoundName, sizeof( szSoundName ), "MVM.GiantPyroLoop" );
+                strcopy( g_aPlayerAttribs[ iClient ].szIdleSound, sizeof( g_aPlayerAttribs[ iClient ].szIdleSound ), "MVM.GiantPyroLoop" );
             }
 
-            if ( !StrEmpty( szSoundName ) )
+            if ( !StrEmpty( g_aPlayerAttribs[ iClient ].szIdleSound ) )
             {
-                EmitGameSoundToAll( szSoundName, iClient );
+                EmitGameSoundToAll( g_aPlayerAttribs[ iClient ].szIdleSound, iClient );
             }
         }
     }
@@ -3078,40 +3076,10 @@ stock void StopIdleSound( int iClient )
     }
     else
     {
-        if ( IsMiniBoss( iClient ) )
+        if ( !StrEmpty( g_aPlayerAttribs[ iClient ].szIdleSound ) )
         {
-            int iBot = GetClientFromSerial( g_aPlayerAttribs[ iClient ].iBotSerial );
-
-            char szSoundName[ 32 ] = "";
-            switch ( TF2_GetPlayerClass( iClient ) )
-            {
-            case TFClass_Heavy:
-                strcopy( szSoundName, sizeof( szSoundName ), "MVM.GiantHeavyLoop" );
-
-            case TFClass_Soldier:
-                strcopy( szSoundName, sizeof( szSoundName ), "MVM.GiantSoldierLoop" );
-
-            case TFClass_DemoMan:
-                if ( GetPrevMission( iBot ) == MISSION_DESTROY_SENTRIES )
-                {
-                    strcopy( szSoundName, sizeof( szSoundName ), "MVM.SentryBusterLoop" );
-                }
-                else
-                {
-                    strcopy( szSoundName, sizeof( szSoundName ), "MVM.GiantDemomanLoop" );
-                }
-
-            case TFClass_Scout:
-                strcopy( szSoundName, sizeof( szSoundName ), "MVM.GiantScoutLoop" );
-
-            case TFClass_Pyro:
-                strcopy( szSoundName, sizeof( szSoundName ), "MVM.GiantPyroLoop" );
-            }
-
-            if ( !StrEmpty( szSoundName ) )
-            {
-                EmitGameSoundToAll( szSoundName, iClient, SND_STOP );
-            }
+            EmitGameSoundToAll( g_aPlayerAttribs[ iClient ].szIdleSound, iClient, SND_STOP );
+            g_aPlayerAttribs[ iClient ].szIdleSound[ 0 ] = EOS;
         }
     }
 }

@@ -678,6 +678,7 @@ enum struct PLAYERATTRIBUTES
     bool  bPendingTaunt;
     bool  bIsWaitingForFullReload;
     char  szOriginalName[ MAX_NAME_LENGTH ];
+    char  szIdleSound[ 32 ];
 
     bool IsControlling()
     {

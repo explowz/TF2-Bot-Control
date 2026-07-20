@@ -14,6 +14,7 @@ This plugin is still in beta and may contain bugs. If you find any, please open 
 - [SM-TFEconData](https://github.com/nosoop/SM-TFEconData)
 - [SM-TFAttributeSupport](https://github.com/nosoop/SM-TFAttributeSupport)
 - [PluginStateManager](https://github.com/Mikusch/PluginStateManager)
+- [Actions](https://forums.alliedmods.net/showthread.php?t=336374)
 
 ## Building
 1. [Install SourceMod](https://wiki.alliedmods.net/Installing_SourceMod).
