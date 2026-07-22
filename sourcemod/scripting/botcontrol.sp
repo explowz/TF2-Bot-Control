@@ -12,6 +12,7 @@
 #endif /* !defined _DEBUG */
 
 #include <sourcemod>
+#include <clientprefs>
 #include <sdktools>
 #include <testing>
 #include <tf2>
@@ -31,13 +32,14 @@
 #include <stocksoup/tf/voice_hook>
 #include <stocksoup/tf/entity_prop_stocks>
 #include <stocksoup/tf/weapon>
+#include <stocksoup/tf/annotations>
 
-#include <botcontrol/const>
-#include <botcontrol/globals>
-#include <botcontrol/stocks>
-#include <botcontrol/dynamichooks>
-#include <botcontrol/dynamicdetours>
-#include <botcontrol/actionhooks>
+#include "include/botcontrol/const"
+#include "include/botcontrol/globals"
+#include "include/botcontrol/stocks"
+#include "include/botcontrol/dynamichooks"
+#include "include/botcontrol/dynamicdetours"
+#include "include/botcontrol/actionhooks"
 
 #pragma newdecls required
 #pragma semicolon 1
@@ -127,16 +129,16 @@ public void OnPluginStart()
         SetFailState( "%T", "Gamedata_Not_Found", LANG_SERVER );
     }
 
-    ConVar sm_botcontrol_enabled = CreateConVar(
-                                                "sm_botcontrol_enabled",
-                                                "1",
-                                                "Enables the plugin and allows players to control invader bots.",
-                                                FCVAR_ARCHIVE | FCVAR_NOTIFY | FCVAR_NEVER_AS_STRING,
-                                                true,
-                                                0.0,
-                                                true,
-                                                1.0
-                                               );
+    sm_botcontrol_enabled = CreateConVar(
+                                         "sm_botcontrol_enabled",
+                                         "1",
+                                         "Enables the plugin and allows players to control invader bots.",
+                                         FCVAR_ARCHIVE | FCVAR_NOTIFY | FCVAR_NEVER_AS_STRING,
+                                         true,
+                                         0.0,
+                                         true,
+                                         1.0
+                                        );
 
     char szName[ 32 ];
     sm_botcontrol_enabled.GetName( szName, sizeof( szName ) );
@@ -150,51 +152,59 @@ public void OnPluginStart()
     char szMaxPlayers[ 4 ];
     IntToString( ( MAXPLAYERS - 1 ), szMaxPlayers, sizeof( szMaxPlayers ) );
 
-    sm_botcontrol_premium_flags = CreateConVar(
-                                               "sm_botcontrol_premium_flags",
-                                               "o",
-                                               "The required flags a player must have to be considered a premium player. " ...
-                                                   "For more information, please refer to admin_levels.cfg.",
-                                               FCVAR_ARCHIVE
-                                              );
-    sm_botcontrol_groupid       = CreateConVar(
-                                               "sm_botcontrol_groupid",
-                                               "571",
-                                               "The groupID32 of the group the user must be a member of to control bots with the \"group\" attribute.",
-                                               FCVAR_ARCHIVE | FCVAR_NEVER_AS_STRING,
-                                               true,
-                                               0.0
-                                              );
-    sm_botcontrol_min_defenders = CreateConVar(
-                                               "sm_botcontrol_min_defenders",
-                                               "0",
-                                               "The minimum amount of players on the defending team for a player to be allowed to control a bot.",
-                                               FCVAR_ARCHIVE | FCVAR_NOTIFY | FCVAR_NEVER_AS_STRING,
-                                               true,
-                                               0.0,
-                                               true,
-                                               float( MAXPLAYERS - 1 )
-                                              );
-    sm_botcontrol_max_invaders  = CreateConVar(
-                                               "sm_botcontrol_max_invaders",
-                                               szMaxPlayers,
-                                               "The maximum amount of human players allowed on the invading team.",
-                                               FCVAR_ARCHIVE | FCVAR_NOTIFY | FCVAR_NEVER_AS_STRING,
-                                               true,
-                                               0.0,
-                                               true,
-                                               float( MAXPLAYERS - 1 )
-                                              );
-    sm_botcontrol_mirror_name   = CreateConVar(
-                                               "sm_botcontrol_mirror_name",
-                                               "0",
-                                               "Enables changing the controlling player's name to that of the bot for the duration the player controls the bot.",
-                                               FCVAR_ARCHIVE | FCVAR_NOTIFY | FCVAR_NEVER_AS_STRING,
-                                               true,
-                                               0.0,
-                                               true,
-                                               1.0
-                                              );
+    sm_botcontrol_premium_flags        = CreateConVar(
+                                                      "sm_botcontrol_premium_flags",
+                                                      "o",
+                                                      "The required flags a player must have to be considered a premium player. " ...
+                                                          "For more information, please refer to admin_levels.cfg.",
+                                                      FCVAR_ARCHIVE
+                                                     );
+    sm_botcontrol_groupid              = CreateConVar(
+                                                      "sm_botcontrol_groupid",
+                                                      "571",
+                                                      "The groupID32 of the group the user must be a member of to control bots with the \"group\" attribute.",
+                                                      FCVAR_ARCHIVE | FCVAR_NEVER_AS_STRING,
+                                                      true,
+                                                      0.0
+                                                     );
+    sm_botcontrol_min_defenders        = CreateConVar(
+                                                      "sm_botcontrol_min_defenders",
+                                                      "0",
+                                                      "The minimum amount of players on the defending team for a player to be allowed to control a bot.",
+                                                      FCVAR_ARCHIVE | FCVAR_NOTIFY | FCVAR_NEVER_AS_STRING,
+                                                      true,
+                                                      0.0,
+                                                      true,
+                                                      float( MAXPLAYERS - 1 )
+                                                     );
+    sm_botcontrol_max_invaders         = CreateConVar(
+                                                      "sm_botcontrol_max_invaders",
+                                                      szMaxPlayers,
+                                                      "The maximum amount of human players allowed on the invading team.",
+                                                      FCVAR_ARCHIVE | FCVAR_NOTIFY | FCVAR_NEVER_AS_STRING,
+                                                      true,
+                                                      0.0,
+                                                      true,
+                                                      float( MAXPLAYERS - 1 )
+                                                     );
+    sm_botcontrol_instruction_interval = CreateConVar(
+                                                      "sm_botcontrol_instruction_interval",
+                                                      "40.0",
+                                                      "The interval at which the plugin should update a controlling player's instrctions.",
+                                                      FCVAR_ARCHIVE | FCVAR_NOTIFY | FCVAR_NEVER_AS_STRING,
+                                                      true,
+                                                      10.0 // Prevent spam
+                                                     );
+    sm_botcontrol_mirror_name          = CreateConVar(
+                                                      "sm_botcontrol_mirror_name",
+                                                      "0",
+                                                      "Enables changing the controlling player's name to that of the bot for the duration the player controls the bot.",
+                                                      FCVAR_ARCHIVE | FCVAR_NOTIFY | FCVAR_NEVER_AS_STRING,
+                                                      true,
+                                                      0.0,
+                                                      true,
+                                                      1.0
+                                                     );
     sm_botcontrol_mirror_name.AddChangeHook( RestoreOriginalNames );
 
     spec_freeze_traveltime                          = FindConVar( "spec_freeze_traveltime" );
@@ -555,6 +565,28 @@ public void OnPluginStart()
         SetFailState( "%T", "SDKCall_Prep_Failed", LANG_SERVER, "CTFBot::GetLastKnownArea" );
     }
 
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+
+    StartPrepSDKCall( SDKCall_Player );
+    PrepSDKCall_SetFromConf( hConf, SDKConf_Signature, "CTFPlayer::IsCapturingPoint" );
+    PrepSDKCall_SetReturnInfo( SDKType_Bool, SDKPass_Plain ); // bool
+    g_hfnCTFPlayer_IsCapturingPoint = EndPrepSDKCall();
+    if ( !g_hfnCTFPlayer_IsCapturingPoint )
+    {
+        SetFailState( "%T", "SDKCall_Prep_Failed", LANG_SERVER, "CTFPlayer::IsCapturingPoint" );
+    }
+
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+
+    StartPrepSDKCall( SDKCall_Player );
+    PrepSDKCall_SetFromConf( hConf, SDKConf_Signature, "CTFBot::GetMyControlPoint" );
+    PrepSDKCall_SetReturnInfo( SDKType_CBaseEntity, SDKPass_Pointer, VDECODE_FLAG_ALLOWNULL );
+    g_hfnCTFBot_GetMyControlPoint = EndPrepSDKCall();
+    if ( !g_hfnCTFBot_GetMyControlPoint )
+    {
+        SetFailState( "%T", "SDKCall_Prep_Failed", LANG_SERVER, "CTFBot::GetMyControlPoint" );
+    }
+
     /*--------------------------------------------------------------------
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!! DYNAMIC HOOKS !!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -566,6 +598,7 @@ public void OnPluginStart()
     PSM_AddDynamicHookFromConf( "CObjectTeleporter::FinishedBuilding" );
     PSM_AddDynamicHookFromConf( "CObjectSentrygun::StartBuilding" );
     PSM_AddDynamicHookFromConf( "CFilterTFBotHasTag::PassesFilterImpl" );
+    PSM_AddDynamicHookFromConf( "CTriggerBotTag::Touch" );
     PSM_AddDynamicHookFromConf( "CTFPlayer::ShouldTransmit" );
     PSM_AddDynamicHookFromConf( "CTFPlayer::ShouldGib" );
     PSM_AddDynamicHookFromConf( "CTFPlayer::IsAllowedToPickUpFlag" );
@@ -638,6 +671,9 @@ public void OnPluginStart()
 
     // HUD messages are taken care of in `OnPlayerRunCmdPost`
     g_hSyncObj = CreateHudSynchronizer();
+
+    g_hShowInstrctions = new Cookie( "botcontrol_show_instructions", "MvM Bot Control Instructions", CookieAccess_Public );
+    g_hShowInstrctions.SetPrefabMenu( CookieMenu_OnOff_Int, "Bot Control Instructions" );
 
     // NOTE: PSM takes care of late-loading through its state change hooks
 
@@ -768,6 +804,71 @@ public void OnAllPluginsLoaded()
 
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
 
+    fn = VScript_GetClassFunction( "CTFBot", "AddBotTag" );
+
+    StartPrepSDKCall( SDKCall_Player );
+    SET_OFFSET_OR_ADDRESS( fn )
+    PrepSDKCall_AddParameter( SDKType_String, SDKPass_Pointer ); // const char *tag
+    g_hfnCTFBot_AddTag = EndPrepSDKCall();
+    if ( !g_hfnCTFBot_AddTag )
+    {
+        SetFailState( "%T", "SDKCall_Prep_Failed_VScript", LANG_SERVER, "CTFBot::AddTag" );
+    }
+
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+
+    fn = VScript_GetClassFunction( "CTFBot", "RemoveBotTag" );
+
+    StartPrepSDKCall( SDKCall_Player );
+    SET_OFFSET_OR_ADDRESS( fn )
+    PrepSDKCall_AddParameter( SDKType_String, SDKPass_Pointer ); // const char *tag
+    g_hfnCTFBot_RemoveTag = EndPrepSDKCall();
+    if ( !g_hfnCTFBot_RemoveTag )
+    {
+        SetFailState( "%T", "SDKCall_Prep_Failed_VScript", LANG_SERVER, "CTFBot::RemoveTag" );
+    }
+
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+
+    fn = VScript_GetClassFunction( "CTFBot", "ClearAllBotTags" );
+
+    StartPrepSDKCall( SDKCall_Player );
+    SET_OFFSET_OR_ADDRESS( fn )
+    g_hfnCTFBot_ClearTags = EndPrepSDKCall();
+    if ( !g_hfnCTFBot_ClearTags )
+    {
+        SetFailState( "%T", "SDKCall_Prep_Failed_VScript", LANG_SERVER, "CTFBot::ClearTags" );
+    }
+
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+
+    fn = VScript_GetClassFunction( "CTFBot", "HasBotTag" );
+
+    StartPrepSDKCall( SDKCall_Player );
+    SET_OFFSET_OR_ADDRESS( fn )
+    PrepSDKCall_AddParameter( SDKType_String, SDKPass_Pointer ); // const char *tag
+    PrepSDKCall_SetReturnInfo( SDKType_Bool, SDKPass_Plain );    // bool
+    g_hfnCTFBot_HasTag = EndPrepSDKCall();
+    if ( !g_hfnCTFBot_HasTag )
+    {
+        SetFailState( "%T", "SDKCall_Prep_Failed_VScript", LANG_SERVER, "CTFBot::HasTag" );
+    }
+
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+
+    fn = VScript_GetClassFunction( "CTFBot", "GetAllBotTags" );
+
+    StartPrepSDKCall( SDKCall_Player );
+    SET_OFFSET_OR_ADDRESS( fn )
+    PrepSDKCall_AddParameter( SDKType_PlainOldData, SDKPass_Plain ); // HSCRIPT hTable
+    g_hfnCTFBot_ScriptGetAllTags = EndPrepSDKCall();
+    if ( !g_hfnCTFBot_ScriptGetAllTags )
+    {
+        SetFailState( "%T", "SDKCall_Prep_Failed_VScript", LANG_SERVER, "CTFBot::ScriptGetAllTags" );
+    }
+
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+
     fn = VScript_GetClassFunction( "CTFBot", "SetMission" );
 
     StartPrepSDKCall( SDKCall_Player );
@@ -843,6 +944,32 @@ public void OnAllPluginsLoaded()
     if ( !g_hfnCTFBot_IsOnAnyMission )
     {
         SetFailState( "%T", "SDKCall_Prep_Failed_VScript", LANG_SERVER, "CTFBot::IsOnAnyMission" );
+    }
+
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+
+    fn = VScript_GetClassFunction( "CTFBot", "SetMissionTarget" );
+
+    StartPrepSDKCall( SDKCall_Player );
+    SET_OFFSET_OR_ADDRESS( fn )
+    PrepSDKCall_AddParameter( SDKType_PlainOldData, SDKPass_Plain );
+    g_hfnCTFBot_SetMissionTarget = EndPrepSDKCall();
+    if ( !g_hfnCTFBot_SetMissionTarget )
+    {
+        SetFailState( "%T", "SDKCall_Prep_Failed_VScript", LANG_SERVER, "CTFBot::SetMissionTarget" );
+    }
+
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+
+    fn = VScript_GetClassFunction( "CTFBot", "GetMissionTarget" );
+
+    StartPrepSDKCall( SDKCall_Player );
+    SET_OFFSET_OR_ADDRESS( fn )
+    PrepSDKCall_SetReturnInfo( SDKType_PlainOldData, SDKPass_Plain );
+    g_hfnCTFBot_GetMissionTarget = EndPrepSDKCall();
+    if ( !g_hfnCTFBot_GetMissionTarget )
+    {
+        SetFailState( "%T", "SDKCall_Prep_Failed_VScript", LANG_SERVER, "CTFBot::GetMissionTarget" );
     }
 
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
@@ -1311,6 +1438,10 @@ public void OnEntityCreated( int iEntity, const char[] szClassname )
     {
         PSM_DHookEntityByName( "CFilterTFBotHasTag::PassesFilterImpl", Hook_Pre, iEntity, CFilterTFBotHasTag_PassesFilterImpl_Pre );
     }
+    else if ( StrEqual( szClassname, "trigger_bot_tag" ) )
+    {
+        PSM_DHookEntityByName( "CTriggerBotTag::Touch", Hook_Pre, iEntity, CTriggerBotTag_Touch_Pre );
+    }
     else if ( StrEqual( szClassname, "func_respawnroom" ) )
     {
         PSM_SDKHook( iEntity, SDKHook_StartTouchPost, RespawnRoom_StartTouchPost );
@@ -1358,6 +1489,11 @@ public void OnEntityCreated( int iEntity, const char[] szClassname )
 F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
 public void OnClientPutInServer( int iClient )
 {
+    if ( !PSM_IsEnabled() )
+    {
+        return;
+    }
+
     ResetGlobals( iClient );
 
     PSM_SDKHook( iClient, SDKHook_SetTransmit, SetTransmit );
@@ -1369,6 +1505,52 @@ public void OnClientPutInServer( int iClient )
         PSM_DHookEntityByName( "CTFPlayer::ShouldTransmit", Hook_Pre, iClient, CTFPlayer_ShouldTransmit_Pre );
         PSM_DHookEntityByName( "CTFPlayer::ShouldGib", Hook_Pre, iClient, CTFPlayer_ShouldGib_Pre );
         PSM_DHookEntityByName( "CTFPlayer::IsAllowedToPickUpFlag", Hook_Post, iClient, CTFPlayer_IsAllowedToPickUpFlag_Post );
+    }
+}
+
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: OnClientCookiesCached
+
+  Summary:  Called once a client's saved cookies have been loaded
+            from the database.
+
+            We use this function to determine whether to
+            automatically enable instructions for a player.
+
+  Args:     int iClient
+              Client index.
+
+  Returns:  void
+              No return value.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
+public void OnClientCookiesCached( int iClient )
+{
+    if ( !PSM_IsEnabled() )
+    {
+        return;
+    }
+
+    if ( IsFakeClient( iClient ) )
+    {
+        return;
+    }
+
+    // Check if this is the first time this client joined the server
+    if ( g_hShowInstrctions.GetInt( iClient, 2 ) == 2 )
+    {
+        if ( SteamWorks_HasLicenseForApp( iClient, 459 ) == k_EUserHasLicenseResultHasLicense )
+        {
+            g_hShowInstrctions.SetInt( iClient, 0 );
+        }
+        else
+        {
+            /*--------------------------------------------------------------------
+              The client doesn't own "Team Fortress 2 - Premium DLC", so we can
+              assume that this player is new to the game, doesn't fully
+              understand how Mann vs. Machine works, and needs instructions.
+            --------------------------------------------------------------------*/
+            g_hShowInstrctions.SetInt( iClient, 1 );
+        }
     }
 }
 
@@ -1586,7 +1768,7 @@ public void OnPlayerRunCmdPre(
         if ( nSentries == 0 )
         {
             // Blow up right where we are if there are no more enemy sentries
-            SDKHooks_TakeDamage( iClient, iClient, iClient, FLT_MAX, DMG_PREVENT_PHYSICS_FORCE, .bypassHooks = false );
+            SDKHooks_TakeDamage( iClient, iClient, iClient, FLT_MAX, DMG_PREVENT_PHYSICS_FORCE );
         }
     }
 
@@ -1605,6 +1787,9 @@ public void OnPlayerRunCmdPre(
             }
         }
     }
+
+    // Instruct the player on what to do
+    ShowInstruction( iClient );
 }
 
 /*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
@@ -1779,7 +1964,7 @@ public Action OnPlayerRunCmd(
             {
                 SetDeployingBombState( iClient, TF_BOMB_DEPLOYING_NONE );
                 SetEntProp( iClient, Prop_Data, "m_takedamage", DAMAGE_YES );
-                SDKHooks_TakeDamage( iClient, iClient, iClient, 99999.9, DMG_CRUSH, .bypassHooks = false );
+                SDKHooks_TakeDamage( iClient, iClient, iClient, 99999.9, DMG_CRUSH );
             }
         }
         }
@@ -2616,6 +2801,7 @@ Action PlayerControlBot( int iClient, TFVoiceCommand eVoiceCommand )
 
     // TODO: Find a way to insert the player into the squad
     LeaveSquad( iObserverTarget );
+    RemoveTag( iObserverTarget, "bot_squad_member" );
 
     if ( HasTheFlag( iObserverTarget ) )
     {
@@ -2694,6 +2880,9 @@ Action PlayerControlBot( int iClient, TFVoiceCommand eVoiceCommand )
         g_aPlayerAttribs[ iClient ].bInSpawn = true;
     }
 
+    // The game doesn't show the annotation if we do it too soon after spawning
+    g_aPlayerAttribs[ iClient ].flLastInstructionTime = ( GetGameTime() - sm_botcontrol_instruction_interval.FloatValue + 1.0 );
+
     return Plugin_Handled;
 }
 
@@ -2750,7 +2939,7 @@ Action HandleTaunt( int iClient, const char[] szCommand, int argc )
             return Plugin_Stop;
         }
 
-        if ( argc == 2 && ( 1 <= GetCmdArgInt( 1 ) <= 8 ) )
+        if ( argc == 1 && ( 1 <= GetCmdArgInt( 1 ) <= 8 ) )
         {
             // Block custom taunts
             return Plugin_Stop;
@@ -3813,6 +4002,99 @@ void HandleAttack(
 }
 
 /*F+F+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+  Function: ShowInstruction
+
+  Summary:  This function takes care of showing instructions to a
+            controlling player based on the type of bot they're
+            controlling and their current state.
+
+  Args:     int iClient
+              Client index. **Must be a controlling player!**
+
+  Returns:  void
+              No return value.
+-----------------------------------------------------------------F-F*/
+void ShowInstruction( int iClient )
+{
+    if ( !g_hShowInstrctions.GetInt( iClient ) )
+    {
+        return;
+    }
+
+    if ( ( GetGameTime() - g_aPlayerAttribs[ iClient ].flLastInstructionTime ) < sm_botcontrol_instruction_interval.FloatValue )
+    {
+        return;
+    }
+
+    char szText[ 64 ];
+
+    if ( HasTheFlag( iClient ) )
+    {
+        int iCaptureZone = GetClosestCaptureZone( iClient );
+        if ( iCaptureZone != -1 )
+        {
+            FormatEx( szText, sizeof( szText ), "%T", "Instruction_Deploy_Bomb", iClient );
+
+            TF2_ShowPositionalAnnotationToClient(
+                                                 iClient,
+                                                 WorldSpaceCenter( iCaptureZone ),
+                                                 szText,
+                                                 iClient,
+                                                 "coach/coach_attack_here.wav",
+                                                 10.0
+                                                );
+
+            g_aPlayerAttribs[ iClient ].flLastInstructionTime = GetGameTime();
+            return;
+        }
+    }
+
+    int iBot = GetClientFromSerial( g_aPlayerAttribs[ iClient ].iBotSerial );
+
+    if ( HasMission( iBot, MISSION_DESTROY_SENTRIES ) )
+    {
+        int iTarget = VScript_HScriptToEntity( GetMissionTarget( iBot ) );
+        if ( iTarget != -1 && IsValidEntity( iTarget ) )
+        {
+            FormatEx( szText, sizeof( szText ), "%T", "Instruction_Destroy_Sentry", iClient );
+
+            TF2_ShowFollowingAnnotationToClient(
+                                                iClient,
+                                                iTarget,
+                                                szText,
+                                                iClient,
+                                                "coach/coach_attack_here.wav",
+                                                10.0
+                                               );
+
+            g_aPlayerAttribs[ iClient ].flLastInstructionTime = GetGameTime();
+            return;
+        }
+    }
+
+    if ( HasTag( iBot, "bot_gatebot" ) && !IsCapturingPoint( iClient ) )
+    {
+        int iTeamControlPoint = GetMyControlPoint( iBot );
+        if ( iTeamControlPoint != -1 )
+        {
+            FormatEx( szText, sizeof( szText ), "%T", "Instruction_Capture_Gate", iClient );
+
+            TF2_ShowPositionalAnnotationToClient(
+                                                 iClient,
+                                                 WorldSpaceCenter( iTeamControlPoint ),
+                                                 szText,
+                                                 iClient,
+                                                 "coach/coach_attack_here.wav",
+                                                 10.0
+                                                );
+
+            g_aPlayerAttribs[ iClient ].flLastInstructionTime = GetGameTime();
+            return;
+        }
+    }
+}
+
+/*F+F+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   Function: SetGameDescription
 
   Summary:  This function is called every time the plugin's state
@@ -3902,6 +4184,11 @@ void ProcessAllEntities( bool bEnabled )
             if ( IsClientInGame( i ) )
             {
                 OnClientPutInServer( i );
+
+                if ( AreClientCookiesCached( i ) )
+                {
+                    OnClientCookiesCached( i );
+                }
             }
         }
 

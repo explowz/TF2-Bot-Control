@@ -255,6 +255,38 @@ MRESReturn CFilterTFBotHasTag_PassesFilterImpl_Pre( int iThis, DHookReturn hRetu
 }
 
 /*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: CTriggerBotTag_Touch_Pre
+
+  Summary:  This function is called before every
+            `CTriggerBotTag::Touch` call on a hooked entity and its
+            purpose is to replace the touch entity with the its
+            controlled bot.
+
+            Original function signature:
+            `void CTriggerBotTag::Touch( CBaseEntity *pOther )`
+
+  Args:     int iThis
+              Index of calling entity.
+            DHookParam hParams
+              Handle to the function's parameters.
+
+  Returns:  MRESReturn
+              Tells SourceMod what action to take.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
+MRESReturn CTriggerBotTag_Touch_Pre( int iThis, DHookParam hParams )
+{
+    int iOther = hParams.Get( 1 );
+    if ( IsPlayerIndex( iOther ) && g_aPlayerAttribs[ iOther ].IsControlling() )
+    {
+        // Add the tag to our bot
+        hParams.Set( 1, GetClientFromSerial( g_aPlayerAttribs[ iOther ].iBotSerial ) );
+        return MRES_ChangedHandled;
+    }
+
+    return MRES_Ignored;
+}
+
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
   Function: CTFPlayer_ShouldTransmit_Pre
 
   Summary:  This function is called before every

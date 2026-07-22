@@ -23,6 +23,7 @@
 #define PTRSIZ              4
 #define NumberType_Pointer  NumberType_Int32
 
+// Maximum number of attributes allowed on a single item
 #define MAX_ATTRIBUTES_PER_ITEM 20
 
 #define MAXPLAYERS_ARRAY_SAFE   ( MAXPLAYERS + 1 )
@@ -656,6 +657,8 @@ enum medigun_resist_types_t
     MEDIGUN_NUM_RESISTS
 }
 
+const int INVALID_ITEM_DEF_INDEX = -1;
+
 //
 // Max size (in bytes of UTF-8 data, not in characters) of server fields, including null terminator.
 //
@@ -672,6 +675,7 @@ enum struct PLAYERATTRIBUTES
     int   iGetBotTypeHookId;
     int   nInitialCurrency;
     float flTalkTimer; // Used for sentry busters
+    float flLastInstructionTime;
     bool  bIsGroupMember;
     bool  bBlockFlagEvent;
     bool  bInSpawn;
