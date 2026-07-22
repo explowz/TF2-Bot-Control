@@ -13,6 +13,7 @@
 #define _botcontrol_globals_included
 
 #include <sourcemod>
+#include <clientprefs>
 
 #include "const"
 
@@ -41,14 +42,24 @@ int g_nInvaders;
 
 /*--------------------------------------------------------------------
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!! COOKIES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+--------------------------------------------------------------------*/
+
+Cookie g_hShowInstrctions;
+
+/*--------------------------------------------------------------------
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !!!!!!!!!!!!!!!!!!!!!!! CONSOLE VARIABLES !!!!!!!!!!!!!!!!!!!!!!!!
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 --------------------------------------------------------------------*/
 
+ConVar sm_botcontrol_enabled;
 ConVar sm_botcontrol_premium_flags;
 ConVar sm_botcontrol_groupid;
 ConVar sm_botcontrol_min_defenders;
 ConVar sm_botcontrol_max_invaders;
+ConVar sm_botcontrol_instruction_interval;
 ConVar sm_botcontrol_mirror_name;
 
 ConVar spec_freeze_traveltime;
@@ -119,6 +130,7 @@ Handle g_hfnCTFPlayer_HandleTauntCommand;
 Handle g_hfnCTFPlayer_GetClosestCaptureZone;
 Handle g_hfnCTFPlayer_PlaySpecificSequence;
 Handle g_hfnCTFPlayer_DoAnimationEvent;
+Handle g_hfnCTFPlayer_IsCapturingPoint;
 
 Handle g_hfnCTFPlayerShared_ResetRageBuffs;
 Handle g_hfnCTFPlayerShared_IsStealthed;
@@ -130,12 +142,19 @@ Handle g_hfnCTFBot_SetAttribute;
 Handle g_hfnCTFBot_ClearAttribute;
 Handle g_hfnCTFBot_ClearAllAttributes;
 Handle g_hfnCTFBot_HasAttribute;
+Handle g_hfnCTFBot_AddTag;
+Handle g_hfnCTFBot_RemoveTag;
+Handle g_hfnCTFBot_ClearTags;
+Handle g_hfnCTFBot_HasTag;
+Handle g_hfnCTFBot_ScriptGetAllTags;
 Handle g_hfnCTFBot_SetMission;
 Handle g_hfnCTFBot_SetPrevMission;
 Handle g_hfnCTFBot_GetMission;
 Handle g_hfnCTFBot_GetPrevMission;
 Handle g_hfnCTFBot_HasMission;
 Handle g_hfnCTFBot_IsOnAnyMission;
+Handle g_hfnCTFBot_SetMissionTarget;
+Handle g_hfnCTFBot_GetMissionTarget;
 Handle g_hfnCTFBot_ShouldAutoJump;
 Handle g_hfnCTFBot_IsWeaponRestricted;
 Handle g_hfnCTFBot_IsBarrageAndReloadWeapon;
@@ -146,6 +165,7 @@ Handle g_hfnCTFBot_SetMaxVisionRangeOverride;
 Handle g_hfnCTFBot_GetMaxVisionRangeOverride;
 Handle g_hfnCTFBot_StartIdleSound;
 Handle g_hfnCTFBot_GetLastKnownArea;
+Handle g_hfnCTFBot_GetMyControlPoint;
 
 Handle g_hfnCTFBotMvMEngineerHintFinder_FindHint;
 

@@ -95,4 +95,19 @@
     {
         "en"    "Please wait until the bot gets teleported out of spawn."
     }
+
+    "Instruction_Deploy_Bomb"
+    {
+        "en"    "Deploy the bomb!"
+    }
+
+    "Instruction_Destroy_Sentry"
+    {
+        "en"    "Destroy this sentry!"
+    }
+
+    "Instruction_Capture_Gate"
+    {
+        "en"    "Capture this gate!"
+    }
 }

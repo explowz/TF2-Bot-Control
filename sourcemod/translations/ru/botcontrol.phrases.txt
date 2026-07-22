@@ -89,4 +89,19 @@
     {
         "ru"    "Подождите пока игра телепортирует бота из зоны возрождения."
     }
+
+    "Instruction_Deploy_Bomb"
+    {
+        "ru"    "Установи бомбу!"
+    }
+
+    "Instruction_Destroy_Sentry"
+    {
+        "en"    "Уничтожь турель!"
+    }
+
+    "Instruction_Capture_Gate"
+    {
+        "en"    "Захвати ворота!"
+    }
 }

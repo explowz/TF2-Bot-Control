@@ -149,6 +149,18 @@
                 "windows"   "\x55\x8B\xEC\x8B\x45\x2A\x83\xEC\x20\x48\x57\x8B\xF9\x83\xF8\x7F\x0F\x87\x2A\x2A\x2A\x2A\x0F\xB6\x80\x2A\x2A\x2A\x2A\x53"
                 "linux"     "@_ZN15CTFPlayerShared16OnConditionAddedE7ETFCond"
             }
+            "CTFPlayer::IsCapturingPoint"
+            {
+                "library"   "server"
+                "windows"   "\x55\x8B\xEC\x51\x53\x56\x8B\xC1"
+                "linux"     "@_ZN9CTFPlayer16IsCapturingPointEv"
+            }
+            "CTFBot::GetMyControlPoint"
+            {
+                "library"   "server"
+                "windows"   "\x55\x8B\xEC\x83\xEC\x38\x53\x8B\xD9\x56"
+                "linux"     "@_ZNK6CTFBot17GetMyControlPointEv"
+            }
 
             /*--------------------------------------------------------------------
               !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -265,6 +277,11 @@
             {
                 "windows"   "68"
                 "linux"     "69"
+            }
+            "CTriggerBotTag::Touch"
+            {
+                "windows"   "105"
+                "linux"     "106"
             }
             "CTFPlayerShared::m_flInvisibility"
             {
@@ -544,6 +561,23 @@
                     pEntity
                     {
                         "type"	"cbaseentity"
+                    }
+                }
+            }
+            "CTriggerBotTag::Touch"
+            {
+                "offset"    "CTriggerBotTag::Touch"
+
+                "hooktype"  "entity"
+
+                "return"    "void"
+                "this"      "entity"
+
+                "arguments"
+                {
+                    pOther
+                    {
+                        "type"  "cbaseentity"
                     }
                 }
             }
