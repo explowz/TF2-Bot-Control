@@ -1192,6 +1192,20 @@ public void OnAllPluginsLoaded()
     {
         SetFailState( "%T", "SDKCall_Prep_Failed_VScript", LANG_SERVER, "CTFNavArea::HasAttributeTF" );
     }
+
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+
+    fn = VScript_GetClassFunction( "CTFPlayer", "GrantOrRemoveAllUpgrades" );
+
+    StartPrepSDKCall( SDKCall_Player );
+    SET_OFFSET_OR_ADDRESS( fn )
+    PrepSDKCall_AddParameter( SDKType_Bool, SDKPass_Plain ); // bool bRemove
+    PrepSDKCall_AddParameter( SDKType_Bool, SDKPass_Plain ); // bool bRefund
+    g_hfnCTFPlayer_GrantOrRemoveAllUpgrades = EndPrepSDKCall();
+    if ( !g_hfnCTFPlayer_GrantOrRemoveAllUpgrades )
+    {
+        SetFailState( "%T", "SDKCall_Prep_Failed_VScript", LANG_SERVER, "CTFPlayer::GrantOrRemoveAllUpgrades" );
+    }
 }
 
 /*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
@@ -2472,6 +2486,8 @@ Action PlayerControlBot( int iClient, TFVoiceCommand eVoiceCommand )
       Our observer target passes all checks. From here on down we mirror
       the bot, shelve it, and drop the player in its place.
     --------------------------------------------------------------------*/
+
+    GrantOrRemoveAllUpgrades( iClient, true, true );
 
     /*--------------------------------------------------------------------
       We save the player's currency amount from before they took control
