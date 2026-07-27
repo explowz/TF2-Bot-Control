@@ -264,7 +264,7 @@ stock void RestoreBot( int iClient )
         }
 
         int iBotWeapon = GetPlayerWeaponSlot( iBot, i );
-        if ( iBotWeapon != -1 )
+        if ( iBotWeapon == -1 )
         {
             // Some other plugin most likely removed the bot's weapon
             continue;
@@ -274,7 +274,7 @@ stock void RestoreBot( int iClient )
 
         /*--------------------------------------------------------------------
           Force the bot to switch to this weapon if this is what the player
-          was last using
+          was last using.
         --------------------------------------------------------------------*/
         if ( TF2_GetClientActiveWeapon( iClient ) == iWeapon )
         {
@@ -1470,6 +1470,130 @@ stock void SetUseBossHealthBar( int iClient, bool bUseBossHealthBar )
 }
 
 /*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: IsDisguiseWearable
+
+  Summary:  This function determines whether a wearable is belongs
+            to the player's disguise.
+
+  Args:     int iWearable
+              Wearable entity index.
+
+  Returns:  bool
+              If the wearable belongs to the player's disguise, the
+              return value is `true`.
+
+              If the wearable does not belong to the player's
+              disguise, the return value is `false`.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
+stock bool IsDisguiseWearable( int iWearable )
+{
+    return GetEntProp( iWearable, Prop_Send, "m_bDisguiseWearable" );
+}
+
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: GetTeamNumber
+
+  Summary:  This function gets an entity's team.
+
+  Args:     int iEntity
+              Entity index.
+
+  Returns:  TFTeam
+              `iEntity`'s team.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
+stock TFTeam GetTeamNumber( int iEntity )
+{
+    return view_as< TFTeam >( GetEntProp( iEntity, Prop_Send, "m_iTeamNum" ) );
+}
+
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: GetObserverMode
+
+  Summary:  This function gets a client's observer mode.
+
+  Args:     int iClient
+              Client index.
+
+  Returns:  int
+              Observer mode.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
+stock int GetObserverMode( int iClient )
+{
+    return GetEntProp( iClient, Prop_Send, "m_iObserverMode" );
+}
+
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: GetObserverTarget
+
+  Summary:  This function gets the entity a client is currently
+            spectating.
+
+  Args:     int iClient
+              Client index.
+
+  Returns:  int
+              Entity index.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
+stock int GetObserverTarget( int iClient )
+{
+    return GetEntPropEnt( iClient, Prop_Send, "m_hObserverTarget" );
+}
+
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: IsDisabled
+
+  Summary:  This function determines whether an object is currently
+            disabled.
+
+  Args:     int iObject
+              Entity index.
+
+  Returns:  bool
+              If the object is disabled, the return value is `true`.
+
+              If the object is not disabled, the return value is
+              `true`.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
+stock bool IsDisabled( int iObject )
+{
+    return GetEntProp( iObject, Prop_Send, "m_bDisabled" );
+}
+
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: Clip1
+
+  Summary:  This function gets the amount of ammo in a weapon's
+            primary clip.
+
+  Args:     int iWeapon
+              Weapon entity index.
+
+  Returns:  int
+              Amount of ammo in `iWeapon`'s primary clip.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
+stock int Clip1( int iWeapon )
+{
+    return SDKCall( g_hfnCTFWeaponBase_Clip1, iWeapon );
+}
+
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: Clip2
+
+  Summary:  This function gets the amount of ammo in a weapon's
+            secondary clip.
+
+  Args:     int iWeapon
+              Weapon entity index.
+
+  Returns:  int
+              Amount of ammo in `iWeapon`'s secondary clip.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
+stock int Clip2( int iWeapon )
+{
+    return GetEntProp( iWeapon, Prop_Send, "m_iClip2" );
+}
+
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
   Function: SetDeployingBombState
 
   Summary:  This function sets a client's bomb deploying state.
@@ -2523,6 +2647,27 @@ F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
 stock bool IsPlayerLockedInPlace( int iClient )
 {
     return GetEntProp( iClient, Prop_Data, "m_iPlayerLocked" );
+}
+
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: EquipRequiredWeapon
+
+  Summary:  This function forces a bot equip their required weapon
+            if they have one.
+
+  Args:     int iBot
+              `CTFBot` client index.
+
+  Returns:  bool
+              If a weapon switch was performed by the bot, the
+              return value is `true`.
+
+              If no weapon switch was performed by the bot, the
+              return value is `false`.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
+stock bool EquipRequiredWeapon( int iBot )
+{
+    return SDKCall( g_hfnCTFBot_EquipRequiredWeapon, iBot );
 }
 
 /*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F

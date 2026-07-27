@@ -587,6 +587,28 @@ public void OnPluginStart()
         SetFailState( "%T", "SDKCall_Prep_Failed", LANG_SERVER, "CTFBot::GetMyControlPoint" );
     }
 
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+
+    StartPrepSDKCall( SDKCall_Player );
+    PrepSDKCall_SetFromConf( hConf, SDKConf_Signature, "CTFBot::EquipRequiredWeapon" );
+    PrepSDKCall_SetReturnInfo( SDKType_Bool, SDKPass_Plain ); // bool
+    g_hfnCTFBot_EquipRequiredWeapon = EndPrepSDKCall();
+    if ( !g_hfnCTFBot_EquipRequiredWeapon )
+    {
+        SetFailState( "%T", "SDKCall_Prep_Failed", LANG_SERVER, "CTFBot::EquipRequiredWeapon" );
+    }
+
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+
+    StartPrepSDKCall( SDKCall_Entity );
+    PrepSDKCall_SetFromConf( hConf, SDKConf_Virtual, "CTFWeaponBase::Clip1" );
+    PrepSDKCall_SetReturnInfo( SDKType_PlainOldData, SDKPass_Plain ); // int
+    g_hfnCTFWeaponBase_Clip1 = EndPrepSDKCall();
+    if ( !g_hfnCTFWeaponBase_Clip1 )
+    {
+        SetFailState( "%T", "SDKCall_Prep_Failed", LANG_SERVER, "CTFWeaponBase::Clip1" );
+    }
+
     /*--------------------------------------------------------------------
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!! DYNAMIC HOOKS !!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -611,10 +633,11 @@ public void OnPluginStart()
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     --------------------------------------------------------------------*/
 
-    PSM_AddDynamicDetourFromConf( "CTFPlayer::CanBuild", CTFPlayer_CanBuild_Pre );
-    PSM_AddDynamicDetourFromConf( "CTFPlayer::HandleCommand_JoinTeam", CTFPlayer_HandleCommand_JoinTeam_Pre );
-    PSM_AddDynamicDetourFromConf( "CTraceFilterObject::ShouldHitEntity", CTraceFilterObject_ShouldHitEntity_Pre );
+    PSM_AddDynamicDetourFromConf( "CTFPlayer::CanBuild", CTFPlayer_CanBuild_Pre, INVALID_FUNCTION );
+    PSM_AddDynamicDetourFromConf( "CTFPlayer::HandleCommand_JoinTeam", CTFPlayer_HandleCommand_JoinTeam_Pre, INVALID_FUNCTION );
+    PSM_AddDynamicDetourFromConf( "CTraceFilterObject::ShouldHitEntity", CTraceFilterObject_ShouldHitEntity_Pre, INVALID_FUNCTION );
     PSM_AddDynamicDetourFromConf( "CTFPlayerShared::OnConditionAdded", CTFPlayerShared_OnConditionAdded_Pre, CTFPlayerShared_OnConditionAdded_Post );
+    PSM_AddDynamicDetourFromConf( "CTFBot::OnEventChangeAttributes", INVALID_FUNCTION, CTFBot_OnEventChangeAttributes_Post );
     // FIXME: Use an extension to detour this because the return data type doesn't fit any presets
     // PSM_AddDynamicDetourFromConf( "CTFBotDeliverFlag::OnStart", CTFBotDeliverFlag_OnStart_Pre, CTFBotDeliverFlag_OnStart_Post );
 
@@ -1689,9 +1712,7 @@ public void OnPlayerRunCmdPre(
           have a `GetLastKnownArea` member function, and this is much better
           than manually keeping track of the last nav area we walked on.
         --------------------------------------------------------------------*/
-        float vecOrigin[ 3 ];
-        GetClientAbsOrigin( iClient, vecOrigin );
-        if ( !TF2Util_IsPointInRespawnRoom( vecOrigin, iClient, true ) && ( GetEntityFlags( iClient ) & FL_ONGROUND ) )
+        if ( !TF2Util_IsPointInRespawnRoom( WorldSpaceCenter( iClient ), iClient, true ) && ( GetEntityFlags( iClient ) & FL_ONGROUND ) )
         {
             // Player just stepped onto the ground outside the respawn room
             g_aPlayerAttribs[ iClient ].bInSpawn = false;
@@ -1759,7 +1780,7 @@ public void OnPlayerRunCmdPre(
         int iObjectSentrygun = -1;
         while ( ( iObjectSentrygun = FindEntityByClassname( iObjectSentrygun, "obj_sentrygun" ) ) != -1 )
         {
-            if ( view_as< TFTeam >( GetEntProp( iObjectSentrygun, Prop_Send, "m_iTeamNum" ) ) == TF_TEAM_PVE_DEFENDERS )
+            if ( GetTeamNumber( iObjectSentrygun ) == TF_TEAM_PVE_DEFENDERS )
             {
                 nSentries++;
             }
@@ -2070,7 +2091,7 @@ public void OnPlayerRunCmdPost(
         return;
     }
 
-    int iObserverMode = GetEntProp( iClient, Prop_Send, "m_iObserverMode" );
+    int iObserverMode = GetObserverMode( iClient );
     if ( iObserverMode != OBS_MODE_IN_EYE && iObserverMode != OBS_MODE_CHASE )
     {
         /*--------------------------------------------------------------------
@@ -2082,7 +2103,7 @@ public void OnPlayerRunCmdPost(
     }
 
     static int c_iPrevObserverTargetSerial = 0;
-    int        iObserverTarget             = GetEntPropEnt( iClient, Prop_Send, "m_hObserverTarget" );
+    int        iObserverTarget             = GetObserverTarget( iClient );
 
     /*--------------------------------------------------------------------
       This check is needed because NextBots such as skeletons and
@@ -2090,18 +2111,21 @@ public void OnPlayerRunCmdPost(
     --------------------------------------------------------------------*/
     if ( !IsPlayerIndex( iObserverTarget ) )
     {
+        c_iPrevObserverTargetSerial = 0; // Force redraw
         ClearSyncHud( iClient, g_hSyncObj );
         return;
     }
 
     if ( !IsFakeClient( iObserverTarget ) )
     {
+        c_iPrevObserverTargetSerial = 0; // Force redraw
         ClearSyncHud( iClient, g_hSyncObj );
         return;
     }
 
     if ( TF2_GetClientTeam( iObserverTarget ) != TF_TEAM_PVE_INVADERS )
     {
+        c_iPrevObserverTargetSerial = 0; // Force redraw
         ClearSyncHud( iClient, g_hSyncObj );
         return;
     }
@@ -2305,7 +2329,7 @@ Action PlayerControlBot( int iClient, TFVoiceCommand eVoiceCommand )
         return Plugin_Continue;
     }
 
-    int iObserverMode = GetEntProp( iClient, Prop_Send, "m_iObserverMode" );
+    int iObserverMode = GetObserverMode( iClient );
     if ( iObserverMode != OBS_MODE_IN_EYE && iObserverMode != OBS_MODE_CHASE )
     {
         /*--------------------------------------------------------------------
@@ -2315,7 +2339,7 @@ Action PlayerControlBot( int iClient, TFVoiceCommand eVoiceCommand )
         return Plugin_Continue;
     }
 
-    int iObserverTarget = GetEntPropEnt( iClient, Prop_Send, "m_hObserverTarget" );
+    int iObserverTarget = GetObserverTarget( iClient );
 
     /*--------------------------------------------------------------------
       This check is needed because NextBots such as skeletons and
@@ -2639,10 +2663,6 @@ Action PlayerControlBot( int iClient, TFVoiceCommand eVoiceCommand )
 
     if ( HasMission( iObserverTarget, MISSION_DESTROY_SENTRIES ) )
     {
-        // Sentry busters don't use their weapons and don't pick up the bomb
-        TF2Attrib_SetByName( iClient, "no_attack", 1.0 );
-        TF2Attrib_SetByName( iClient, "cannot pick up intelligence", 1.0 );
-
         // Sentry busters don't die, they detonate
         DebugOverlayBits_t fDebugOverlays = view_as< DebugOverlayBits_t >( GetEntProp( iClient, Prop_Data, "m_debugOverlays" ) );
         SetEntProp( iClient, Prop_Data, "m_debugOverlays", fDebugOverlays | OVERLAY_BUDDHA_MODE );
@@ -2754,8 +2774,8 @@ Action PlayerControlBot( int iClient, TFVoiceCommand eVoiceCommand )
             continue;
         }
 
-        // Don't mirror wearables that belong to the player we're disguised as
-        if ( GetEntProp( iWearable, Prop_Send, "m_bDisguiseWearable" ) )
+        // Don't mirror wearables that belong to the player the bot is disguised as
+        if ( IsDisguiseWearable( iWearable ) )
         {
             continue;
         }
@@ -3333,7 +3353,7 @@ Action SetTransmit( int iEntity, int iClient )
     }
     else
     {
-        bool bIsEnemy = TF2_IsEnemyTeam( view_as< TFTeam >( GetEntProp( iEntity, Prop_Send, "m_iTeamNum" ) ), TF2_GetClientTeam( iClient ) );
+        bool bIsEnemy = TF2_IsEnemyTeam( GetTeamNumber( iEntity ), TF2_GetClientTeam( iClient ) );
 
         char szClassname[ 64 ];
         GetEntityClassname( iEntity, szClassname, sizeof( szClassname ) );
@@ -3508,7 +3528,7 @@ Action OnTakeDamage(
 -----------------------------------------------------------------F-F*/
 void RespawnRoom_StartTouchPost( int iRespawnRoom, int iEntity )
 {
-    TFTeam eTeam = view_as< TFTeam >( GetEntProp( iRespawnRoom, Prop_Send, "m_iTeamNum" ) );
+    TFTeam eTeam = GetTeamNumber( iRespawnRoom );
     if ( eTeam != TF_TEAM_PVE_INVADERS )
     {
         // We don't care about the defenders' respawn room
@@ -3544,7 +3564,7 @@ void RespawnRoom_StartTouchPost( int iRespawnRoom, int iEntity )
 -----------------------------------------------------------------F-F*/
 void CaptureZone_StartTouchPost( int iCaptureZone, int iEntity )
 {
-    TFTeam eTeam = view_as< TFTeam >( GetEntProp( iCaptureZone, Prop_Send, "m_iTeamNum" ) );
+    TFTeam eTeam = GetTeamNumber( iCaptureZone );
     if ( eTeam != TF_TEAM_PVE_INVADERS )
     {
         // We only care about the invaders' capture zone
@@ -3561,7 +3581,7 @@ void CaptureZone_StartTouchPost( int iCaptureZone, int iEntity )
         return;
     }
 
-    if ( GetEntProp( iCaptureZone, Prop_Send, "m_bDisabled" ) )
+    if ( IsDisabled( iCaptureZone ) )
     {
         return;
     }
@@ -3951,13 +3971,12 @@ void HandleAttack(
         return;
     }
 
-    // We apply the "no_attack" attribute the these players
-    /*if ( HasMission( iBot, MISSION_DESTROY_SENTRIES ) ) )
+    if ( HasMission( iBot, MISSION_DESTROY_SENTRIES ) )
     {
         // Sentry busters don't attack
         iButtons &= ~IN_ATTACK;
         return;
-    }*/
+    }
 
     int iActiveWeapon = TF2_GetClientActiveWeapon( iClient );
 
@@ -3965,7 +3984,7 @@ void HandleAttack(
     {
         if ( HasAttribute( iBot, HOLD_FIRE_UNTIL_FULL_RELOAD ) || tf_bot_always_full_reload.BoolValue )
         {
-            int iClip1 = GetEntProp( iActiveWeapon, Prop_Send, "m_iClip1" );
+            int iClip1 = Clip1( iActiveWeapon );
             if ( iClip1 <= 0 )
             {
                 g_aPlayerAttribs[ iClient ].bIsWaitingForFullReload = true;

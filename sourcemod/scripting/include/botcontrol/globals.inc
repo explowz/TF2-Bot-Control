@@ -105,6 +105,8 @@ Handle g_hfnCTFGameRules_BroadcastSound;
 Handle g_hfnCObjectTeleporter_SetTeleportWhere;
 #endif
 
+Handle g_hfnCTFWeaponBase_Clip1;
+
 Handle g_hfnCTFWeaponBuilder_SetSubType;
 
 Handle g_hfnCTFSniperRifle_ZoomOut;
@@ -166,6 +168,7 @@ Handle g_hfnCTFBot_GetMaxVisionRangeOverride;
 Handle g_hfnCTFBot_StartIdleSound;
 Handle g_hfnCTFBot_GetLastKnownArea;
 Handle g_hfnCTFBot_GetMyControlPoint;
+Handle g_hfnCTFBot_EquipRequiredWeapon;
 
 Handle g_hfnCTFBotMvMEngineerHintFinder_FindHint;
 
