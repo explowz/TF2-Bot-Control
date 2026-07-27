@@ -149,6 +149,30 @@
                 "windows"   "\x55\x8B\xEC\x8B\x45\x2A\x83\xEC\x20\x48\x57\x8B\xF9\x83\xF8\x7F\x0F\x87\x2A\x2A\x2A\x2A\x0F\xB6\x80\x2A\x2A\x2A\x2A\x53"
                 "linux"     "@_ZN15CTFPlayerShared16OnConditionAddedE7ETFCond"
             }
+            "CTFPlayer::IsCapturingPoint"
+            {
+                "library"   "server"
+                "windows"   "\x55\x8B\xEC\x51\x53\x56\x8B\xC1"
+                "linux"     "@_ZN9CTFPlayer16IsCapturingPointEv"
+            }
+            "CTFBot::GetMyControlPoint"
+            {
+                "library"   "server"
+                "windows"   "\x55\x8B\xEC\x83\xEC\x38\x53\x8B\xD9\x56"
+                "linux"     "@_ZNK6CTFBot17GetMyControlPointEv"
+            }
+            "CTFBot::EquipRequiredWeapon"
+            {
+                "library"   "server"
+                "windows"   "\x57\x8B\xF9\x83\xBF\x2A\x2A\x2A\x2A\x00\x74\x2A\x8B\x97\x2A\x2A\x2A\x2A\x8B\x87"
+                "linux"     "@_ZN6CTFBot19EquipRequiredWeaponEv"
+            }
+            "CTFBot::OnEventChangeAttributes"
+            {
+                "library"   "server"
+                "windows"   "\x55\x8B\xEC\x83\xEC\x30\x53\x57\x8B\x7D"
+                "linux"     "@_ZN6CTFBot23OnEventChangeAttributesEPKNS_23EventChangeAttributes_tE"
+            }
 
             /*--------------------------------------------------------------------
               !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -265,6 +289,16 @@
             {
                 "windows"   "68"
                 "linux"     "69"
+            }
+            "CTriggerBotTag::Touch"
+            {
+                "windows"   "105"
+                "linux"     "106"
+            }
+            "CTFWeaponBase::Clip1"
+            {
+                "windows"   "345"
+                "linux"     "351"
             }
             "CTFPlayerShared::m_flInvisibility"
             {
@@ -446,6 +480,23 @@
                     }
                 }
             }
+            "CTFBot::OnEventChangeAttributes"
+            {
+                "signature" "CTFBot::OnEventChangeAttributes"
+
+                "callconv"  "thiscall"
+
+                "return"    "void"
+                "this"      "entity"
+
+                "arguments"
+                {
+                    pEvent
+                    {
+                        "type"  "objectptr"
+                    }
+                }
+            }
             // "CTFBotDeliverFlag::OnStart"
             // {
             //     "signature" "CTFBotDeliverFlag::OnStart"
@@ -478,7 +529,7 @@
             {
                 "offset"    "CObjectTeleporter::StartBuilding"
 
-                "hooktype"   "entity"
+                "hooktype"  "entity"
 
                 "return"    "bool"
                 "this"      "entity"
@@ -544,6 +595,23 @@
                     pEntity
                     {
                         "type"	"cbaseentity"
+                    }
+                }
+            }
+            "CTriggerBotTag::Touch"
+            {
+                "offset"    "CTriggerBotTag::Touch"
+
+                "hooktype"  "entity"
+
+                "return"    "void"
+                "this"      "entity"
+
+                "arguments"
+                {
+                    pOther
+                    {
+                        "type"  "cbaseentity"
                     }
                 }
             }

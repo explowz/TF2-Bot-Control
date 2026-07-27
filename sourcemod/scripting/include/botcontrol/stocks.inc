@@ -264,7 +264,7 @@ stock void RestoreBot( int iClient )
         }
 
         int iBotWeapon = GetPlayerWeaponSlot( iBot, i );
-        if ( iBotWeapon != -1 )
+        if ( iBotWeapon == -1 )
         {
             // Some other plugin most likely removed the bot's weapon
             continue;
@@ -274,7 +274,7 @@ stock void RestoreBot( int iClient )
 
         /*--------------------------------------------------------------------
           Force the bot to switch to this weapon if this is what the player
-          was last using
+          was last using.
         --------------------------------------------------------------------*/
         if ( TF2_GetClientActiveWeapon( iClient ) == iWeapon )
         {
@@ -410,6 +410,8 @@ void ResetGlobals( int iClient )
     g_aPlayerAttribs[ iClient ].iBotSerial              = 0;
     g_aPlayerAttribs[ iClient ].iGetBotTypeHookId       = INVALID_HOOK_ID;
     g_aPlayerAttribs[ iClient ].nInitialCurrency        = 0;
+    g_aPlayerAttribs[ iClient ].flTalkTimer             = 0.0;
+    g_aPlayerAttribs[ iClient ].flLastInstructionTime   = 0.0;
     g_aPlayerAttribs[ iClient ].bIsGroupMember          = false;
     g_aPlayerAttribs[ iClient ].bBlockFlagEvent         = false;
     g_aPlayerAttribs[ iClient ].bInSpawn                = false;
@@ -665,7 +667,7 @@ F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
 stock int CopyItem( int iItem, int iClient )
 {
     int iItemDefinitionIndex = GetEntProp( iItem, Prop_Send, "m_iItemDefinitionIndex" );
-    if ( iItemDefinitionIndex == 0xFFFF )
+    if ( iItemDefinitionIndex == INVALID_ITEM_DEF_INDEX )
     {
         // Weapon wearables which are applied automatically
         return -1;
@@ -990,7 +992,7 @@ stock void ClearAllAttributes( int iBot )
             attributes.
 
   Args:     int iBot
-              Client index of the bot whose attributes to check.
+              `CTFBot` client index.
             AttributeType eAttributeFlag
               Attribute to test.
 
@@ -1001,6 +1003,100 @@ F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
 stock bool HasAttribute( int iBot, AttributeType eAttributeFlag )
 {
     return SDKCall( g_hfnCTFBot_HasAttribute, iBot, eAttributeFlag );
+}
+
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: AddTag
+
+  Summary:  This function adds a tag to a bot.
+
+  Args:     int iBot
+              `CTFBot` client index.
+            const char[] szTag
+              Tag to add.
+
+  Returns:  void
+              No return value.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
+stock void AddTag( int iBot, const char[] szTag )
+{
+    SDKCall( g_hfnCTFBot_AddTag, iBot, szTag );
+}
+
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: RemoveTag
+
+  Summary:  This function removes a bot's tag.
+
+  Args:     int iBot
+              `CTFBot` client index.
+            const char[] szTag
+              Tag to remove.
+
+  Returns:  void
+              No return value.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
+stock void RemoveTag( int iBot, const char[] szTag )
+{
+    SDKCall( g_hfnCTFBot_RemoveTag, iBot, szTag );
+}
+
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: ClearTags
+
+  Summary:  This function removes all tags from a bot.
+
+  Args:     int iBot
+              `CTFBot` client index.
+
+  Returns:  void
+              No return value.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
+stock void ClearTags( int iBot )
+{
+    SDKCall( g_hfnCTFBot_ClearTags, iBot );
+}
+
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: HasTag
+
+  Summary:  This function determines whether a bot has a certain
+            tag applied.
+
+  Args:     int iBot
+              `CTFBot` client index.
+            const char[] szTag
+              Tag to test.
+
+  Returns:  bool
+              If the bot has the given tag, the return value is
+              `true`.
+
+              If the bot does not have the given tag, the return
+              value is `false`.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
+stock bool HasTag( int iBot, const char[] szTag )
+{
+    return SDKCall( g_hfnCTFBot_HasTag, iBot, szTag );
+}
+
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: ScriptGetAllTags
+
+  Summary:  This function writes all the tags of a bot to an HSCRIPT
+            table.
+
+  Args:     int iBot
+              `CTFBot` client index.
+            HSCRIPT hTable
+              Table to which to write the bot's tags.
+
+  Returns:  void
+              No return value.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
+stock void ScriptGetAllTags( int iBot, HSCRIPT hTable )
+{
+    SDKCall( g_hfnCTFBot_ScriptGetAllTags, iBot, hTable );
 }
 
 /*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
@@ -1121,6 +1217,40 @@ F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
 stock bool IsOnAnyMission( int iBot )
 {
     return SDKCall( g_hfnCTFBot_IsOnAnyMission, iBot );
+}
+
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: SetMissionTarget
+
+  Summary:  This function sets a bot's mission target.
+
+  Args:     int iBot
+              `CTFBot` entity index.
+            HSCRIPT hTarget
+              HSCRIPT address of the target entity.
+
+  Returns:  void
+              No return value.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
+stock void SetMissionTarget( int iBot, HSCRIPT hTarget )
+{
+    SDKCall( g_hfnCTFBot_SetMissionTarget, iBot, hTarget );
+}
+
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: GetMissionTarget
+
+  Summary:  This function gets a bot's mission target.
+
+  Args:     int iBot
+              `CTFBot` entity index.
+
+  Returns:  HSCRIPT
+              HSCRIPT address of the target entity.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
+stock HSCRIPT GetMissionTarget( int iBot )
+{
+    return SDKCall( g_hfnCTFBot_GetMissionTarget, iBot );
 }
 
 /*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
@@ -1337,6 +1467,130 @@ F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
 stock void SetUseBossHealthBar( int iClient, bool bUseBossHealthBar )
 {
     SetEntProp( iClient, Prop_Send, "m_bUseBossHealthBar", bUseBossHealthBar );
+}
+
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: IsDisguiseWearable
+
+  Summary:  This function determines whether a wearable is belongs
+            to the player's disguise.
+
+  Args:     int iWearable
+              Wearable entity index.
+
+  Returns:  bool
+              If the wearable belongs to the player's disguise, the
+              return value is `true`.
+
+              If the wearable does not belong to the player's
+              disguise, the return value is `false`.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
+stock bool IsDisguiseWearable( int iWearable )
+{
+    return GetEntProp( iWearable, Prop_Send, "m_bDisguiseWearable" );
+}
+
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: GetTeamNumber
+
+  Summary:  This function gets an entity's team.
+
+  Args:     int iEntity
+              Entity index.
+
+  Returns:  TFTeam
+              `iEntity`'s team.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
+stock TFTeam GetTeamNumber( int iEntity )
+{
+    return view_as< TFTeam >( GetEntProp( iEntity, Prop_Send, "m_iTeamNum" ) );
+}
+
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: GetObserverMode
+
+  Summary:  This function gets a client's observer mode.
+
+  Args:     int iClient
+              Client index.
+
+  Returns:  int
+              Observer mode.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
+stock int GetObserverMode( int iClient )
+{
+    return GetEntProp( iClient, Prop_Send, "m_iObserverMode" );
+}
+
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: GetObserverTarget
+
+  Summary:  This function gets the entity a client is currently
+            spectating.
+
+  Args:     int iClient
+              Client index.
+
+  Returns:  int
+              Entity index.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
+stock int GetObserverTarget( int iClient )
+{
+    return GetEntPropEnt( iClient, Prop_Send, "m_hObserverTarget" );
+}
+
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: IsDisabled
+
+  Summary:  This function determines whether an object is currently
+            disabled.
+
+  Args:     int iObject
+              Entity index.
+
+  Returns:  bool
+              If the object is disabled, the return value is `true`.
+
+              If the object is not disabled, the return value is
+              `true`.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
+stock bool IsDisabled( int iObject )
+{
+    return GetEntProp( iObject, Prop_Send, "m_bDisabled" );
+}
+
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: Clip1
+
+  Summary:  This function gets the amount of ammo in a weapon's
+            primary clip.
+
+  Args:     int iWeapon
+              Weapon entity index.
+
+  Returns:  int
+              Amount of ammo in `iWeapon`'s primary clip.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
+stock int Clip1( int iWeapon )
+{
+    return SDKCall( g_hfnCTFWeaponBase_Clip1, iWeapon );
+}
+
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: Clip2
+
+  Summary:  This function gets the amount of ammo in a weapon's
+            secondary clip.
+
+  Args:     int iWeapon
+              Weapon entity index.
+
+  Returns:  int
+              Amount of ammo in `iWeapon`'s secondary clip.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
+stock int Clip2( int iWeapon )
+{
+    return GetEntProp( iWeapon, Prop_Send, "m_iClip2" );
 }
 
 /*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
@@ -2271,12 +2525,54 @@ stock void DoAnimationEvent( int iClient, PlayerAnimEvent_t eEvent, int nData = 
               If the function succeeds to find a `CCaptureZone`
               entity, the return value is the entity's index.
 
-              If the function failed to find a `CCaptureZone`
+              If the function fails to find a `CCaptureZone`
               entity, the return value is `-1`.
 F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
 stock int GetClosestCaptureZone( int iClient )
 {
     return SDKCall( g_hfnCTFPlayer_GetClosestCaptureZone, iClient );
+}
+
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: IsCapturingPoint
+
+  Summary:  This function determines whether a client is currently
+            capturing a control point.
+
+  Args:     int iClient
+              Client index.
+
+  Returns:  bool
+              If the client is capturing a control point, the return
+              value is `true`.
+
+              If the client is not capturing a control point, the
+              return value is `false`.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
+stock bool IsCapturingPoint( int iClient )
+{
+    return SDKCall( g_hfnCTFPlayer_IsCapturingPoint, iClient );
+}
+
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: GetMyControlPoint
+
+  Summary:  This function gets the control point a bot wants to
+            capture or defend.
+
+  Args:     int iBot
+              `CTFBot` client index.
+
+  Returns:  int
+              If the function succeeds to find a `CTeamControlPoint`
+              entity, the return value is the entity's index.
+
+              If the function fails to find a `CTeamControlPoint`
+              entity, the return value is `-1`.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
+stock int GetMyControlPoint( int iBot )
+{
+    return SDKCall( g_hfnCTFBot_GetMyControlPoint, iBot );
 }
 
 /*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
@@ -2351,6 +2647,27 @@ F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
 stock bool IsPlayerLockedInPlace( int iClient )
 {
     return GetEntProp( iClient, Prop_Data, "m_iPlayerLocked" );
+}
+
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: EquipRequiredWeapon
+
+  Summary:  This function forces a bot equip their required weapon
+            if they have one.
+
+  Args:     int iBot
+              `CTFBot` client index.
+
+  Returns:  bool
+              If a weapon switch was performed by the bot, the
+              return value is `true`.
+
+              If no weapon switch was performed by the bot, the
+              return value is `false`.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
+stock bool EquipRequiredWeapon( int iBot )
+{
+    return SDKCall( g_hfnCTFBot_EquipRequiredWeapon, iBot );
 }
 
 /*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
@@ -2848,6 +3165,29 @@ F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
 stock void HandleTauntCommand( int iClient, int iTauntSlot = 0 )
 {
     SDKCall( g_hfnCTFPlayer_HandleTauntCommand, iClient, iTauntSlot );
+}
+
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: GrantOrRemoveAllUpgrades
+
+  Summary:  This function grants or removes all upgrades from a
+            client.
+
+  Args:     int iClient
+              Client index.
+            bool bRemove
+              Whether the function should remove all upgrades from
+              the client.
+            bool bRefund
+              Whether the client should be refunded for the removed
+              upgrades.
+
+  Returns:  void
+              No return value.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
+stock void GrantOrRemoveAllUpgrades( int iClient, bool bRemove, bool bRefund )
+{
+    SDKCall( g_hfnCTFPlayer_GrantOrRemoveAllUpgrades, iClient, bRemove, bRefund );
 }
 
 /*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F

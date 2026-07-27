@@ -239,6 +239,168 @@ MRESReturn CTFPlayerShared_OnConditionAdded_Post( Address pThis, DHookParam hPar
     return MRES_Ignored;
 }
 
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: CTFBot_OnEventChangeAttributes_Post
+
+  Summary:  This function is called after every
+            `CTFBot::OnEventChangeAttributes` call and its purpose
+            is to recopy the bot's attributes, weapons, and
+            wearables onto the player.
+
+            Original function signature:
+            `void CTFBot::OnEventChangeAttributes( const CTFBot::EventChangeAttributes_t* pEvent )`
+
+  Args:     int iThis
+              Calling `CTFBot` client index.
+            DHookParam hParams
+              Handle to the function's parameters.
+
+  Returns:  MRESReturn
+              Tells SourceMod what action to take.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
+MRESReturn CTFBot_OnEventChangeAttributes_Post( int iThis, DHookParam hParams )
+{
+    if ( g_aBotAttribs[ iThis ].IsControlled() && !hParams.IsNull( 1 ) )
+    {
+        int iPlayer = GetClientFromSerial( g_aBotAttribs[ iThis ].iPlayerSerial );
+
+        /*--------------------------------------------------------------------
+          Force the bot to immediately equip their required weapon so that
+          when we copy the weapons again we don't leave the player holding
+          a weapon they shouldn't use.
+        --------------------------------------------------------------------*/
+        EquipRequiredWeapon( iThis );
+
+        CopyEntProp( iThis, iPlayer, Prop_Send, "m_nBotSkill" ); // Update eye glow
+
+        /*--------------------------------------------------------------------
+          Cache off health value before we clear attributes because
+          `ModifyMaxHealth` adds a new attribute and resets the health.
+        --------------------------------------------------------------------*/
+        int iHealth    = GetClientHealth( iPlayer );
+        int iMaxHealth = TF2Util_GetEntityMaxHealth( iPlayer );
+
+        // Remove any player attributes
+        TF2Attrib_RemoveAll( iPlayer );
+        // Mirror the character attributes
+        int aiAttributeDefinitionIndices[ MAX_ATTRIBUTES_PER_ITEM ];
+        int nAttribs = TF2Attrib_ListDefIndices( iThis, aiAttributeDefinitionIndices, sizeof( aiAttributeDefinitionIndices ) );
+        for ( int i = 0; i < nAttribs; i++ )
+        {
+            TF2Attrib_SetByDefIndex(
+                                    iPlayer,
+                                    aiAttributeDefinitionIndices[ i ],
+                                    TF2Attrib_GetValue( TF2Attrib_GetByDefIndex( iThis, aiAttributeDefinitionIndices[ i ] ) )
+                                   );
+        }
+
+        // Set health back to what it was before we cleared the player's attributes
+        ModifyMaxHealth( iPlayer, iMaxHealth, false );
+        SetEntityHealth( iPlayer, iHealth );
+
+        /*--------------------------------------------------------------------
+          BUGBUG: A player's meters (charge, rage, etc.), healing target,
+          and ammo will get reset because we strip everything instead of
+          replacing only what new items the event requires.
+        --------------------------------------------------------------------*/
+
+        RemoveAllItems( iPlayer );
+
+        // Mirror the bot's weapons
+        for ( int i = 0; i <= TFWeaponSlot_PDA; i++ )
+        {
+            int iWeapon = GetPlayerWeaponSlot( iThis, i );
+            if ( iWeapon == -1 )
+            {
+                continue;
+            }
+
+            int iNewWeapon = CopyItem( iWeapon, iPlayer );
+            if ( iNewWeapon == -1 )
+            {
+                continue;
+            }
+
+            if ( TF2Util_GetWeaponID( iNewWeapon ) == TF_WEAPON_BUILDER )
+            {
+                SetSubType( iNewWeapon, GetEntProp( iWeapon, Prop_Send, "m_aBuildableObjectTypes", 1, 0 ) );
+            }
+
+            EquipPlayerWeapon( iPlayer, iNewWeapon );
+
+            /*--------------------------------------------------------------------
+              Force the player to switch to this weapon if we mirrored the bot's
+              current active weapon.
+            --------------------------------------------------------------------*/
+            if ( TF2_GetClientActiveWeapon( iThis ) == iWeapon )
+            {
+                TF2Util_SetPlayerActiveWeapon( iPlayer, iNewWeapon );
+            }
+        }
+
+        Address pData = GetPlayerClassData( TF2_GetPlayerClass( iPlayer ) );
+        if ( pData )
+        {
+            ManageBuilderWeapons( iPlayer, pData );
+        }
+
+        // Mirror the bot's wearables
+        int nWearables = TF2Util_GetPlayerWearableCount( iThis );
+        for ( int i = 0; i < nWearables; i++ )
+        {
+            int iWearable = TF2Util_GetPlayerWearable( iThis, i );
+            if ( iWearable == -1 )
+            {
+                continue;
+            }
+
+            // Don't mirror wearables that belong to the player the bot is disguised as
+            if ( IsDisguiseWearable( iWearable ) )
+            {
+                continue;
+            }
+
+            int iNewWearable = CopyItem( iWearable, iPlayer );
+            if ( iNewWearable == -1 )
+            {
+                continue;
+            }
+
+            TF2Util_EquipPlayerWearable( iPlayer, iNewWearable );
+        }
+
+        // Tell the client to update the cached server loadout items
+        BfWrite hMsg = UserMessageToBfWrite( StartMessageOne( "PlayerLoadoutUpdated", iPlayer, USERMSG_BLOCKHOOKS ) );
+        hMsg.WriteByte( iPlayer );
+        EndMessage();
+
+        PostInventoryApplication( iPlayer );
+
+        // Mirror the bot's attributes
+        if ( HasAttribute( iThis, BULLET_IMMUNE ) )
+        {
+            TF2_AddCondition( iPlayer, TFCond_BulletImmune );
+        }
+
+        if ( HasAttribute( iThis, BLAST_IMMUNE ) )
+        {
+            TF2_AddCondition( iPlayer, TFCond_BlastImmune );
+        }
+
+        if ( HasAttribute( iThis, FIRE_IMMUNE ) )
+        {
+            TF2_AddCondition( iPlayer, TFCond_FireImmune );
+        }
+
+        if ( HasAttribute( iThis, IGNORE_FLAG ) )
+        {
+            TF2Attrib_SetByName( iPlayer, "cannot pick up intelligence", 1.0 );
+        }
+    }
+
+    return MRES_Ignored;
+}
+
 // static float g_flPrevIntervalTo1stUpgrade;
 
 /*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
