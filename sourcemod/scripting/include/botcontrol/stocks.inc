@@ -3168,6 +3168,29 @@ stock void HandleTauntCommand( int iClient, int iTauntSlot = 0 )
 }
 
 /*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: GrantOrRemoveAllUpgrades
+
+  Summary:  This function grants or removes all upgrades from a
+            client.
+
+  Args:     int iClient
+              Client index.
+            bool bRemove
+              Whether the function should remove all upgrades from
+              the client.
+            bool bRefund
+              Whether the client should be refunded for the removed
+              upgrades.
+
+  Returns:  void
+              No return value.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
+stock void GrantOrRemoveAllUpgrades( int iClient, bool bRemove, bool bRefund )
+{
+    SDKCall( g_hfnCTFPlayer_GrantOrRemoveAllUpgrades, iClient, bRemove, bRefund );
+}
+
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
   Function: CycleResistType
 
   Summary:  This function cycles a medigun's resist type.

@@ -133,6 +133,7 @@ Handle g_hfnCTFPlayer_GetClosestCaptureZone;
 Handle g_hfnCTFPlayer_PlaySpecificSequence;
 Handle g_hfnCTFPlayer_DoAnimationEvent;
 Handle g_hfnCTFPlayer_IsCapturingPoint;
+Handle g_hfnCTFPlayer_GrantOrRemoveAllUpgrades;
 
 Handle g_hfnCTFPlayerShared_ResetRageBuffs;
 Handle g_hfnCTFPlayerShared_IsStealthed;
