@@ -1750,7 +1750,7 @@ public void OnPlayerRunCmdPre(
     if ( TF2_GetPlayerClass( iClient ) == TFClass_Medic )
     {
         int iActiveWeapon = TF2_GetClientActiveWeapon( iClient );
-        if ( TF2Util_GetWeaponID( iActiveWeapon ) == TF_WEAPON_MEDIGUN )
+        if ( iActiveWeapon != -1 && TF2Util_GetWeaponID( iActiveWeapon ) == TF_WEAPON_MEDIGUN )
         {
             if ( GetMedigunType( iActiveWeapon ) == MEDIGUN_RESIST )
             {
@@ -1767,21 +1767,11 @@ public void OnPlayerRunCmdPre(
 
     if ( HasMission( iBot, MISSION_DESTROY_SENTRIES ) )
     {
-        // Prevent other plugins from unsetting this flag
         DebugOverlayBits_t fDebugOverlays = view_as< DebugOverlayBits_t >( GetEntProp( iClient, Prop_Data, "m_debugOverlays" ) );
         if ( !( fDebugOverlays & OVERLAY_BUDDHA_MODE ) )
         {
+            // Prevent other plugins from unsetting this flag
             SetEntProp( iClient, Prop_Data, "m_debugOverlays", fDebugOverlays | OVERLAY_BUDDHA_MODE );
-        }
-
-        // This handles the bug described in https://developer.valvesoftware.com/wiki/Buddha
-        if ( GetClientHealth( iClient ) == 1 && HasMission( iBot, MISSION_DESTROY_SENTRIES ) )
-        {
-            // Prevent the player from getting kicked for spamming commands
-            if ( IsAllowedToTaunt( iClient ) )
-            {
-                FakeClientCommand( iClient, "taunt" );
-            }
         }
 
         if ( GetGameTime() > g_aPlayerAttribs[ iClient ].flTalkTimer )
@@ -1790,20 +1780,30 @@ public void OnPlayerRunCmdPre(
             EmitGameSoundToAll( "MVM.SentryBusterIntro", iClient );
         }
 
-        int nSentries        = 0;
-        int iObjectSentrygun = -1;
-        while ( ( iObjectSentrygun = FindEntityByClassname( iObjectSentrygun, "obj_sentrygun" ) ) != -1 )
+        bool bDetonate = ( GetClientHealth( iClient ) == 1 );
+        if ( !bDetonate )
         {
-            if ( GetTeamNumber( iObjectSentrygun ) == TF_TEAM_PVE_DEFENDERS )
+            int nSentries        = 0;
+            int iObjectSentrygun = -1;
+            while ( ( iObjectSentrygun = FindEntityByClassname( iObjectSentrygun, "obj_sentrygun" ) ) != -1 )
             {
-                nSentries++;
+                if ( GetTeamNumber( iObjectSentrygun ) == TF_TEAM_PVE_DEFENDERS )
+                {
+                    nSentries++;
+                }
             }
+
+            // Blow up right where we are if there are no more enemy sentries
+            bDetonate = ( nSentries == 0 );
         }
 
-        if ( nSentries == 0 )
+        if ( bDetonate )
         {
-            // Blow up right where we are if there are no more enemy sentries
-            SDKHooks_TakeDamage( iClient, iClient, iClient, FLT_MAX, DMG_PREVENT_PHYSICS_FORCE );
+            // Prevent the player from getting kicked for spamming commands
+            if ( IsAllowedToTaunt( iClient ) )
+            {
+                FakeClientCommand( iClient, "taunt" );
+            }
         }
     }
 
@@ -3995,8 +3995,7 @@ void HandleAttack(
     }
 
     int iActiveWeapon = TF2_GetClientActiveWeapon( iClient );
-
-    if ( IsBarrageAndReloadWeapon( iBot, iActiveWeapon ) )
+    if ( iActiveWeapon != -1 && IsBarrageAndReloadWeapon( iBot, iActiveWeapon ) )
     {
         if ( HasAttribute( iBot, HOLD_FIRE_UNTIL_FULL_RELOAD ) || tf_bot_always_full_reload.BoolValue )
         {
