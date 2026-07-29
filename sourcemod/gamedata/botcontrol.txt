@@ -497,27 +497,6 @@
                     }
                 }
             }
-            // "CTFBotDeliverFlag::OnStart"
-            // {
-            //     "signature" "CTFBotDeliverFlag::OnStart"
-
-            //     "callconv"  "thiscall"
-
-            //     "return"    "none fit... :("
-            //     "this"      "address"
-
-            //     "arguments"
-            //     {
-            //         me
-            //         {
-            //             "type"  "cbaseentity"
-            //         }
-            //         priorAction
-            //         {
-            //             "type"  "objectptr"
-            //         }
-            //     }
-            // }
 
             /*--------------------------------------------------------------------
               !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

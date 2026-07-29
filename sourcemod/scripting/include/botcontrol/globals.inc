@@ -26,8 +26,8 @@
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 --------------------------------------------------------------------*/
 
-PLAYERATTRIBUTES g_aPlayerAttribs[ MAXPLAYERS_ARRAY_SAFE ];
-BOTATTRIBUTES    g_aBotAttribs[ MAXPLAYERS_ARRAY_SAFE ];
+public PLAYERATTRIBUTES g_aPlayerAttribs[ MAXPLAYERS_ARRAY_SAFE ];
+public BOTATTRIBUTES    g_aBotAttribs[ MAXPLAYERS_ARRAY_SAFE ];
 
 CARRIERATTRIBUTES g_CarrierAttribs;
 

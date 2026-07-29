@@ -27,6 +27,11 @@
         "en"        "Failed to create SDKCall for {1} from VScript function."
     }
 
+    "Extension_Not_Running"
+    {
+        "en"    "The bot control helper extension is not running."
+    }
+
     "Missing_Library"
     {
         "#format"   "{1:s},{2:s}"

@@ -94,6 +94,12 @@ public APLRes AskPluginLoad2( Handle hMyself, bool bLate, char[] szError, int cc
         return APLRes_Failure;
     }
 
+    if ( !LibraryExists( "botcontrol.ext" ) )
+    {
+        FormatEx( szError, cch, "%T", "Extension_Not_Running", LANG_SERVER );
+        return APLRes_Failure;
+    }
+
     RegPluginLibrary( "botcontrol" );
 
     return APLRes_Success;
