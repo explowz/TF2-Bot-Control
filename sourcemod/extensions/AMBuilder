@@ -1,11 +1,12 @@
-# vim: set sts=2 ts=8 sw=2 tw=99 et ft=python:
-import os, sys
+import os
 
 projectName = 'botcontrol'
 
 # smsdk_ext.cpp will be automatically added later
 sourceFiles = [
-  'extension.cpp'
+  'extension.cpp',
+  'detours.cpp',
+  'listeners.cpp'
 ]
 
 ###############
@@ -20,6 +21,22 @@ if os.path.isfile(os.path.join(builder.currentSourcePath, 'sdk', 'smsdk_ext.cpp'
 else:
   # Use the copy included with SM 1.6 and newer
   project.sources += [os.path.join(Extension.sm_root, 'public', 'smsdk_ext.cpp')]
+
+project.sources += [
+  os.path.join(Extension.sm_root, 'public', 'CDetour', 'detours.cpp'),
+  os.path.join(Extension.sm_root, 'public', 'safetyhook', 'src', 'allocator.cpp'),
+  os.path.join(Extension.sm_root, 'public', 'safetyhook', 'src', 'easy.cpp'),
+  os.path.join(Extension.sm_root, 'public', 'safetyhook', 'src', 'inline_hook.cpp'),
+  os.path.join(Extension.sm_root, 'public', 'safetyhook', 'src', 'mid_hook.cpp'),
+  os.path.join(Extension.sm_root, 'public', 'safetyhook', 'src', 'utility.cpp'),
+  os.path.join(Extension.sm_root, 'public', 'safetyhook', 'src', 'vmt_hook.cpp'),
+  os.path.join(Extension.sm_root, 'public', 'safetyhook', 'zydis', 'Zydis.c'),
+]
+
+if builder.target_platform == 'windows':
+  project.sources += [os.path.join(Extension.sm_root, 'public', 'safetyhook', 'src', 'os.windows.cpp')]
+elif builder.target_platform == 'linux':
+  project.sources += [os.path.join(Extension.sm_root, 'public', 'safetyhook', 'src', 'os.linux.cpp')]
 
 project.sources += sourceFiles
 

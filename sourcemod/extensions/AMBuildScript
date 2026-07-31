@@ -1,7 +1,4 @@
-# vim: set sts=2 ts=8 sw=2 tw=99 et ft=python:
-import os, sys
-
-# Simple extensions do not need to modify this file.
+import os
 
 class SDK(object):
   def __init__(self, sdk, ext, aDef, name, platform, dir):
@@ -19,28 +16,28 @@ WinLinux = ['windows', 'linux']
 WinLinuxMac = ['windows', 'linux', 'mac']
 
 PossibleSDKs = {
-#   'episode1':  SDK('HL2SDK', '1.ep1', '1', 'EPISODEONE', WinLinux, 'episode1'),
-#   'ep2':  SDK('HL2SDKOB', '2.ep2', '3', 'ORANGEBOX', WinLinux, 'orangebox'),
-#   'css':  SDK('HL2SDKCSS', '2.css', '6', 'CSS', WinLinuxMac, 'css'),
-#   'hl2dm':  SDK('HL2SDKHL2DM', '2.hl2dm', '7', 'HL2DM', WinLinuxMac, 'hl2dm'),
-#   'dods': SDK('HL2SDKDODS', '2.dods', '8', 'DODS', WinLinuxMac, 'dods'),
-#   'sdk2013': SDK('HL2SDK2013', '2.sdk2013', '9', 'SDK2013', WinLinuxMac, 'sdk2013'),
-  'tf2':  SDK('HL2SDKTF2', '2.tf2', '12', 'TF2', WinLinuxMac, 'tf2'),
-#   'l4d':  SDK('HL2SDKL4D', '2.l4d', '13', 'LEFT4DEAD', WinLinuxMac, 'l4d'),
-#   'nucleardawn': SDK('HL2SDKND', '2.nd', '14', 'NUCLEARDAWN', WinLinuxMac, 'nucleardawn'),
-#   'l4d2': SDK('HL2SDKL4D2', '2.l4d2', '16', 'LEFT4DEAD2', WinLinuxMac, 'l4d2'),
-#   'darkm':  SDK('HL2SDK-DARKM', '2.darkm', '2', 'DARKMESSIAH', WinOnly, 'darkm'),
-#   'swarm':  SDK('HL2SDK-SWARM', '2.swarm', '17', 'ALIENSWARM', WinOnly, 'swarm'),
-#   'bgt':  SDK('HL2SDK-BGT', '2.bgt', '4', 'BLOODYGOODTIME', WinOnly, 'bgt'),
-#   'eye':  SDK('HL2SDK-EYE', '2.eye', '5', 'EYE', WinOnly, 'eye'),
-#   'csgo': SDK('HL2SDKCSGO', '2.csgo', '22', 'CSGO', WinLinuxMac, 'csgo'),
-#   'portal2':  SDK('HL2SDKPORTAL2', '2.portal2', '18', 'PORTAL2', [], 'portal2'),
-#   'blade':  SDK('HL2SDKBLADE', '2.blade', '19', 'BLADE', WinLinux, 'blade'),
-#   'insurgency':  SDK('HL2SDKINSURGENCY', '2.insurgency', '20', 'INSURGENCY', WinLinuxMac, 'insurgency'),
-#   'contagion':  SDK('HL2SDKCONTAGION', '2.contagion', '15', 'CONTAGION', WinOnly, 'contagion'),
-#   'bms':  SDK('HL2SDKBMS', '2.bms', '11', 'BMS', WinLinux, 'bms'),
-#   'doi':  SDK('HL2SDKDOI', '2.doi', '21', 'DOI', WinLinuxMac, 'doi'),
-#   'pvkii': SDK('HL2SDKPVKII', '2.pvkii', '10', 'PVKII', WinLinux, 'pvkii'),
+#  'episode1': SDK('HL2SDK', '1.ep1', '1', 'EPISODEONE', WinLinux, 'episode1'),
+#  'ep2': SDK('HL2SDKOB', '2.ep2', '3', 'ORANGEBOX', WinLinux, 'orangebox'),
+#  'css': SDK('HL2SDKCSS', '2.css', '6', 'CSS', WinLinuxMac, 'css'),
+#  'hl2dm': SDK('HL2SDKHL2DM', '2.hl2dm', '7', 'HL2DM', WinLinuxMac, 'hl2dm'),
+#  'dods': SDK('HL2SDKDODS', '2.dods', '8', 'DODS', WinLinuxMac, 'dods'),
+#  'sdk2013': SDK('HL2SDK2013', '2.sdk2013', '9', 'SDK2013', WinLinuxMac, 'sdk2013'),
+  'tf2': SDK('HL2SDKTF2', '2.tf2', '12', 'TF2', WinLinuxMac, 'tf2'),
+#  'l4d': SDK('HL2SDKL4D', '2.l4d', '13', 'LEFT4DEAD', WinLinuxMac, 'l4d'),
+#  'nucleardawn': SDK('HL2SDKND', '2.nd', '14', 'NUCLEARDAWN', WinLinuxMac, 'nucleardawn'),
+#  'l4d2': SDK('HL2SDKL4D2', '2.l4d2', '16', 'LEFT4DEAD2', WinLinuxMac, 'l4d2'),
+#  'darkm': SDK('HL2SDK-DARKM', '2.darkm', '2', 'DARKMESSIAH', WinOnly, 'darkm'),
+#  'swarm': SDK('HL2SDK-SWARM', '2.swarm', '17', 'ALIENSWARM', WinOnly, 'swarm'),
+#  'bgt': SDK('HL2SDK-BGT', '2.bgt', '4', 'BLOODYGOODTIME', WinOnly, 'bgt'),
+#  'eye': SDK('HL2SDK-EYE', '2.eye', '5', 'EYE', WinOnly, 'eye' ),
+#  'csgo': SDK('HL2SDKCSGO', '2.csgo', '22', 'CSGO', WinLinuxMac, 'csgo'),
+#  'portal2': SDK('HL2SDKPORTAL2', '2.portal2', '18', 'PORTAL2', [], 'portal2'),
+#  'blade': SDK('HL2SDKBLADE', '2.blade', '19', 'BLADE', WinLinux, 'blade'),
+#  'insurgency': SDK('HL2SDKINSURGENCY', '2.insurgency', '20', 'INSURGENCY', WinLinuxMac, 'insurgency'),
+#  'contagion': SDK('HL2SDKCONTAGION', '2.contagion', '15', 'CONTAGION', WinOnly, 'contagion'),
+#  'bms': SDK('HL2SDKBMS', '2.bms', '11', 'BMS', WinLinux, 'bms'),
+#  'doi': SDK('HL2SDKDOI', '2.doi', '21', 'DOI', WinLinuxMac, 'doi'),
+#  'pvkii': SDK('HL2SDKPVKII', '2.pvkii', '10', 'PVKII', WinLinux, 'pvkii')
 }
 
 def ResolveEnvPath(env, folder):
@@ -164,7 +161,7 @@ class ExtensionConfig(object):
       '_snprintf=snprintf',
       '_vsnprintf=vsnprintf',
       'HAVE_STDINT_H',
-      'GNUC',
+      'GNUC'
     ]
     cxx.cflags += [
       '-pipe',
@@ -176,15 +173,15 @@ class ExtensionConfig(object):
       '-Wno-array-bounds',
       '-msse',
       '-m32',
-      '-fvisibility=hidden',
+      '-fvisibility=hidden'
     ]
     cxx.cxxflags += [
-      '-std=c++14',
+      '-std=c++17',
       '-fno-exceptions',
       '-fno-threadsafe-statics',
       '-Wno-non-virtual-dtor',
       '-Wno-overloaded-virtual',
-      '-fvisibility-inlines-hidden',
+      '-fvisibility-inlines-hidden'
     ]
     cxx.linkflags += ['-m32']
 
@@ -223,16 +220,16 @@ class ExtensionConfig(object):
       '_CRT_SECURE_NO_DEPRECATE',
       '_CRT_SECURE_NO_WARNINGS',
       '_CRT_NONSTDC_NO_DEPRECATE',
-      '_ITERATOR_DEBUG_LEVEL=0',
+      '_ITERATOR_DEBUG_LEVEL=0'
     ]
     cxx.cflags += [
-      '/W3',
+      '/W3'
     ]
     cxx.cxxflags += [
-      '/std:c++20',
+      '/std:c++17',
       '/EHsc',
       '/GR-',
-      '/TP',
+      '/TP'
     ]
     cxx.linkflags += [
       '/MACHINE:X86',
@@ -247,7 +244,7 @@ class ExtensionConfig(object):
       'oleaut32.lib',
       'uuid.lib',
       'odbc32.lib',
-      'odbccp32.lib',
+      'odbccp32.lib'
     ]
 
     if builder.options.opt == '1':
@@ -276,7 +273,7 @@ class ExtensionConfig(object):
       '-mmacosx-version-min=10.5',
       '-arch', 'i386',
       '-lstdc++',
-      '-stdlib=libstdc++',
+      '-stdlib=libstdc++'
     ]
     cxx.cxxflags += ['-stdlib=libstdc++']
 
@@ -290,121 +287,87 @@ class ExtensionConfig(object):
       os.path.join(self.sm_root, 'public'),
       os.path.join(self.sm_root, 'public', 'extensions'),
       os.path.join(self.sm_root, 'public', 'safetyhook', 'include'),
+      os.path.join(self.sm_root, 'public', 'safetyhook', 'Zydis'),
       os.path.join(self.sm_root, 'sourcepawn', 'include'),
       os.path.join(self.sm_root, 'public', 'amtl', 'amtl'),
-      os.path.join(self.sm_root, 'public', 'amtl'),
+      os.path.join(self.sm_root, 'public', 'amtl')
     ]
     return compiler
 
   def ConfigureForHL2(self, binary, sdk):
     compiler = binary.compiler
 
-    if sdk.name == 'episode1':
-      mms_path = os.path.join(self.mms_root, 'core-legacy')
-    else:
-      mms_path = os.path.join(self.mms_root, 'core')
+    mms_path = os.path.join(self.mms_root, 'core')
 
     compiler.cxxincludes += [
       os.path.join(mms_path),
-      os.path.join(mms_path, 'sourcehook'),
+      os.path.join(mms_path, 'sourcehook')
     ]
 
     defines = ['SE_' + PossibleSDKs[i].define + '=' + PossibleSDKs[i].code for i in PossibleSDKs]
     compiler.defines += defines
 
     paths = [
+      ['gcsdk', 'steamextra'],
       ['public'],
       ['public', 'engine'],
       ['public', 'mathlib'],
       ['public', 'vstdlib'],
       ['public', 'tier0'],
-      ['public', 'tier1']
+      ['public', 'tier1'],
+      ['public', 'game', 'server'],
+      ['public', 'toolframework'],
+      ['game', 'shared'],
+      ['game', 'shared', 'econ'],
+      ['game', 'shared', 'tf'],
+      ['game', 'server'],
+      ['game', 'server', 'NextBot'],
+      ['game', 'server', 'tf'],
+      ['common'],
+      ['generated_proto'],
+      ['generated_proto', 'econ'],
+      ['generated_proto', 'tf'],
+      ['thirdparty', 'protobuf-2.6.1', 'src']
     ]
-    if sdk.name == 'episode1' or sdk.name == 'darkm':
-      paths.append(['public', 'dlls'])
-      paths.append(['game_shared'])
-    else:
-      paths.append(['public', 'game', 'server'])
-      paths.append(['public', 'toolframework'])
-      paths.append(['game', 'shared'])
-      paths.append(['game', 'shared', 'tf'])
-      paths.append(['game', 'server'])
-      paths.append(['game', 'server', 'NextBot'])
-      paths.append(['game', 'server', 'tf'])
-      paths.append(['common'])
 
-    compiler.defines += ['SOURCE_ENGINE=' + sdk.code]
-
-    if sdk.name in ['sdk2013', 'bms', 'pvkii'] and compiler.like('gcc'):
-      # The 2013 SDK already has these in public/tier0/basetypes.h
-      compiler.defines.remove('stricmp=strcasecmp')
-      compiler.defines.remove('_stricmp=strcasecmp')
-      compiler.defines.remove('_snprintf=snprintf')
-      compiler.defines.remove('_vsnprintf=vsnprintf')
+    compiler.defines += [
+      'GAME_DLL',
+      'TF_DLL',
+      'USES_ECON_ITEMS',
+      'ENABLE_GC_MATCHMAKING',
+      'SOURCE_ENGINE=' + sdk.code
+    ]
 
     if compiler.like('msvc'):
       compiler.defines += ['COMPILER_MSVC', 'COMPILER_MSVC32']
     else:
       compiler.defines += ['COMPILER_GCC']
 
-    # For everything after Swarm, this needs to be defined for entity networking
-    # to work properly with sendprop value changes.
-    if sdk.name in ['blade', 'insurgency', 'doi', 'csgo']:
-      compiler.defines += ['NETWORK_VARS_ENABLED']
-
-    if sdk.name in ['css', 'hl2dm', 'dods', 'sdk2013', 'bms', 'tf2', 'l4d', 'nucleardawn', 'l4d2', 'pvkii']:
-      if builder.target_platform in ['linux', 'mac']:
-        compiler.defines += ['NO_HOOK_MALLOC', 'NO_MALLOC_OVERRIDE']
-
-    if sdk.name == 'csgo' and builder.target_platform == 'linux':
-      compiler.linkflags += ['-lstdc++']
+    if builder.target_platform in ['linux', 'mac']:
+      compiler.defines += ['NO_HOOK_MALLOC', 'NO_MALLOC_OVERRIDE']
 
     for path in paths:
       compiler.cxxincludes += [os.path.join(sdk.path, *path)]
 
     if builder.target_platform == 'linux':
-      if sdk.name == 'episode1':
-        lib_folder = os.path.join(sdk.path, 'linux_sdk')
-      elif sdk.name in ['sdk2013', 'bms', 'pvkii']:
-        lib_folder = os.path.join(sdk.path, 'lib', 'public', 'linux32')
-      else:
-        lib_folder = os.path.join(sdk.path, 'lib', 'linux')
+      lib_folder = os.path.join(sdk.path, 'lib', 'linux')
     elif builder.target_platform == 'mac':
-      if sdk.name in ['sdk2013', 'bms']:
-        lib_folder = os.path.join(sdk.path, 'lib', 'public', 'osx32')
-      else:
-        lib_folder = os.path.join(sdk.path, 'lib', 'mac')
+      lib_folder = os.path.join(sdk.path, 'lib', 'mac')
 
     if builder.target_platform in ['linux', 'mac']:
-      if sdk.name in ['sdk2013', 'bms', 'pvkii']:
-        compiler.postlink += [
-          compiler.Dep(os.path.join(lib_folder, 'tier1.a')),
-          compiler.Dep(os.path.join(lib_folder, 'mathlib.a'))
-        ]
-      else:
-        compiler.postlink += [
-          compiler.Dep(os.path.join(lib_folder, 'tier1_i486.a')),
-          compiler.Dep(os.path.join(lib_folder, 'mathlib_i486.a'))
-        ]
-
-      if sdk.name in ['blade', 'insurgency', 'doi', 'csgo']:
-        compiler.postlink += [compiler.Dep(os.path.join(lib_folder, 'interfaces_i486.a'))]
+      compiler.postlink += [
+        compiler.Dep(os.path.join(lib_folder, 'tier1_i486.a')),
+        compiler.Dep(os.path.join(lib_folder, 'mathlib_i486.a'))
+      ]
 
     dynamic_libs = []
     if builder.target_platform == 'linux':
-      if sdk.name in ['css', 'hl2dm', 'dods', 'tf2', 'sdk2013', 'bms', 'nucleardawn', 'l4d2', 'insurgency', 'doi']:
-        dynamic_libs = ['libtier0_srv.so', 'libvstdlib_srv.so']
-      elif sdk.name in ['l4d', 'blade', 'insurgency', 'doi', 'csgo', 'pvkii']:
-        dynamic_libs = ['libtier0.so', 'libvstdlib.so']
-      else:
-        dynamic_libs = ['tier0_i486.so', 'vstdlib_i486.so']
+      dynamic_libs = ['libtier0_srv.so', 'libvstdlib_srv.so']
     elif builder.target_platform == 'mac':
       compiler.linkflags.append('-liconv')
       dynamic_libs = ['libtier0.dylib', 'libvstdlib.dylib']
     elif builder.target_platform == 'windows':
       libs = ['tier0', 'tier1', 'vstdlib', 'mathlib']
-      if sdk.name in ['swarm', 'blade', 'insurgency', 'doi', 'csgo']:
-        libs.append('interfaces')
       for lib in libs:
         lib_path = os.path.join(sdk.path, 'lib', 'public', 'x86', lib) + '.lib'
         compiler.linkflags.append(compiler.Dep(lib_path))
@@ -444,7 +407,7 @@ Extension.configure()
 
 # Add additional buildscripts here
 BuildScripts = [
-  'AMBuilder',
+  'AMBuilder'
 ]
 
 if builder.backend == 'amb2':
