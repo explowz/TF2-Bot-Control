@@ -392,7 +392,7 @@ public void OnPluginStart()
 
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
 
-    StartPrepSDKCall( SDKCall_Player );
+    StartPrepSDKCall( SDKCall_Raw );
     PrepSDKCall_SetFromConf( hConf, SDKConf_Signature, "CTFPlayerShared::ResetRageBuffs" );
     g_hfnCTFPlayerShared_ResetRageBuffs = EndPrepSDKCall();
     if ( !g_hfnCTFPlayerShared_ResetRageBuffs )
@@ -609,6 +609,30 @@ public void OnPluginStart()
         SetFailState( "%T", "SDKCall_Prep_Failed", LANG_SERVER, "CTFWeaponBase::Clip1" );
     }
 
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+
+    StartPrepSDKCall( SDKCall_Raw );
+    PrepSDKCall_SetFromConf( hConf, SDKConf_Virtual, "CEconItemView::GetQuality" );
+    PrepSDKCall_SetReturnInfo( SDKType_PlainOldData, SDKPass_Plain ); // int32
+    g_hfnCEconItemView_GetQuality = EndPrepSDKCall();
+    if ( !g_hfnCEconItemView_GetQuality )
+    {
+        SetFailState( "%T", "SDKCall_Prep_Failed", LANG_SERVER, "CEconItemView::GetQuality" );
+    }
+
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+
+    StartPrepSDKCall( SDKCall_Raw );
+    PrepSDKCall_SetFromConf( hConf, SDKConf_Signature, "CTFPlayerShared::AddToSpyCloakMeter" );
+    PrepSDKCall_AddParameter( SDKType_Float, SDKPass_Plain ); // float val
+    PrepSDKCall_AddParameter( SDKType_Bool, SDKPass_Plain );  // bool bForce
+    PrepSDKCall_SetReturnInfo( SDKType_Bool, SDKPass_Plain ); // bool
+    g_hfnCTFPlayerShared_AddToSpyCloakMeter = EndPrepSDKCall();
+    if ( !g_hfnCTFPlayerShared_AddToSpyCloakMeter )
+    {
+        SetFailState( "%T", "SDKCall_Prep_Failed", LANG_SERVER, "CTFPlayerShared::AddToSpyCloakMeter" );
+    }
+
     /*--------------------------------------------------------------------
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!! DYNAMIC HOOKS !!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -686,10 +710,10 @@ public void OnPluginStart()
     PSM_AddCommandListener( HandleTaunt, "taunt" );
     PSM_AddCommandListener( HandleTaunt, "weapon_taunt" );
 
+    PSM_AddCommandListener( HandleDropItem, "dropitem" );
+
     PSM_AddEventHook( "player_team", HandlePlayerTeamEvent_Pre, EventHookMode_Pre );
     PSM_AddEventHook( "player_spawn", HandlePlayerSpawnEvent_Pre, EventHookMode_Pre );
-    // Apparently this is unneeded
-    // PSM_AddEventHook( GAME_EVENT_PLAYER_DEATH, HandlePlayerDeathEvent_Pre, EventHookMode_Pre );
     PSM_AddEventHook( "teamplay_flag_event", HandleTeamplayFlagEvent_Pre, EventHookMode_Pre );
 
     // HUD messages are taken care of in `OnPlayerRunCmdPost`
@@ -1147,10 +1171,10 @@ public void OnAllPluginsLoaded()
     StartPrepSDKCall( SDKCall_Player );
     SET_OFFSET_OR_ADDRESS( fn )
     PrepSDKCall_SetReturnInfo( SDKType_Bool, SDKPass_Plain ); // bool
-    g_hfnCTFPlayerShared_IsAllowedToTaunt = EndPrepSDKCall();
-    if ( !g_hfnCTFPlayerShared_IsAllowedToTaunt )
+    g_hfnCTFPlayer_IsAllowedToTaunt = EndPrepSDKCall();
+    if ( !g_hfnCTFPlayer_IsAllowedToTaunt )
     {
-        SetFailState( "%T", "SDKCall_Prep_Failed_VScript", LANG_SERVER, "CTFPlayerShared::IsAllowedToTaunt" );
+        SetFailState( "%T", "SDKCall_Prep_Failed_VScript", LANG_SERVER, "CTFPlayer::IsAllowedToTaunt" );
     }
 
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
@@ -1706,7 +1730,7 @@ public void OnPlayerRunCmdPre(
     }
 
     GivePlayerAmmo( iClient, 100, TF_AMMO_METAL, true );
-    SetEntPropFloat( iClient, Prop_Send, "m_flCloakMeter", 100.0 );
+    AddToSpyCloakMeter( GetPlayerShared( iClient ), 100.0, true );
 
     int iBot = GetClientFromSerial( g_aPlayerAttribs[ iClient ].iBotSerial );
 
@@ -3001,6 +3025,41 @@ Action HandleTaunt( int iClient, const char[] szCommand, int argc )
 }
 
 /*F+F+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+  Function: HandleDropItem
+
+  Summary:  This function is called every time a player tries drop
+            the item they are carrying (if any). It blocks human
+            invaders from dropping the bomb so we don't have to
+            deal with manually removing the the upgrade attributes
+            and conditions.
+
+  Args:     int iClient
+              Index of client that sent the command.
+            const char[] szCommand
+              Name of the command as typed by the client. To get name
+              as typed, use GetCmdArg() and specify argument 0.
+            int argc
+              Argument count.
+
+  Returns:  Action
+              `Plugin_Continue` to allow the server to process the
+              command, `Plugin_Handled` or `Plugin_Stop` to block
+              the command from being processed.
+-----------------------------------------------------------------F-F*/
+Action HandleDropItem( int iClient, const char[] szCommand, int argc )
+{
+#if !defined _DEBUG
+    if ( g_aPlayerAttribs[ iClient].IsControlling() && HasTheFlag( iClient ) )
+    {
+        PrintHintText( iClient, "%t", "Cannot_Drop_Intelligence" );
+        return Plugin_Stop;
+    }
+#endif
+
+    return Plugin_Continue;
+}
+
+/*F+F+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   Function: HandleTeamplayFlagEvent_Pre
 
   Summary:  This function is called before every "teamplay_flag_event"
@@ -3078,7 +3137,7 @@ Action HandleTeamplayFlagEvent_Pre( Event hEvent, const char[] szName, bool bDon
     {
         TF2Attrib_RemoveByName( iPlayer, "no_attack" );
 
-        ResetRageBuffs( iPlayer );
+        ResetRageBuffs( GetPlayerShared( iPlayer ) );
     }
 
     return Plugin_Continue;
@@ -3117,41 +3176,6 @@ Action HandlePlayerTeamEvent_Pre( Event hEvent, const char[] szName, bool dDontB
 
     return Plugin_Continue;
 }
-
-/*F+F+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  Function: HandlePlayerDeathEvent_Pre
-
-  Summary:  This function is called before every "player_death"
-            event gets fired and its purpose is to block controlled
-            bot deaths from appearing in the killfeed.
-
-  Args:     Event hEvent
-              Handle to event.
-            const char[] szName
-              A string representing the name of the event. In the
-              case of this function this will always be "player_death".
-            bool bDontBroadcast
-              If this variable is `true`, the event was not broadcast
-              to clients. If this variable is `false`, the event was
-              broadcast to clients.
-              May not correspond to the real value. Use the property
-              BroadcastDisabled.
-
-  Returns:  Action
-              `Plugin_Continue` to allow the event to be fired,
-              `Plugin_Handled` to block the event.
------------------------------------------------------------------F-F*/
-/*Action HandlePlayerDeathEvent_Pre( Event hEvent, const char[] szName, bool bDontBroadcast )
-{
-    int iVictim = hEvent.GetInt( "victim_entindex" );
-
-    if ( g_aBotAttribs[ iVictim ].IsControlled() )
-    {
-        hEvent.SetBool( "silent_kill", true );
-    }
-
-    return Plugin_Continue;
-}*/
 
 /*F+F+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   Function: HandlePlayerSpawnEvent_Pre
