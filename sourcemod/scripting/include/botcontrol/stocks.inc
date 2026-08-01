@@ -18,7 +18,6 @@
 #include <tf2>
 #include <tf2attributes>
 #include <tf2items>
-#include <tf_econ_data>
 #include <tf2utils>
 #include <pluginstatemanager>
 #include <vscript>
@@ -77,7 +76,22 @@ F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
               If the entity index does not belong to a `CTFPlayer`
               or `CTFBot` entity, the return value is `false`.
 F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
-#define IsPlayerIndex(%1) ( 0 < ( %1 ) <= MaxClients )
+#define IsPlayerIndex(%1)   ( 0 < ( %1 ) <= MaxClients )
+
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: GetPlayerShared
+
+  Summary:  This function-like macro retrieves the memory address
+            of a client's `m_Shared` member variable.
+
+  Args:     int %1
+              Client index.
+
+  Returns:  Address
+              Memory address of the client's `m_Shared` member
+              variable.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
+#define GetPlayerShared(%1) ( GetEntityAddress( %1 ) + view_as< Address >( GetEntSendPropOffs( %1, "m_Shared", true ) ) )
 
 /*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
   Function: CUtlVector_Count
@@ -90,7 +104,7 @@ F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
   Returns:  int
               Size of the vector.
 F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
-#define CUtlVector_Count(%1)    view_as< int >( LoadFromAddress( ( %1 ) + view_as< Address >( 12 ), NumberType_Int32 ) )
+#define CUtlVector_Count(%1)    view_as< int >( LoadFromAddress( ( %1 ) + view_as< Address >( PTRSIZ + 8 ), NumberType_Int32 ) )
 
 /*--------------------------------------------------------------------
   Include files that use macros defined in this file must come after
@@ -648,11 +662,120 @@ stock float GetModelScale( int iClient )
 }
 
 /*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: IsValid
+
+  Summary:  This function determines whether an item entity is valid.
+
+  Args:     int iItem
+              Item entity index.
+
+  Returns:  bool
+              If the item entity has been initialized, the return
+              value is `true`.
+
+              If the item entity has not been initialized, the
+              return valus is `false`.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
+stock bool IsValid( int iItem )
+{
+    return GetEntProp( iItem, Prop_Send, "m_bInitialized" );
+}
+
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: IsUndefined
+
+  Summary:  This function determines whether an item entity is
+            undefined.
+
+  Args:     int iItem
+              Item entity index.
+
+  Returns:  bool
+              If the item entity is undefined, the return value is
+              `true`.
+
+              If the item entity is not undefined, the return value
+              is `false`.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
+stock bool IsUndefined( int iItem )
+{
+    return !IsValid( iItem ) || GetEntProp( iItem, Prop_Send, "m_iItemDefinitionIndex" ) == INVALID_ITEM_DEF_INDEX;
+}
+
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: GetItemDefIndex
+
+  Summary:  This function gets an item's definition index.
+
+  Args:     int iItem
+              Item entity index.
+
+  Returns:  int
+              Item definition index.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
+stock int GetItemDefIndex( int iItem )
+{
+    return GetEntProp( iItem, Prop_Send, "m_iItemDefinitionIndex" );
+}
+
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: GetItemQuality
+
+  Summary:  This function gets an item's quality.
+
+  Args:     int iItem
+              Item entity index.
+
+  Returns:  int
+              Item quality.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
+stock int GetItemQuality( int iItem )
+{
+    return GetEntProp( iItem, Prop_Send, "m_iEntityQuality" );
+}
+
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: GetQuality
+
+  Summary:  This function gets an item's quality by first trying to
+            get its `CEconItem` quality, if that fails it tries to
+            get the `CEconItemView` quality, and if that also fails
+            it defaults to `AE_NORMAL`.
+
+            This is the preferred function to get an item's quality.
+
+  Args:     int iItem
+              Item entity index.
+
+  Returns:  int
+              Item quality.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
+stock int GetQuality( int iItem )
+{
+    return SDKCall( g_hfnCEconItemView_GetQuality, GetEntityAddress( iItem ) + view_as< Address >( GetEntSendPropOffs( iItem, "m_Item", true ) ) );
+}
+
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: GetItemLevel
+
+  Summary:  This function gets an item's level.
+
+  Args:     int iItem
+              `CEconItemView` entity index.
+
+  Returns:  int
+              Item level.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
+stock int GetItemLevel( int iItem )
+{
+    return GetEntProp( iItem, Prop_Send, "m_iEntityLevel" );
+}
+
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
   Function: CopyItem
 
-  Summary:  This function creates an _almost_ identical copy of an
-            item (weapon or wearable). The item's level will not
-            be mirrored, and instead will be randomized.
+  Summary:  This function creates an identical copy of an item
+            (weapon or wearable) and gives it to a player.
 
   Args:     int iItem
               Entity index of the item to copy.
@@ -666,12 +789,13 @@ stock float GetModelScale( int iClient )
 F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
 stock int CopyItem( int iItem, int iClient )
 {
-    int iItemDefinitionIndex = GetEntProp( iItem, Prop_Send, "m_iItemDefinitionIndex" );
-    if ( iItemDefinitionIndex == INVALID_ITEM_DEF_INDEX )
+    if ( IsUndefined( iItem ) )
     {
         // Weapon wearables which are applied automatically
         return -1;
     }
+
+    int iItemDefinitionIndex = GetItemDefIndex( iItem );
 
     char szClassname[ 64 ];
     GetEntityClassname( iItem, szClassname, sizeof( szClassname ) );
@@ -682,10 +806,8 @@ stock int CopyItem( int iItem, int iClient )
     Handle hNewItem = TF2Items_CreateItem( OVERRIDE_ALL | PRESERVE_ATTRIBUTES );
     TF2Items_SetClassname( hNewItem, szClassname );
     TF2Items_SetItemIndex( hNewItem, iItemDefinitionIndex );
-    TF2Items_SetQuality( hNewItem, TF2Econ_GetItemQuality( iItemDefinitionIndex ) );
-    int iMinLevel, iMaxLevel;
-    TF2Econ_GetItemLevelRange( iItemDefinitionIndex, iMinLevel, iMaxLevel );
-    TF2Items_SetLevel( hNewItem, GetRandomInt( iMinLevel, iMaxLevel ) );
+    TF2Items_SetQuality( hNewItem, GetQuality( iItem ) );
+    TF2Items_SetLevel( hNewItem, GetItemLevel( iItem ) );
 
     TF2Items_SetNumAttributes( hNewItem, nAttribs );
     for ( int i = 0; i < nAttribs; i++ )
@@ -1345,6 +1467,34 @@ F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
 stock bool IsStealthed( int iClient )
 {
     return SDKCall( g_hfnCTFPlayerShared_IsStealthed, iClient );
+}
+
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: AddToSpyCloakMeter
+
+  Summary:  This function increases the spy's cloak meter by a
+            given value.
+
+  Args:     Address pShared
+              Memory address of a client's `m_Shared`.
+            float flVal
+              Value to increase the cloak meter by.
+            bool bForce
+              If `false` is passed, the function checks if the
+              player is currently allowed to have their cloak meter
+              increased. If `true`, the function bypasses all checks
+              and increases the cloak meter value.
+
+  Returns:  bool
+              If the client's cloak meter was increased, the return
+              value is `true`.
+
+              If the client's cloak meter was not increased, the
+              return value is `false`.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
+stock bool AddToSpyCloakMeter( Address pShared, float flVal, bool bForce )
+{
+    return SDKCall( g_hfnCTFPlayerShared_AddToSpyCloakMeter, pShared, flVal, bForce );
 }
 
 /*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
@@ -2908,12 +3058,15 @@ stock bool CanBotsAttackWhileInSpawnRoom()
 
   Summary:  This function resets a client's rage buffs.
 
+  Args:     Address pShared
+              Memory address of a client's `m_Shared` variable.
+
   Returns:  void
               No return value.
 F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
-stock void ResetRageBuffs( int iClient )
+stock void ResetRageBuffs( Address pShared )
 {
-    SDKCall( g_hfnCTFPlayerShared_ResetRageBuffs, iClient );
+    SDKCall( g_hfnCTFPlayerShared_ResetRageBuffs, pShared );
 }
 
 /*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
@@ -3145,7 +3298,7 @@ stock void HaveAllPlayersSpeakConceptIfAllowed( int iConcept, int iTeam = TFTeam
 F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
 stock bool IsAllowedToTaunt( int iClient )
 {
-    return SDKCall( g_hfnCTFPlayerShared_IsAllowedToTaunt, iClient );
+    return SDKCall( g_hfnCTFPlayer_IsAllowedToTaunt, iClient );
 }
 
 /*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F

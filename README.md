@@ -11,7 +11,6 @@ This plugin is still in beta and may contain bugs. If you find any, please open 
 - [stocksoup](https://github.com/nosoop/stocksoup)
 - [SteamWorks](https://github.com/alliedmodders/SM-SteamWorks)
 - [VScript](https://github.com/FortyTwoFortyTwo/VScript)
-- [SM-TFEconData](https://github.com/nosoop/SM-TFEconData)
 - [SM-TFAttributeSupport](https://github.com/nosoop/SM-TFAttributeSupport)
 - [PluginStateManager](https://github.com/Mikusch/PluginStateManager)
 - [Actions](https://forums.alliedmods.net/showthread.php?t=336374)

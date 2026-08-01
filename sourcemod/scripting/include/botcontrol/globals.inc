@@ -101,6 +101,8 @@ Handle g_hfnCTeamplayRoundBasedRules_PlayThrottledAlert;
 
 Handle g_hfnCTFGameRules_BroadcastSound;
 
+Handle g_hfnCEconItemView_GetQuality;
+
 #if defined WIN32
 Handle g_hfnCObjectTeleporter_SetTeleportWhere;
 #endif
@@ -134,10 +136,11 @@ Handle g_hfnCTFPlayer_PlaySpecificSequence;
 Handle g_hfnCTFPlayer_DoAnimationEvent;
 Handle g_hfnCTFPlayer_IsCapturingPoint;
 Handle g_hfnCTFPlayer_GrantOrRemoveAllUpgrades;
+Handle g_hfnCTFPlayer_IsAllowedToTaunt;
 
 Handle g_hfnCTFPlayerShared_ResetRageBuffs;
 Handle g_hfnCTFPlayerShared_IsStealthed;
-Handle g_hfnCTFPlayerShared_IsAllowedToTaunt;
+Handle g_hfnCTFPlayerShared_AddToSpyCloakMeter;
 
 Handle g_hfnCTFBot_ShouldQuickBuild;
 Handle g_hfnCTFBot_LeaveSquad;

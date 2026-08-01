@@ -173,6 +173,12 @@
                 "windows"   "\x55\x8B\xEC\x83\xEC\x30\x53\x57\x8B\x7D"
                 "linux"     "@_ZN6CTFBot23OnEventChangeAttributesEPKNS_23EventChangeAttributes_tE"
             }
+            "CTFPlayerShared::AddToSpyCloakMeter"
+            {
+                "library"   "server"
+                "windows"   "\x53\x8B\xDC\x83\xEC\x08\x83\xE4\xF0\x83\xC4\x04\x55\x8B\x6B\x2A\x89\x6C\x24\x2A\x8B\xEC\x83\xEC\x28\x56\x57\x8B\xF9\x6A\x39"
+                "linux"     "@_ZN15CTFPlayerShared18AddToSpyCloakMeterEfb"
+            }
 
             /*--------------------------------------------------------------------
               !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -299,6 +305,11 @@
             {
                 "windows"   "345"
                 "linux"     "351"
+            }
+            "CEconItemView::GetQuality"
+            {
+                "windows"   "9"
+                "linux"     "10"
             }
             "CTFPlayerShared::m_flInvisibility"
             {

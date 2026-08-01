@@ -25,6 +25,7 @@
 
 // Maximum number of attributes allowed on a single item
 #define MAX_ATTRIBUTES_PER_ITEM 20
+#define MAX_ITEM_NAME_LENGTH    128
 
 #define MAXPLAYERS_ARRAY_SAFE   ( MAXPLAYERS + 1 )
 
@@ -296,6 +297,14 @@ enum MissionType
     MISSION_SPY,              // maintain teams of spies harassing the enemy
     MISSION_ENGINEER,         // maintain engineer nests for harassing the enemy
     MISSION_REPROGRAMMED      // MvM: robot has been hacked and will do bad things to their team
+}
+
+enum WeaponRestrictionType
+{
+    ANY_WEAPON     = 0,
+    MELEE_ONLY     = 0x0001,
+    PRIMARY_ONLY   = 0x0002,
+    SECONDARY_ONLY = 0x0004
 }
 
 // Spectator Movement modes
