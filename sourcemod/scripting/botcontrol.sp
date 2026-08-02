@@ -19,7 +19,6 @@
 #include <tf2_stocks>
 #include <tf2items>
 #include <tf2attributes>
-#include <tf_econ_data>
 #include <vscript>
 #include <SteamWorks>
 #include <pluginstatemanager>
@@ -761,11 +760,6 @@ public void OnAllPluginsLoaded()
     if ( !LibraryExists( "vscript" ) )
     {
         SetFailState( "%T", "Missing_Library", LANG_SERVER, "VScript", "42" );
-    }
-
-    if ( !LibraryExists( "tf_econ_data" ) )
-    {
-        SetFailState( "%T", "Missing_Library", LANG_SERVER, "[TF2] Econ Data", "nosoop" );
     }
 
     if ( !LibraryExists( "actionslib" ) )
