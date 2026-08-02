@@ -433,6 +433,10 @@ void ResetGlobals( int iClient )
     g_aPlayerAttribs[ iClient ].bIsWaitingForFullReload = false;
     g_aPlayerAttribs[ iClient ].szOriginalName[ 0 ]     = EOS;
     g_aPlayerAttribs[ iClient ].szIdleSound[ 0 ]        = EOS;
+    g_aPlayerAttribs[ iClient ].iUpgradeLevel           = 0;
+    g_aPlayerAttribs[ iClient ].flBuffPulseTimer        = 0.0;
+    g_aPlayerAttribs[ iClient ].flDeployTimer           = 0.0;
+    g_aPlayerAttribs[ iClient ].vecAnchorPos            = { 0.0, 0.0, 0.0 };
 
     g_aBotAttribs[ iClient ].iPlayerSerial   = 0;
     g_aBotAttribs[ iClient ].bBlockFlagEvent = false;

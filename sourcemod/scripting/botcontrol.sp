@@ -1919,9 +1919,9 @@ public Action OnPlayerRunCmd(
     if ( eBombDeployingState != TF_BOMB_DEPLOYING_NONE )
     {
         // No moving or attacking while deploying
-        iButtons   &= ~( IN_ATTACK   | IN_ATTACK2  | IN_ATTACK3 |
-                         IN_JUMP     | IN_DUCK     | IN_FORWARD |
-                         IN_BACK     | IN_LEFT     | IN_RIGHT   |
+        iButtons   &= ~( IN_ATTACK   | IN_ATTACK2   | IN_ATTACK3 |
+                         IN_JUMP     | IN_DUCK      | IN_FORWARD |
+                         IN_BACK     | IN_LEFT      | IN_RIGHT   |
                          IN_MOVELEFT | IN_MOVERIGHT );
         vecVelocity = { 0.0, 0.0, 0.0 };
 
@@ -1937,7 +1937,7 @@ public Action OnPlayerRunCmd(
 
             // If we've been moved, give up and go back to normal behavior
             const float flMovedRange = 20.0;
-            if ( IsRangeGreaterThanVec( iClient, g_CarrierAttribs.vecAnchorPos, flMovedRange ) )
+            if ( IsRangeGreaterThanVec( iClient, g_aPlayerAttribs[ iClient ].vecAnchorPos, flMovedRange ) )
             {
                 // TODO: Send an "mvm_bomb_deploy_reset_by_player" event
 
@@ -1978,10 +1978,10 @@ public Action OnPlayerRunCmd(
         {
         case TF_BOMB_DEPLOYING_DELAY:
         {
-            if ( GetGameTime() > g_CarrierAttribs.flDeployTimer )
+            if ( GetGameTime() > g_aPlayerAttribs[ iClient ].flDeployTimer )
             {
                 PlaySpecificSequence( iClient, "primary_deploybomb" );
-                g_CarrierAttribs.flDeployTimer = GetGameTime() + tf_deploying_bomb_time.FloatValue;
+                g_aPlayerAttribs[ iClient ].flDeployTimer = GetGameTime() + tf_deploying_bomb_time.FloatValue;
                 SetDeployingBombState( iClient, TF_BOMB_DEPLOYING_ANIMATING );
 
                 char szSoundName[ 32 ];
@@ -2001,14 +2001,14 @@ public Action OnPlayerRunCmd(
 
         case TF_BOMB_DEPLOYING_ANIMATING:
         {
-            if ( GetGameTime() > g_CarrierAttribs.flDeployTimer )
+            if ( GetGameTime() > g_aPlayerAttribs[ iClient ].flDeployTimer )
             {
                 if ( iCaptureZone != -1 )
                 {
                     Capture( iCaptureZone, iClient );
                 }
 
-                g_CarrierAttribs.flDeployTimer = GetGameTime() + 2.0;
+                g_aPlayerAttribs[ iClient ].flDeployTimer = GetGameTime() + 2.0;
                 BroadcastSound( 255, "Announcer.MVM_Robots_Planted" );
                 SetDeployingBombState( iClient, TF_BOMB_DEPLOYING_COMPLETE );
                 SetEntProp( iClient, Prop_Data, "m_takedamage", DAMAGE_NO );
@@ -2019,7 +2019,7 @@ public Action OnPlayerRunCmd(
 
         case TF_BOMB_DEPLOYING_COMPLETE:
         {
-            if ( GetGameTime() > g_CarrierAttribs.flDeployTimer )
+            if ( GetGameTime() > g_aPlayerAttribs[ iClient ].flDeployTimer )
             {
                 SetDeployingBombState( iClient, TF_BOMB_DEPLOYING_NONE );
                 SetEntProp( iClient, Prop_Data, "m_takedamage", DAMAGE_YES );
@@ -2889,11 +2889,11 @@ Action PlayerControlBot( int iClient, TFVoiceCommand eVoiceCommand )
         // We need to manually set this because `bBlockFlagEvent` skips it
         if ( IsMiniBoss( iObserverTarget ) )
         {
-            g_CarrierAttribs.iUpgradeLevel = DONT_UPGRADE;
+            g_aPlayerAttribs[ iClient ].iUpgradeLevel = DONT_UPGRADE;
         }
         else
         {
-            g_CarrierAttribs.iUpgradeLevel = nFlagCarrierUpgradeLevel;
+            g_aPlayerAttribs[ iClient ].iUpgradeLevel = nFlagCarrierUpgradeLevel;
         }
 
         ApplyPreviousUpgrades( iClient );
@@ -3121,11 +3121,11 @@ Action HandleTeamplayFlagEvent_Pre( Event hEvent, const char[] szName, bool bDon
         // Mini-bosses don't upgrade - they are already tough
         if ( IsMiniBoss( iPlayer ) )
         {
-            g_CarrierAttribs.iUpgradeLevel = DONT_UPGRADE;
+            g_aPlayerAttribs[ iPlayer ].iUpgradeLevel = DONT_UPGRADE;
         }
         else
         {
-            g_CarrierAttribs.iUpgradeLevel = 0;
+            g_aPlayerAttribs[ iPlayer ].iUpgradeLevel = 0;
         }
         /*--------------------------------------------------------------------
           NOTE: Updating the objective resource happens in the
@@ -3648,10 +3648,10 @@ void CaptureZone_StartTouchPost( int iCaptureZone, int iEntity )
     }
 
     SetDeployingBombState( iEntity, TF_BOMB_DEPLOYING_DELAY );
-    g_CarrierAttribs.flDeployTimer = GetGameTime() + tf_deploying_bomb_delay_time.FloatValue;
+    g_aPlayerAttribs[ iEntity ].flDeployTimer = GetGameTime() + tf_deploying_bomb_delay_time.FloatValue;
 
     // Remember where we start deploying
-    GetClientAbsOrigin( iEntity, g_CarrierAttribs.vecAnchorPos );
+    GetClientAbsOrigin( iEntity, g_aPlayerAttribs[ iEntity ].vecAnchorPos );
 
     /*--------------------------------------------------------------------
       TODO: Manually block movement and attacking, but allow the
@@ -3694,7 +3694,7 @@ void CaptureZone_StartTouchPost( int iCaptureZone, int iEntity )
 -----------------------------------------------------------------F-F*/
 bool UpgradeOverTime( int iClient )
 {
-    if ( g_CarrierAttribs.iUpgradeLevel == DONT_UPGRADE )
+    if ( g_aPlayerAttribs[ iClient ].iUpgradeLevel == DONT_UPGRADE )
     {
         return false;
     }
@@ -3707,9 +3707,9 @@ bool UpgradeOverTime( int iClient )
     }
 
     // Do defensive buff effect ourselves (since we're not a soldier)
-    if ( g_CarrierAttribs.iUpgradeLevel > 0 && GetGameTime() > g_CarrierAttribs.flBuffPulseTimer )
+    if ( g_aPlayerAttribs[ iClient ].iUpgradeLevel > 0 && GetGameTime() > g_aPlayerAttribs[ iClient ].flBuffPulseTimer )
     {
-        g_CarrierAttribs.flBuffPulseTimer = GetGameTime() + 1.0;
+        g_aPlayerAttribs[ iClient ].flBuffPulseTimer = GetGameTime() + 1.0;
 
         const float flBuffRadius = 450.0;
         for ( int i = 1; i <= MaxClients; i++ )
@@ -3728,13 +3728,13 @@ bool UpgradeOverTime( int iClient )
     if ( GetGameTime() > GetNextMvMBombUpgradeTime() )
     {
         const int iMaxLevel = 3;
-        if ( g_CarrierAttribs.iUpgradeLevel < iMaxLevel )
+        if ( g_aPlayerAttribs[ iClient ].iUpgradeLevel < iMaxLevel )
         {
-            g_CarrierAttribs.iUpgradeLevel++;
+            g_aPlayerAttribs[ iClient ].iUpgradeLevel++;
 
             BroadcastSound( 255, "MVM.Warning" );
 
-            switch ( g_CarrierAttribs.iUpgradeLevel )
+            switch ( g_aPlayerAttribs[ iClient ].iUpgradeLevel )
             {
             case 1:
             {
@@ -3806,12 +3806,12 @@ void ApplyPreviousUpgrades( int iClient )
     if ( iUpgradeLevel >= 2 )
     {
         TF2Attrib_SetByName( iClient, "health regen", tf_mvm_bot_flag_carrier_health_regen.FloatValue );
-    }
 
-    if ( iUpgradeLevel == 3 )
-    {
-        // Add critz
-        TF2_AddCondition( iClient, TFCond_Kritzkrieged );
+        if ( iUpgradeLevel == 3 )
+        {
+            // Add critz
+            TF2_AddCondition( iClient, TFCond_Kritzkrieged );
+        }
     }
 }
 
