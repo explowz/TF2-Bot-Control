@@ -29,8 +29,6 @@
 PLAYERATTRIBUTES g_aPlayerAttribs[ MAXPLAYERS_ARRAY_SAFE ];
 BOTATTRIBUTES    g_aBotAttribs[ MAXPLAYERS_ARRAY_SAFE ];
 
-CARRIERATTRIBUTES g_CarrierAttribs;
-
 /*--------------------------------------------------------------------
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !!!!!!!!!!!!!!!!!!!!!!!! GLOBAL COUNTERS !!!!!!!!!!!!!!!!!!!!!!!!!

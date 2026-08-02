@@ -678,6 +678,7 @@ const int k_cbMaxGameServerName            = 64;
 const int k_cbMaxGameServerTags            = 128;
 const int k_cbMaxGameServerGameData        = 2048;
 
+#define DONT_UPGRADE -1
 enum struct PLAYERATTRIBUTES
 {
     int   iBotSerial;
@@ -692,6 +693,12 @@ enum struct PLAYERATTRIBUTES
     bool  bIsWaitingForFullReload;
     char  szOriginalName[ MAX_NAME_LENGTH ];
     char  szIdleSound[ 32 ];
+
+    // Bomb carrier attributes
+    int   iUpgradeLevel;
+    float flBuffPulseTimer;
+    float flDeployTimer;
+    float vecAnchorPos[ 3 ];
 
     bool IsControlling()
     {
@@ -708,13 +715,4 @@ enum struct BOTATTRIBUTES
     {
         return this.iPlayerSerial != 0;
     }
-}
-
-#define DONT_UPGRADE -1
-enum struct CARRIERATTRIBUTES
-{
-    int   iUpgradeLevel;
-    float flBuffPulseTimer;
-    float flDeployTimer;
-    float vecAnchorPos[ 3 ];
 }
