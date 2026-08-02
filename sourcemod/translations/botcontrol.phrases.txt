@@ -110,4 +110,9 @@
     {
         "en"    "Capture this gate!"
     }
+
+    "Cannot_Drop_Intelligence"
+    {
+        "en"    "The bomb cannot be dropped."
+    }
 }

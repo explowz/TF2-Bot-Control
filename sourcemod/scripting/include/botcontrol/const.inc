@@ -25,6 +25,7 @@
 
 // Maximum number of attributes allowed on a single item
 #define MAX_ATTRIBUTES_PER_ITEM 20
+#define MAX_ITEM_NAME_LENGTH    128
 
 #define MAXPLAYERS_ARRAY_SAFE   ( MAXPLAYERS + 1 )
 
@@ -296,6 +297,14 @@ enum MissionType
     MISSION_SPY,              // maintain teams of spies harassing the enemy
     MISSION_ENGINEER,         // maintain engineer nests for harassing the enemy
     MISSION_REPROGRAMMED      // MvM: robot has been hacked and will do bad things to their team
+}
+
+enum WeaponRestrictionType
+{
+    ANY_WEAPON     = 0,
+    MELEE_ONLY     = 0x0001,
+    PRIMARY_ONLY   = 0x0002,
+    SECONDARY_ONLY = 0x0004
 }
 
 // Spectator Movement modes
@@ -669,6 +678,7 @@ const int k_cbMaxGameServerName            = 64;
 const int k_cbMaxGameServerTags            = 128;
 const int k_cbMaxGameServerGameData        = 2048;
 
+#define DONT_UPGRADE -1
 enum struct PLAYERATTRIBUTES
 {
     int   iBotSerial;
@@ -683,6 +693,12 @@ enum struct PLAYERATTRIBUTES
     bool  bIsWaitingForFullReload;
     char  szOriginalName[ MAX_NAME_LENGTH ];
     char  szIdleSound[ 32 ];
+
+    // Bomb carrier attributes
+    int   iUpgradeLevel;
+    float flBuffPulseTimer;
+    float flDeployTimer;
+    float vecAnchorPos[ 3 ];
 
     bool IsControlling()
     {
@@ -699,13 +715,4 @@ enum struct BOTATTRIBUTES
     {
         return this.iPlayerSerial != 0;
     }
-}
-
-#define DONT_UPGRADE -1
-enum struct CARRIERATTRIBUTES
-{
-    int   iUpgradeLevel;
-    float flBuffPulseTimer;
-    float flDeployTimer;
-    float vecAnchorPos[ 3 ];
 }

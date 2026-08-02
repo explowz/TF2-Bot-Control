@@ -97,11 +97,16 @@
 
     "Instruction_Destroy_Sentry"
     {
-        "en"    "Уничтожь турель!"
+        "ru"    "Уничтожь турель!"
     }
 
     "Instruction_Capture_Gate"
     {
-        "en"    "Захвати ворота!"
+        "ru"    "Захвати ворота!"
+    }
+
+    "Cannot_Drop_Intelligence"
+    {
+        "ru"    "Нельзя бросить бомбу."
     }
 }

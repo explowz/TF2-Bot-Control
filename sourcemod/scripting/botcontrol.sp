@@ -49,7 +49,7 @@ public Plugin myinfo =
     name        = "[TF2] MvM Bot Control",
     author      = "Bintr",
     description = "Allows players to take control of a robot in the Mann vs. Machine gamemode.",
-    version     = "0.8",
+    version     = "0.9",
     url         = "https://github.com/explowz/TF2-Bot-Control"
 };
 
@@ -392,7 +392,7 @@ public void OnPluginStart()
 
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
 
-    StartPrepSDKCall( SDKCall_Player );
+    StartPrepSDKCall( SDKCall_Raw );
     PrepSDKCall_SetFromConf( hConf, SDKConf_Signature, "CTFPlayerShared::ResetRageBuffs" );
     g_hfnCTFPlayerShared_ResetRageBuffs = EndPrepSDKCall();
     if ( !g_hfnCTFPlayerShared_ResetRageBuffs )
@@ -609,6 +609,30 @@ public void OnPluginStart()
         SetFailState( "%T", "SDKCall_Prep_Failed", LANG_SERVER, "CTFWeaponBase::Clip1" );
     }
 
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+
+    StartPrepSDKCall( SDKCall_Raw );
+    PrepSDKCall_SetFromConf( hConf, SDKConf_Virtual, "CEconItemView::GetQuality" );
+    PrepSDKCall_SetReturnInfo( SDKType_PlainOldData, SDKPass_Plain ); // int32
+    g_hfnCEconItemView_GetQuality = EndPrepSDKCall();
+    if ( !g_hfnCEconItemView_GetQuality )
+    {
+        SetFailState( "%T", "SDKCall_Prep_Failed", LANG_SERVER, "CEconItemView::GetQuality" );
+    }
+
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+
+    StartPrepSDKCall( SDKCall_Raw );
+    PrepSDKCall_SetFromConf( hConf, SDKConf_Signature, "CTFPlayerShared::AddToSpyCloakMeter" );
+    PrepSDKCall_AddParameter( SDKType_Float, SDKPass_Plain ); // float val
+    PrepSDKCall_AddParameter( SDKType_Bool, SDKPass_Plain );  // bool bForce
+    PrepSDKCall_SetReturnInfo( SDKType_Bool, SDKPass_Plain ); // bool
+    g_hfnCTFPlayerShared_AddToSpyCloakMeter = EndPrepSDKCall();
+    if ( !g_hfnCTFPlayerShared_AddToSpyCloakMeter )
+    {
+        SetFailState( "%T", "SDKCall_Prep_Failed", LANG_SERVER, "CTFPlayerShared::AddToSpyCloakMeter" );
+    }
+
     /*--------------------------------------------------------------------
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!! DYNAMIC HOOKS !!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -686,10 +710,10 @@ public void OnPluginStart()
     PSM_AddCommandListener( HandleTaunt, "taunt" );
     PSM_AddCommandListener( HandleTaunt, "weapon_taunt" );
 
+    PSM_AddCommandListener( HandleDropItem, "dropitem" );
+
     PSM_AddEventHook( "player_team", HandlePlayerTeamEvent_Pre, EventHookMode_Pre );
     PSM_AddEventHook( "player_spawn", HandlePlayerSpawnEvent_Pre, EventHookMode_Pre );
-    // Apparently this is unneeded
-    // PSM_AddEventHook( GAME_EVENT_PLAYER_DEATH, HandlePlayerDeathEvent_Pre, EventHookMode_Pre );
     PSM_AddEventHook( "teamplay_flag_event", HandleTeamplayFlagEvent_Pre, EventHookMode_Pre );
 
     // HUD messages are taken care of in `OnPlayerRunCmdPost`
@@ -1147,10 +1171,10 @@ public void OnAllPluginsLoaded()
     StartPrepSDKCall( SDKCall_Player );
     SET_OFFSET_OR_ADDRESS( fn )
     PrepSDKCall_SetReturnInfo( SDKType_Bool, SDKPass_Plain ); // bool
-    g_hfnCTFPlayerShared_IsAllowedToTaunt = EndPrepSDKCall();
-    if ( !g_hfnCTFPlayerShared_IsAllowedToTaunt )
+    g_hfnCTFPlayer_IsAllowedToTaunt = EndPrepSDKCall();
+    if ( !g_hfnCTFPlayer_IsAllowedToTaunt )
     {
-        SetFailState( "%T", "SDKCall_Prep_Failed_VScript", LANG_SERVER, "CTFPlayerShared::IsAllowedToTaunt" );
+        SetFailState( "%T", "SDKCall_Prep_Failed_VScript", LANG_SERVER, "CTFPlayer::IsAllowedToTaunt" );
     }
 
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
@@ -1706,7 +1730,7 @@ public void OnPlayerRunCmdPre(
     }
 
     GivePlayerAmmo( iClient, 100, TF_AMMO_METAL, true );
-    SetEntPropFloat( iClient, Prop_Send, "m_flCloakMeter", 100.0 );
+    AddToSpyCloakMeter( GetPlayerShared( iClient ), 100.0, true );
 
     int iBot = GetClientFromSerial( g_aPlayerAttribs[ iClient ].iBotSerial );
 
@@ -1750,7 +1774,7 @@ public void OnPlayerRunCmdPre(
     if ( TF2_GetPlayerClass( iClient ) == TFClass_Medic )
     {
         int iActiveWeapon = TF2_GetClientActiveWeapon( iClient );
-        if ( TF2Util_GetWeaponID( iActiveWeapon ) == TF_WEAPON_MEDIGUN )
+        if ( iActiveWeapon != -1 && TF2Util_GetWeaponID( iActiveWeapon ) == TF_WEAPON_MEDIGUN )
         {
             if ( GetMedigunType( iActiveWeapon ) == MEDIGUN_RESIST )
             {
@@ -1767,21 +1791,11 @@ public void OnPlayerRunCmdPre(
 
     if ( HasMission( iBot, MISSION_DESTROY_SENTRIES ) )
     {
-        // Prevent other plugins from unsetting this flag
         DebugOverlayBits_t fDebugOverlays = view_as< DebugOverlayBits_t >( GetEntProp( iClient, Prop_Data, "m_debugOverlays" ) );
         if ( !( fDebugOverlays & OVERLAY_BUDDHA_MODE ) )
         {
+            // Prevent other plugins from unsetting this flag
             SetEntProp( iClient, Prop_Data, "m_debugOverlays", fDebugOverlays | OVERLAY_BUDDHA_MODE );
-        }
-
-        // This handles the bug described in https://developer.valvesoftware.com/wiki/Buddha
-        if ( GetClientHealth( iClient ) == 1 && HasMission( iBot, MISSION_DESTROY_SENTRIES ) )
-        {
-            // Prevent the player from getting kicked for spamming commands
-            if ( IsAllowedToTaunt( iClient ) )
-            {
-                FakeClientCommand( iClient, "taunt" );
-            }
         }
 
         if ( GetGameTime() > g_aPlayerAttribs[ iClient ].flTalkTimer )
@@ -1790,20 +1804,30 @@ public void OnPlayerRunCmdPre(
             EmitGameSoundToAll( "MVM.SentryBusterIntro", iClient );
         }
 
-        int nSentries        = 0;
-        int iObjectSentrygun = -1;
-        while ( ( iObjectSentrygun = FindEntityByClassname( iObjectSentrygun, "obj_sentrygun" ) ) != -1 )
+        bool bDetonate = ( GetClientHealth( iClient ) == 1 );
+        if ( !bDetonate )
         {
-            if ( GetTeamNumber( iObjectSentrygun ) == TF_TEAM_PVE_DEFENDERS )
+            int nSentries        = 0;
+            int iObjectSentrygun = -1;
+            while ( ( iObjectSentrygun = FindEntityByClassname( iObjectSentrygun, "obj_sentrygun" ) ) != -1 )
             {
-                nSentries++;
+                if ( GetTeamNumber( iObjectSentrygun ) == TF_TEAM_PVE_DEFENDERS )
+                {
+                    nSentries++;
+                }
             }
+
+            // Blow up right where we are if there are no more enemy sentries
+            bDetonate = ( nSentries == 0 );
         }
 
-        if ( nSentries == 0 )
+        if ( bDetonate )
         {
-            // Blow up right where we are if there are no more enemy sentries
-            SDKHooks_TakeDamage( iClient, iClient, iClient, FLT_MAX, DMG_PREVENT_PHYSICS_FORCE );
+            // Prevent the player from getting kicked for spamming commands
+            if ( IsAllowedToTaunt( iClient ) )
+            {
+                FakeClientCommand( iClient, "taunt" );
+            }
         }
     }
 
@@ -1895,9 +1919,9 @@ public Action OnPlayerRunCmd(
     if ( eBombDeployingState != TF_BOMB_DEPLOYING_NONE )
     {
         // No moving or attacking while deploying
-        iButtons   &= ~( IN_ATTACK   | IN_ATTACK2  | IN_ATTACK3 |
-                         IN_JUMP     | IN_DUCK     | IN_FORWARD |
-                         IN_BACK     | IN_LEFT     | IN_RIGHT   |
+        iButtons   &= ~( IN_ATTACK   | IN_ATTACK2   | IN_ATTACK3 |
+                         IN_JUMP     | IN_DUCK      | IN_FORWARD |
+                         IN_BACK     | IN_LEFT      | IN_RIGHT   |
                          IN_MOVELEFT | IN_MOVERIGHT );
         vecVelocity = { 0.0, 0.0, 0.0 };
 
@@ -1913,7 +1937,7 @@ public Action OnPlayerRunCmd(
 
             // If we've been moved, give up and go back to normal behavior
             const float flMovedRange = 20.0;
-            if ( IsRangeGreaterThanVec( iClient, g_CarrierAttribs.vecAnchorPos, flMovedRange ) )
+            if ( IsRangeGreaterThanVec( iClient, g_aPlayerAttribs[ iClient ].vecAnchorPos, flMovedRange ) )
             {
                 // TODO: Send an "mvm_bomb_deploy_reset_by_player" event
 
@@ -1954,10 +1978,10 @@ public Action OnPlayerRunCmd(
         {
         case TF_BOMB_DEPLOYING_DELAY:
         {
-            if ( GetGameTime() > g_CarrierAttribs.flDeployTimer )
+            if ( GetGameTime() > g_aPlayerAttribs[ iClient ].flDeployTimer )
             {
                 PlaySpecificSequence( iClient, "primary_deploybomb" );
-                g_CarrierAttribs.flDeployTimer = GetGameTime() + tf_deploying_bomb_time.FloatValue;
+                g_aPlayerAttribs[ iClient ].flDeployTimer = GetGameTime() + tf_deploying_bomb_time.FloatValue;
                 SetDeployingBombState( iClient, TF_BOMB_DEPLOYING_ANIMATING );
 
                 char szSoundName[ 32 ];
@@ -1977,14 +2001,14 @@ public Action OnPlayerRunCmd(
 
         case TF_BOMB_DEPLOYING_ANIMATING:
         {
-            if ( GetGameTime() > g_CarrierAttribs.flDeployTimer )
+            if ( GetGameTime() > g_aPlayerAttribs[ iClient ].flDeployTimer )
             {
                 if ( iCaptureZone != -1 )
                 {
                     Capture( iCaptureZone, iClient );
                 }
 
-                g_CarrierAttribs.flDeployTimer = GetGameTime() + 2.0;
+                g_aPlayerAttribs[ iClient ].flDeployTimer = GetGameTime() + 2.0;
                 BroadcastSound( 255, "Announcer.MVM_Robots_Planted" );
                 SetDeployingBombState( iClient, TF_BOMB_DEPLOYING_COMPLETE );
                 SetEntProp( iClient, Prop_Data, "m_takedamage", DAMAGE_NO );
@@ -1995,7 +2019,7 @@ public Action OnPlayerRunCmd(
 
         case TF_BOMB_DEPLOYING_COMPLETE:
         {
-            if ( GetGameTime() > g_CarrierAttribs.flDeployTimer )
+            if ( GetGameTime() > g_aPlayerAttribs[ iClient ].flDeployTimer )
             {
                 SetDeployingBombState( iClient, TF_BOMB_DEPLOYING_NONE );
                 SetEntProp( iClient, Prop_Data, "m_takedamage", DAMAGE_YES );
@@ -2850,7 +2874,7 @@ Action PlayerControlBot( int iClient, TFVoiceCommand eVoiceCommand )
         float flMvMNextBombUpgradeTime = GetNextMvMBombUpgradeTime();
 
         // Give the bomb to the player
-        int iBomb = GetItem( iObserverTarget );
+        int iBomb = CTFPlayer_GetItem( iObserverTarget );
         DropFlag( iObserverTarget, true );
         /*--------------------------------------------------------------------
           BUGBUG: The player's HUD doesn't get updated and always points to
@@ -2865,11 +2889,11 @@ Action PlayerControlBot( int iClient, TFVoiceCommand eVoiceCommand )
         // We need to manually set this because `bBlockFlagEvent` skips it
         if ( IsMiniBoss( iObserverTarget ) )
         {
-            g_CarrierAttribs.iUpgradeLevel = DONT_UPGRADE;
+            g_aPlayerAttribs[ iClient ].iUpgradeLevel = DONT_UPGRADE;
         }
         else
         {
-            g_CarrierAttribs.iUpgradeLevel = nFlagCarrierUpgradeLevel;
+            g_aPlayerAttribs[ iClient ].iUpgradeLevel = nFlagCarrierUpgradeLevel;
         }
 
         ApplyPreviousUpgrades( iClient );
@@ -3001,6 +3025,41 @@ Action HandleTaunt( int iClient, const char[] szCommand, int argc )
 }
 
 /*F+F+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+  Function: HandleDropItem
+
+  Summary:  This function is called every time a player tries drop
+            the item they are carrying (if any). It blocks human
+            invaders from dropping the bomb so we don't have to
+            deal with manually removing the the upgrade attributes
+            and conditions.
+
+  Args:     int iClient
+              Index of client that sent the command.
+            const char[] szCommand
+              Name of the command as typed by the client. To get name
+              as typed, use GetCmdArg() and specify argument 0.
+            int argc
+              Argument count.
+
+  Returns:  Action
+              `Plugin_Continue` to allow the server to process the
+              command, `Plugin_Handled` or `Plugin_Stop` to block
+              the command from being processed.
+-----------------------------------------------------------------F-F*/
+Action HandleDropItem( int iClient, const char[] szCommand, int argc )
+{
+#if !defined _DEBUG
+    if ( g_aPlayerAttribs[ iClient].IsControlling() && HasTheFlag( iClient ) )
+    {
+        PrintHintText( iClient, "%t", "Cannot_Drop_Intelligence" );
+        return Plugin_Stop;
+    }
+#endif
+
+    return Plugin_Continue;
+}
+
+/*F+F+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   Function: HandleTeamplayFlagEvent_Pre
 
   Summary:  This function is called before every "teamplay_flag_event"
@@ -3062,11 +3121,11 @@ Action HandleTeamplayFlagEvent_Pre( Event hEvent, const char[] szName, bool bDon
         // Mini-bosses don't upgrade - they are already tough
         if ( IsMiniBoss( iPlayer ) )
         {
-            g_CarrierAttribs.iUpgradeLevel = DONT_UPGRADE;
+            g_aPlayerAttribs[ iPlayer ].iUpgradeLevel = DONT_UPGRADE;
         }
         else
         {
-            g_CarrierAttribs.iUpgradeLevel = 0;
+            g_aPlayerAttribs[ iPlayer ].iUpgradeLevel = 0;
         }
         /*--------------------------------------------------------------------
           NOTE: Updating the objective resource happens in the
@@ -3078,7 +3137,7 @@ Action HandleTeamplayFlagEvent_Pre( Event hEvent, const char[] szName, bool bDon
     {
         TF2Attrib_RemoveByName( iPlayer, "no_attack" );
 
-        ResetRageBuffs( iPlayer );
+        ResetRageBuffs( GetPlayerShared( iPlayer ) );
     }
 
     return Plugin_Continue;
@@ -3117,41 +3176,6 @@ Action HandlePlayerTeamEvent_Pre( Event hEvent, const char[] szName, bool dDontB
 
     return Plugin_Continue;
 }
-
-/*F+F+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  Function: HandlePlayerDeathEvent_Pre
-
-  Summary:  This function is called before every "player_death"
-            event gets fired and its purpose is to block controlled
-            bot deaths from appearing in the killfeed.
-
-  Args:     Event hEvent
-              Handle to event.
-            const char[] szName
-              A string representing the name of the event. In the
-              case of this function this will always be "player_death".
-            bool bDontBroadcast
-              If this variable is `true`, the event was not broadcast
-              to clients. If this variable is `false`, the event was
-              broadcast to clients.
-              May not correspond to the real value. Use the property
-              BroadcastDisabled.
-
-  Returns:  Action
-              `Plugin_Continue` to allow the event to be fired,
-              `Plugin_Handled` to block the event.
------------------------------------------------------------------F-F*/
-/*Action HandlePlayerDeathEvent_Pre( Event hEvent, const char[] szName, bool bDontBroadcast )
-{
-    int iVictim = hEvent.GetInt( "victim_entindex" );
-
-    if ( g_aBotAttribs[ iVictim ].IsControlled() )
-    {
-        hEvent.SetBool( "silent_kill", true );
-    }
-
-    return Plugin_Continue;
-}*/
 
 /*F+F+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   Function: HandlePlayerSpawnEvent_Pre
@@ -3624,10 +3648,10 @@ void CaptureZone_StartTouchPost( int iCaptureZone, int iEntity )
     }
 
     SetDeployingBombState( iEntity, TF_BOMB_DEPLOYING_DELAY );
-    g_CarrierAttribs.flDeployTimer = GetGameTime() + tf_deploying_bomb_delay_time.FloatValue;
+    g_aPlayerAttribs[ iEntity ].flDeployTimer = GetGameTime() + tf_deploying_bomb_delay_time.FloatValue;
 
     // Remember where we start deploying
-    GetClientAbsOrigin( iEntity, g_CarrierAttribs.vecAnchorPos );
+    GetClientAbsOrigin( iEntity, g_aPlayerAttribs[ iEntity ].vecAnchorPos );
 
     /*--------------------------------------------------------------------
       TODO: Manually block movement and attacking, but allow the
@@ -3670,7 +3694,7 @@ void CaptureZone_StartTouchPost( int iCaptureZone, int iEntity )
 -----------------------------------------------------------------F-F*/
 bool UpgradeOverTime( int iClient )
 {
-    if ( g_CarrierAttribs.iUpgradeLevel == DONT_UPGRADE )
+    if ( g_aPlayerAttribs[ iClient ].iUpgradeLevel == DONT_UPGRADE )
     {
         return false;
     }
@@ -3683,9 +3707,9 @@ bool UpgradeOverTime( int iClient )
     }
 
     // Do defensive buff effect ourselves (since we're not a soldier)
-    if ( g_CarrierAttribs.iUpgradeLevel > 0 && GetGameTime() > g_CarrierAttribs.flBuffPulseTimer )
+    if ( g_aPlayerAttribs[ iClient ].iUpgradeLevel > 0 && GetGameTime() > g_aPlayerAttribs[ iClient ].flBuffPulseTimer )
     {
-        g_CarrierAttribs.flBuffPulseTimer = GetGameTime() + 1.0;
+        g_aPlayerAttribs[ iClient ].flBuffPulseTimer = GetGameTime() + 1.0;
 
         const float flBuffRadius = 450.0;
         for ( int i = 1; i <= MaxClients; i++ )
@@ -3704,13 +3728,13 @@ bool UpgradeOverTime( int iClient )
     if ( GetGameTime() > GetNextMvMBombUpgradeTime() )
     {
         const int iMaxLevel = 3;
-        if ( g_CarrierAttribs.iUpgradeLevel < iMaxLevel )
+        if ( g_aPlayerAttribs[ iClient ].iUpgradeLevel < iMaxLevel )
         {
-            g_CarrierAttribs.iUpgradeLevel++;
+            g_aPlayerAttribs[ iClient ].iUpgradeLevel++;
 
             BroadcastSound( 255, "MVM.Warning" );
 
-            switch ( g_CarrierAttribs.iUpgradeLevel )
+            switch ( g_aPlayerAttribs[ iClient ].iUpgradeLevel )
             {
             case 1:
             {
@@ -3782,12 +3806,12 @@ void ApplyPreviousUpgrades( int iClient )
     if ( iUpgradeLevel >= 2 )
     {
         TF2Attrib_SetByName( iClient, "health regen", tf_mvm_bot_flag_carrier_health_regen.FloatValue );
-    }
 
-    if ( iUpgradeLevel == 3 )
-    {
-        // Add critz
-        TF2_AddCondition( iClient, TFCond_Kritzkrieged );
+        if ( iUpgradeLevel == 3 )
+        {
+            // Add critz
+            TF2_AddCondition( iClient, TFCond_Kritzkrieged );
+        }
     }
 }
 
@@ -3995,8 +4019,7 @@ void HandleAttack(
     }
 
     int iActiveWeapon = TF2_GetClientActiveWeapon( iClient );
-
-    if ( IsBarrageAndReloadWeapon( iBot, iActiveWeapon ) )
+    if ( iActiveWeapon != -1 && IsBarrageAndReloadWeapon( iBot, iActiveWeapon ) )
     {
         if ( HasAttribute( iBot, HOLD_FIRE_UNTIL_FULL_RELOAD ) || tf_bot_always_full_reload.BoolValue )
         {
