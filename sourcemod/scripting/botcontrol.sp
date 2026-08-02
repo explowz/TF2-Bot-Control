@@ -49,7 +49,7 @@ public Plugin myinfo =
     name        = "[TF2] MvM Bot Control",
     author      = "Bintr",
     description = "Allows players to take control of a robot in the Mann vs. Machine gamemode.",
-    version     = "0.8",
+    version     = "0.9",
     url         = "https://github.com/explowz/TF2-Bot-Control"
 };
 
@@ -2874,7 +2874,7 @@ Action PlayerControlBot( int iClient, TFVoiceCommand eVoiceCommand )
         float flMvMNextBombUpgradeTime = GetNextMvMBombUpgradeTime();
 
         // Give the bomb to the player
-        int iBomb = GetItem( iObserverTarget );
+        int iBomb = CTFPlayer_GetItem( iObserverTarget );
         DropFlag( iObserverTarget, true );
         /*--------------------------------------------------------------------
           BUGBUG: The player's HUD doesn't get updated and always points to

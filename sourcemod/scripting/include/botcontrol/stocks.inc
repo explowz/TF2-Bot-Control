@@ -371,7 +371,7 @@ stock void RestoreBot( int iClient )
         float flMvMNextBombUpgradeTime = GetNextMvMBombUpgradeTime();*/
 
         // Give the bomb to the bot
-        int iBomb = GetItem( iClient );
+        int iBomb = CTFPlayer_GetItem( iClient );
         DropFlag( iClient, true );
         PickUp( iBomb, iBot, false );
 
@@ -744,15 +744,33 @@ stock int GetItemQuality( int iItem )
 
             This is the preferred function to get an item's quality.
 
-  Args:     int iItem
-              Item entity index.
+  Args:     Address pItem
+              Memory address of an item's `m_Item` member variable.
 
   Returns:  int
               Item quality.
 F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
-stock int GetQuality( int iItem )
+stock int GetQuality( Address pItem )
 {
-    return SDKCall( g_hfnCEconItemView_GetQuality, GetEntityAddress( iItem ) + view_as< Address >( GetEntSendPropOffs( iItem, "m_Item", true ) ) );
+    return SDKCall( g_hfnCEconItemView_GetQuality, pItem );
+}
+
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: CAttributeContainer_GetItem
+
+  Summary:  This function gets the memory address of an item entity's
+            `m_Item` member variable.
+
+  Args:     int iItem
+              Item entity.
+
+  Returns:  Address
+              Memory address of the item entity's `m_Item` member
+              variable.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
+stock Address CAttributeContainer_GetItem( int iItem )
+{
+    return GetEntityAddress( iItem ) + view_as< Address >( GetEntSendPropOffs( iItem, "m_Item", true ) );
 }
 
 /*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
@@ -806,7 +824,7 @@ stock int CopyItem( int iItem, int iClient )
     Handle hNewItem = TF2Items_CreateItem( OVERRIDE_ALL | PRESERVE_ATTRIBUTES );
     TF2Items_SetClassname( hNewItem, szClassname );
     TF2Items_SetItemIndex( hNewItem, iItemDefinitionIndex );
-    TF2Items_SetQuality( hNewItem, GetQuality( iItem ) );
+    TF2Items_SetQuality( hNewItem, GetQuality( CAttributeContainer_GetItem( iItem ) ) );
     TF2Items_SetLevel( hNewItem, GetItemLevel( iItem ) );
 
     TF2Items_SetNumAttributes( hNewItem, nAttribs );
@@ -2085,11 +2103,11 @@ stock int GetGroundEntity( int iClient )
 F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
 stock bool HasItem( int iClient )
 {
-    return GetItem( iClient ) != -1;
+    return GetEntPropEnt( iClient, Prop_Send, "m_hItem" ) != -1;
 }
 
 /*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
-  Function: GetItem
+  Function: CTFPlayer_GetItem
 
   Summary:  This function get the item a client is currently
             carrying.
@@ -2100,7 +2118,7 @@ stock bool HasItem( int iClient )
   Returns:  int
               Index of item entity the client is carrying.
 F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
-stock int GetItem( int iClient )
+stock int CTFPlayer_GetItem( int iClient )
 {
     return GetEntPropEnt( iClient, Prop_Send, "m_hItem" );
 }
