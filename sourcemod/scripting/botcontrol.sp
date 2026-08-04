@@ -676,14 +676,16 @@ public void OnPluginStart()
     g_CTFPlayer_bIsMissionEnemy_Offset                        = g_CTFPlayer_nDeployingBombState_Offset + hConf.GetOffset( "CTFPlayer::m_bIsMissionEnemy" );
     g_CTFPlayer_bIsSupportEnemy_Offset                        = g_CTFPlayer_bIsMissionEnemy_Offset + hConf.GetOffset( "CTFPlayer::m_bIsSupportEnemy" );
     g_CTFPlayer_bIsLimitedSupportEnemy_Offset                 = g_CTFPlayer_bIsSupportEnemy_Offset + hConf.GetOffset( "CTFPlayer::m_bIsLimitedSupportEnemy" );
+    g_CTFPlayer_pWaveSpawnPopulator_Offset                    = FindSendPropInfo( "CTFPlayer", "m_bMatchSafeToLeave" ) + hConf.GetOffset( "CTFPlayer::m_pWaveSpawnPopulator" );
     g_CTFPlayerShared_flInvisibility_Offset                   = FindSendPropInfo( "CTFPlayer", "m_flInvisChangeCompleteTime" ) + hConf.GetOffset( "CTFPlayerShared::m_flInvisibility" );
     g_CTFBot_teleportWhereName_Offset                         = hConf.GetOffset( "CTFBot::m_teleportWhereName" );
+    g_CTFBot_squad_Offset                                     = hConf.GetOffset( "CTFBot::m_squad" );
     g_CObjectTeleporter_teleportWhereName_Offset              = hConf.GetOffset( "CObjectTeleporter::m_teleportWhereName" );
     g_CBaseObject_bForceQuickBuild_Offset                     = FindSendPropInfo( "CBaseObject", "m_bServerOverridePlacement" ) + hConf.GetOffset( "CBaseObject::m_bForceQuickBuild" );
     // g_CTFBotDeliverFlag_upgradeLevel_Offset                   = hConf.GetOffset( "CTFBotDeliverFlag::m_upgradeLevel" );
     g_CPopulationManager_canBotsAttackWhileInSpawnRoom_Offset = hConf.GetOffset( "CPopulationManager::m_canBotsAttackWhileInSpawnRoom" );
-    g_CTFPlayer_pWaveSpawnPopulator_Offset                    = FindSendPropInfo( "CTFPlayer", "m_bMatchSafeToLeave" ) + hConf.GetOffset( "CTFPlayer::m_pWaveSpawnPopulator" );
     g_CTraceFilterSimple_pPassEnt_Offset                      = hConf.GetOffset( "CTraceFilterSimple::m_pPassEnt" );
+    g_CTFBotSquad_leader_Offset                               = hConf.GetOffset( "CTFBotSquad::m_leader" );
 
     delete hConf;
 
@@ -780,6 +782,19 @@ public void OnAllPluginsLoaded()
     --------------------------------------------------------------------*/
 
     VScriptFunction fn;
+
+    fn = VScript_GetClassFunction( "CTFBot", "IsInASquad" );
+
+    StartPrepSDKCall( SDKCall_Player );
+    SET_OFFSET_OR_ADDRESS( fn )
+    PrepSDKCall_SetReturnInfo( SDKType_Bool, SDKPass_Plain ); // bool
+    g_hfnCTFBot_IsInASquad = EndPrepSDKCall();
+    if ( !g_hfnCTFBot_IsInASquad )
+    {
+        SetFailState( "%T", "SDKCall_Prep_Failed_VScript", LANG_SERVER, "CTFBot::IsInASquad" );
+    }
+
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
 
     fn = VScript_GetClassFunction( "CTFBot", "LeaveSquad" );
 
@@ -2853,9 +2868,31 @@ Action PlayerControlBot( int iClient, TFVoiceCommand eVoiceCommand )
         }
     }
 
-    // TODO: Find a way to insert the player into the squad
-    LeaveSquad( iObserverTarget );
-    RemoveTag( iObserverTarget, "bot_squad_member" );
+    /*--------------------------------------------------------------------
+      TODO: Detour `CTFBotEscortSquadLeader::Update` and reimplement it
+      without references to `PathFollower`.
+    --------------------------------------------------------------------*/
+    if ( IsInASquad( iObserverTarget ) )
+    {
+        Address pSquad = GetSquad( iObserverTarget );
+        if ( GetLeader( pSquad ) == iObserverTarget )
+        {
+            // Only keep medics in the squad, as their logic doesn't access `CTFBot` properties
+            for ( int i = 1; i <= MaxClients; i++ )
+            {
+                if ( IsClientInGame( i ) && IsFakeClient( i ) && TF2_GetClientTeam( i ) == TF_TEAM_PVE_INVADERS )
+                {
+                    if ( GetSquad( i ) == pSquad && TF2_GetPlayerClass( i ) != TFClass_Medic && i != iObserverTarget )
+                    {
+                        LeaveSquad( i );
+                    }
+                }
+            }
+
+            // The player is the new squad leader
+            StoreEntityToHandleAddress( pSquad + view_as< Address >( g_CTFBotSquad_leader_Offset ), iClient );
+        }
+    }
 
     if ( HasTheFlag( iObserverTarget ) )
     {
@@ -3982,7 +4019,9 @@ void HandleAttack(
         }
     }
 
-    if ( TF2_GetPlayerClass( iClient ) == TFClass_Medic && !HasAttribute( iBot, PROJECTILE_SHIELD ) )
+    TFClassType eClass = TF2_GetPlayerClass( iClient );
+
+    if ( eClass == TFClass_Medic && !HasAttribute( iBot, PROJECTILE_SHIELD ) )
     {
         iButtons &= ~IN_ATTACK3;
     }
@@ -4041,6 +4080,15 @@ void HandleAttack(
     {
         iButtons |= IN_ATTACK;
         return;
+    }
+
+    if ( eClass == TFClass_Medic )
+    {
+        if ( iActiveWeapon != -1 && TF2Util_GetWeaponID( iActiveWeapon ) == TF_WEAPON_MEDIGUN )
+        {
+            // Don't interfere with medic healing
+            return;
+        }
     }
 
     if ( g_aPlayerAttribs[ iClient ].bInSpawn )
@@ -4116,6 +4164,27 @@ void ShowInstruction( int iClient )
                                                 szText,
                                                 iClient,
                                                 "coach/coach_attack_here.wav",
+                                                10.0
+                                               );
+
+            g_aPlayerAttribs[ iClient ].flLastInstructionTime = GetGameTime();
+            return;
+        }
+    }
+
+    if ( IsInASquad( iBot ) )
+    {
+        int iLeader = GetLeader( GetSquad( iBot ) );
+        if ( iLeader != -1 && iLeader != iClient )
+        {
+            FormatEx( szText, sizeof( szText ), "%T", "Instruction_Protect_Leader", iClient );
+
+            TF2_ShowFollowingAnnotationToClient(
+                                                iClient,
+                                                iLeader,
+                                                szText,
+                                                iClient,
+                                                "coach/coach_defend_here.wav",
                                                 10.0
                                                );
 
