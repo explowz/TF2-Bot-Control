@@ -4019,7 +4019,9 @@ void HandleAttack(
         }
     }
 
-    if ( TF2_GetPlayerClass( iClient ) == TFClass_Medic && !HasAttribute( iBot, PROJECTILE_SHIELD ) )
+    TFClassType eClass = TF2_GetPlayerClass( iClient );
+
+    if ( eClass == TFClass_Medic && !HasAttribute( iBot, PROJECTILE_SHIELD ) )
     {
         iButtons &= ~IN_ATTACK3;
     }
@@ -4078,6 +4080,15 @@ void HandleAttack(
     {
         iButtons |= IN_ATTACK;
         return;
+    }
+
+    if ( eClass == TFClass_Medic )
+    {
+        if ( iActiveWeapon != -1 && TF2Util_GetWeaponID( iActiveWeapon ) == TF_WEAPON_MEDIGUN )
+        {
+            // Don't interfere with medic healing
+            return;
+        }
     }
 
     if ( g_aPlayerAttribs[ iClient ].bInSpawn )
@@ -4153,6 +4164,27 @@ void ShowInstruction( int iClient )
                                                 szText,
                                                 iClient,
                                                 "coach/coach_attack_here.wav",
+                                                10.0
+                                               );
+
+            g_aPlayerAttribs[ iClient ].flLastInstructionTime = GetGameTime();
+            return;
+        }
+    }
+
+    if ( IsInASquad( iBot ) )
+    {
+        int iLeader = GetLeader( GetSquad( iBot ) );
+        if ( iLeader != -1 && iLeader != iClient )
+        {
+            FormatEx( szText, sizeof( szText ), "%T", "Instruction_Protect_Leader", iClient );
+
+            TF2_ShowFollowingAnnotationToClient(
+                                                iClient,
+                                                iLeader,
+                                                szText,
+                                                iClient,
+                                                "coach/coach_defend_here.wav",
                                                 10.0
                                                );
 

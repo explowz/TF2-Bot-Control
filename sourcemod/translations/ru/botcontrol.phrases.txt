@@ -105,6 +105,11 @@
         "ru"    "Захвати ворота!"
     }
 
+    "Instruction_Protect_Leader"
+    {
+        "ru"    "Защити своего лидера бригады!"
+    }
+
     "Cannot_Drop_Intelligence"
     {
         "ru"    "Нельзя бросить бомбу."
