@@ -471,6 +471,16 @@ MRESReturn CTFPlayer_Event_Killed_Pre( int iThis, DHookParam hParams )
     }
     else if ( g_aBotAttribs[ iThis ].IsControlled() )
     {
+        if ( IsInASquad( iThis ) )
+        {
+            Address pSquad = GetSquad( iThis );
+            if ( GetLeader( pSquad ) == GetClientFromSerial( g_aBotAttribs[ iThis ].iPlayerSerial ) )
+            {
+                // Reassign the bot as the squad leader
+                StoreEntityHandleToAddress( pSquad + view_as< Address >( g_CTFBotSquad_leader_Offset ), iThis );
+            }
+        }
+
         /*--------------------------------------------------------------------
           We need to unlock the bot, otherwise the game will keep it locked
           for one more respawn.

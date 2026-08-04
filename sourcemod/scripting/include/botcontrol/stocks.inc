@@ -354,6 +354,16 @@ stock void RestoreBot( int iClient )
     }
     }
 
+    if ( IsInASquad( iBot ) )
+    {
+        Address pSquad = GetSquad( iBot );
+        if ( GetLeader( pSquad ) == iClient )
+        {
+            // Reassign the bot as the squad leader
+            StoreEntityHandleToAddress( pSquad + view_as< Address >( g_CTFBotSquad_leader_Offset ), iBot );
+        }
+    }
+
     if ( HasTheFlag( iClient ) )
     {
         g_aPlayerAttribs[ iClient ].bBlockFlagEvent = true;
@@ -1058,6 +1068,67 @@ stock void TransferObject( int iObject, int iNewBuilder )
     }
 
     AcceptEntityInput( iObject, "SetBuilder", iNewBuilder );
+}
+
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: GetSquad
+
+  Summary:  This function gets the memory address of the squad
+            the bot is part of.
+
+  Args:     int iBot
+              `CTFBot` client index.
+
+  Returns:  Address
+              If the bot is part of a squad, the return value is
+              the memory address of the `CTFBotSquad` object.
+
+              If the bot is not part of a squad, the return value
+              is `Address_Null`.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
+stock Address GetSquad( int iBot )
+{
+    return view_as< Address >( GetEntData( iBot, g_CTFBot_squad_Offset, PTRSIZ ) );
+}
+
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: GetLeader
+
+  Summary:  This function gets the leader of a `CTFBotSquad`.
+
+  Args:     Address pSquad
+              Memory address of a `CTFBotSquad` object.
+
+  Returns:  int
+              If the squad has a leader, the return value is that
+              client's index.
+
+              If the squad does not have a leader, the return value
+              is `-1`.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
+stock int GetLeader( Address pSquad )
+{
+    return LoadEntityFromHandleAddress( pSquad + view_as< Address >( g_CTFBotSquad_leader_Offset ) );
+}
+
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: IsInASquad
+
+  Summary:  This function determines whether a `CTFBot` client is in
+            a squad.
+
+  Args:     int iBot
+              `CTFBot` client index.
+
+  Returns:  bool
+              If the client is in a squad, the return value is `true`.
+
+              If the client is not in a squad, the return  value is
+              `false`.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
+stock bool IsInASquad( int iBot )
+{
+    return SDKCall( g_hfnCTFBot_IsInASquad, iBot );
 }
 
 /*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F

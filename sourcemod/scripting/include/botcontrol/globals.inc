@@ -141,6 +141,7 @@ Handle g_hfnCTFPlayerShared_IsStealthed;
 Handle g_hfnCTFPlayerShared_AddToSpyCloakMeter;
 
 Handle g_hfnCTFBot_ShouldQuickBuild;
+Handle g_hfnCTFBot_IsInASquad;
 Handle g_hfnCTFBot_LeaveSquad;
 Handle g_hfnCTFBot_SetAttribute;
 Handle g_hfnCTFBot_ClearAttribute;
@@ -200,6 +201,7 @@ int g_CTFPlayer_pWaveSpawnPopulator_Offset;
 int g_CTFPlayerShared_flInvisibility_Offset;
 
 int g_CTFBot_teleportWhereName_Offset;
+int g_CTFBot_squad_Offset;
 
 int g_CObjectTeleporter_teleportWhereName_Offset;
 
@@ -208,6 +210,8 @@ int g_CBaseObject_bForceQuickBuild_Offset;
 int g_CPopulationManager_canBotsAttackWhileInSpawnRoom_Offset;
 
 int g_CTraceFilterSimple_pPassEnt_Offset;
+
+int g_CTFBotSquad_leader_Offset;
 
 // int g_CTFBotDeliverFlag_upgradeLevel_Offset;
 
