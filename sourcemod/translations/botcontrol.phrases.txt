@@ -111,6 +111,11 @@
         "en"    "Capture this gate!"
     }
 
+    "Instruction_Protect_Leader"
+    {
+        "en"    "Protect your squad leader!"
+    }
+
     "Cannot_Drop_Intelligence"
     {
         "en"    "The bomb cannot be dropped."

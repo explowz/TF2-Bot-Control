@@ -359,10 +359,15 @@
                 "windows"   "1"
                 "linux"     "1"
             }
-            "CTFBot::m_squad"	// Find from `CTFBot::LeaveSquad`
+            "CTFBot::m_squad"
             {
                 "windows"	"10192"
                 "linux"		"10192"
+            }
+            "CTFBotSquad::m_leader"
+            {
+                "windows"   "24"
+                "linux"     "24"
             }
             "CTFBot::m_teleportWhereName"	// Find function containing both "Engineer.MVM_AutoBuildingTeleporter02" and "Teleport exit built"
             {
@@ -394,17 +399,6 @@
             {
                 "windows"   "4"
                 "linux"     "4"
-            }
-
-            /*--------------------------------------------------------------------
-              !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-              !!!!!!!!!!!!!!!!!!!!!!! WINDOWS-ONLY OFFSETS !!!!!!!!!!!!!!!!!!!!!
-              !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            --------------------------------------------------------------------*/
-
-            "CTFBotSquad::m_leader"	// Find from `CTFBotSquad::GetLeader`
-            {
-                "windows"	"24"
             }
         }
         "Functions"
