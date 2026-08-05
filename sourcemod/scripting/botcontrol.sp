@@ -48,7 +48,7 @@ public Plugin myinfo =
     name        = "[TF2] MvM Bot Control",
     author      = "Bintr",
     description = "Allows players to take control of a robot in the Mann vs. Machine gamemode.",
-    version     = "0.9",
+    version     = "1.0",
     url         = "https://github.com/explowz/TF2-Bot-Control"
 };
 

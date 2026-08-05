@@ -1,9 +1,6 @@
 # TF2-Bot-Control
 A Team Fortress 2 plugin that allows players to take control of a robot in Mann vs. Machine.
 
-## Important note!
-This plugin is still in beta and may contain bugs. If you find any, please open an issue.
-
 ## Dependencies
 - [TF2Attributes](https://forums.alliedmods.net/showthread.php?t=210221)
 - [TF2Items](https://forums.alliedmods.net/forumdisplay.php?f=146)
