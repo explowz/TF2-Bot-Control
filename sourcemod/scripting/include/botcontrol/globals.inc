@@ -215,7 +215,7 @@ int g_CTraceFilterSimple_pPassEnt_Offset;
 
 int g_CTFBotSquad_leader_Offset;
 
-// int g_CTFBotDeliverFlag_upgradeLevel_Offset;
+int g_CTFBotDeliverFlag_upgradeLevel_Offset;
 
 /*--------------------------------------------------------------------
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

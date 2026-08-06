@@ -682,10 +682,10 @@ public void OnPluginStart()
     g_CTFBot_squad_Offset                                     = hConf.GetOffset( "CTFBot::m_squad" );
     g_CObjectTeleporter_teleportWhereName_Offset              = hConf.GetOffset( "CObjectTeleporter::m_teleportWhereName" );
     g_CBaseObject_bForceQuickBuild_Offset                     = FindSendPropInfo( "CBaseObject", "m_bServerOverridePlacement" ) + hConf.GetOffset( "CBaseObject::m_bForceQuickBuild" );
-    // g_CTFBotDeliverFlag_upgradeLevel_Offset                   = hConf.GetOffset( "CTFBotDeliverFlag::m_upgradeLevel" );
     g_CPopulationManager_canBotsAttackWhileInSpawnRoom_Offset = hConf.GetOffset( "CPopulationManager::m_canBotsAttackWhileInSpawnRoom" );
     g_CTraceFilterSimple_pPassEnt_Offset                      = hConf.GetOffset( "CTraceFilterSimple::m_pPassEnt" );
     g_CTFBotSquad_leader_Offset                               = hConf.GetOffset( "CTFBotSquad::m_leader" );
+    g_CTFBotDeliverFlag_upgradeLevel_Offset                   = hConf.GetOffset( "CTFBotDeliverFlag::m_upgradeLevel" );
 
     delete hConf;
 
@@ -1695,7 +1695,12 @@ public void OnClientDisconnect( int iClient )
 F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
 public void OnActionCreated( BehaviorAction BotAction, int iClient, const char[] szName )
 {
-    if ( StrEqual( szName, "MissionSuicideBomber" ) )
+    if ( StrEqual( szName, "DeliverFlag" ) )
+    {
+        BotAction.OnStart     = CTFBotDeliverFlag_OnStart;
+        BotAction.OnStartPost = CTFBotDeliverFlag_OnStartPost;
+    }
+    else if ( StrEqual( szName, "MissionSuicideBomber" ) )
     {
         BotAction.Update = CTFBotMissionSuicideBomber_Update;
     }

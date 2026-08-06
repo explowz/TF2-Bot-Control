@@ -368,30 +368,25 @@ stock void RestoreBot( int iClient )
 
     if ( HasTheFlag( iClient ) )
     {
-        g_aPlayerAttribs[ iClient ].bBlockFlagEvent = true;
-        g_aBotAttribs[ iBot ].bBlockFlagEvent       = true;
-
-        /*--------------------------------------------------------------------
-          TODO: Write an extension to detour `CTFBotDeliverFlag::OnStart`.
-          For now the bot bomb carrier just will have to start upgrading
-          from zero when restored.
-        --------------------------------------------------------------------*/
+        g_aPlayerAttribs[ iClient ].bBlockFlagEvent  = true;
+        g_aBotAttribs[ iBot ].bBlockFlagEvent        = true;
+        g_aBotAttribs[ iBot ].bRestoredAsFlagCarrier = true;
 
         // Save these so we can restore them after the bomb swap
-        /*int   nFlagCarrierUpgradeLevel = GetFlagCarrierUpgradeLevel();
+        int   nFlagCarrierUpgradeLevel = GetFlagCarrierUpgradeLevel();
         float flMvMBaseBombUpgradeTime = GetBaseMvMBombUpgradeTime();
-        float flMvMNextBombUpgradeTime = GetNextMvMBombUpgradeTime();*/
+        float flMvMNextBombUpgradeTime = GetNextMvMBombUpgradeTime();
 
         // Give the bomb to the bot
         int iBomb = CTFPlayer_GetItem( iClient );
         DropFlag( iClient, true );
         PickUp( iBomb, iBot, false );
 
-        /*SetFlagCarrierUpgradeLevel( nFlagCarrierUpgradeLevel );
+        SetFlagCarrierUpgradeLevel( nFlagCarrierUpgradeLevel );
         SetBaseMvMBombUpgradeTime( flMvMBaseBombUpgradeTime );
         SetNextMvMBombUpgradeTime( flMvMNextBombUpgradeTime );
 
-        ApplyPreviousUpgrades( iBot );*/
+        ApplyPreviousUpgrades( iBot );
     }
 
     if ( HasMission( iBot, MISSION_DESTROY_SENTRIES ) )
@@ -450,8 +445,9 @@ void ResetGlobals( int iClient )
     g_aPlayerAttribs[ iClient ].flDeployTimer           = 0.0;
     g_aPlayerAttribs[ iClient ].vecAnchorPos            = { 0.0, 0.0, 0.0 };
 
-    g_aBotAttribs[ iClient ].iPlayerSerial   = 0;
-    g_aBotAttribs[ iClient ].bBlockFlagEvent = false;
+    g_aBotAttribs[ iClient ].iPlayerSerial          = 0;
+    g_aBotAttribs[ iClient ].bBlockFlagEvent        = false;
+    g_aBotAttribs[ iClient ].bRestoredAsFlagCarrier = false;
 }
 
 /*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
