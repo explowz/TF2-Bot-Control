@@ -139,6 +139,8 @@ Handle g_hfnCTFPlayer_IsAllowedToTaunt;
 Handle g_hfnCTFPlayerShared_ResetRageBuffs;
 Handle g_hfnCTFPlayerShared_IsStealthed;
 Handle g_hfnCTFPlayerShared_AddToSpyCloakMeter;
+Handle g_hfnCTFPlayerShared_SetRageMeter;
+Handle g_hfnCTFPlayerShared_SetScoutHypeMeter;
 
 Handle g_hfnCTFBot_ShouldQuickBuild;
 Handle g_hfnCTFBot_IsInASquad;

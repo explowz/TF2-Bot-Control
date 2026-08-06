@@ -321,12 +321,19 @@ MRESReturn CTFBot_OnEventChangeAttributes_Post( int iThis, DHookParam hParams )
                 continue;
             }
 
-            if ( TF2Util_GetWeaponID( iNewWeapon ) == TF_WEAPON_BUILDER )
+            int iWeaponId = TF2Util_GetWeaponID( iNewWeapon );
+            if ( iWeaponId == TF_WEAPON_BUILDER )
             {
                 SetSubType( iNewWeapon, GetEntProp( iWeapon, Prop_Send, "m_aBuildableObjectTypes", 1, 0 ) );
             }
 
             EquipPlayerWeapon( iPlayer, iNewWeapon );
+
+            if ( iWeaponId == TF_WEAPON_LUNCHBOX )
+            {
+                // Lunchbox items always need 1 "grenade"
+                TF2_GiveWeaponAmmo( iNewWeapon, 1, true );
+            }
 
             /*--------------------------------------------------------------------
               Force the player to switch to this weapon if we mirrored the bot's

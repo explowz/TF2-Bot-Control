@@ -190,7 +190,9 @@ stock void RestoreBot( int iClient )
 
     // Copy back properties that could've changed
     CopyEntProp( iClient, iBot, Prop_Send, "m_iHealth" );
-    CopyEntPropFloat( iClient, iBot, Prop_Send, "m_flRageMeter" );
+    CopyEntPropFloat( iClient, iBot, Prop_Send, "m_flEnergyDrinkMeter" ); // FIXME: Does nothing?
+    SetScoutHypeMeter( iBot, GetScoutHypeMeter( iClient ) );              // FIXME: Does nothing?
+    SetRageMeter( iBot, GetRageMeter( iClient ) );
 
     /*--------------------------------------------------------------------
       We specifically turn this off for the bot to avoid double health
@@ -1800,6 +1802,113 @@ F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
 stock bool IsDisabled( int iObject )
 {
     return GetEntProp( iObject, Prop_Send, "m_bDisabled" );
+}
+
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: IsRageDraining
+
+  Summary:  This function determines whether a client's rage meter
+            is currently draining.
+
+  Args:     int iClient
+              Client index.
+
+  Returns:  bool
+              If the client's rage meter is currently draining, the
+              return value is `true`.
+
+              If the client's rage meter is currently not draining,
+              the return value is `false`.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
+stock bool IsRageDraining( int iClient )
+{
+    return GetEntProp( iClient, Prop_Send, "m_bRageDraining" );
+}
+
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: GetRageMeter
+
+  Summary:  This function gets a client's rage meter.
+
+  Args:     int iClient
+              Client index.
+
+  Returns:  float
+              Client's rage meter value.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
+stock float GetRageMeter( int iClient )
+{
+    return GetEntPropFloat( iClient, Prop_Send, "m_flRageMeter" );
+}
+
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: SetRageMeter
+
+  Summary:  This function sets a client's rage meter.
+
+  Args:     int iClient
+              Client index.
+            float flValue
+              Rage meter value.
+
+  Returns:  void
+              No return value.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
+stock void SetRageMeter( int iClient, float flValue )
+{
+    SDKCall( g_hfnCTFPlayerShared_SetRageMeter, iClient, flValue );
+}
+
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: GetBuffType
+
+  Summary:  This function gets a weapon's buff type.
+
+  Args:     int iWeapon
+              Weapon entity index.
+
+  Returns:  int
+              Weapon's buff type.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
+stock int GetBuffType( int iWeapon )
+{
+    int iBuffType = 0;
+    TF2Attrib_HookValueInt( iBuffType, "set_buff_type", iWeapon );
+    return iBuffType;
+}
+
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: GetScoutHypeMeter
+
+  Summary:  This function gets a client's hype meter.
+
+  Args:     int iClient
+              Client index.
+
+  Returns:  float
+              Client's hype meter value.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
+stock float GetScoutHypeMeter( int iClient )
+{
+    return GetEntPropFloat( iClient, Prop_Send, "m_flHypeMeter" );
+}
+
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: SetScoutHypeMeter
+
+  Summary:  This function sets a client's hype meter.
+
+  Args:     int iClient
+              Client index.
+            float flValue
+              Hype meter value.
+
+  Returns:  void
+              No return value.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
+stock void SetScoutHypeMeter( int iClient, float flValue )
+{
+    SDKCall( g_hfnCTFPlayerShared_SetScoutHypeMeter, iClient, flValue );
 }
 
 /*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
