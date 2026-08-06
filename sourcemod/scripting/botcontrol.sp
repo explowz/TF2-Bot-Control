@@ -48,7 +48,7 @@ public Plugin myinfo =
     name        = "[TF2] MvM Bot Control",
     author      = "Bintr",
     description = "Allows players to take control of a robot in the Mann vs. Machine gamemode.",
-    version     = "1.1",
+    version     = "1.2",
     url         = "https://github.com/explowz/TF2-Bot-Control"
 };
 
@@ -661,8 +661,6 @@ public void OnPluginStart()
     PSM_AddDynamicDetourFromConf( "CTraceFilterObject::ShouldHitEntity", CTraceFilterObject_ShouldHitEntity_Pre, INVALID_FUNCTION );
     PSM_AddDynamicDetourFromConf( "CTFPlayerShared::OnConditionAdded", CTFPlayerShared_OnConditionAdded_Pre, CTFPlayerShared_OnConditionAdded_Post );
     PSM_AddDynamicDetourFromConf( "CTFBot::OnEventChangeAttributes", INVALID_FUNCTION, CTFBot_OnEventChangeAttributes_Post );
-    // FIXME: Use an extension to detour this because the return data type doesn't fit any presets
-    // PSM_AddDynamicDetourFromConf( "CTFBotDeliverFlag::OnStart", CTFBotDeliverFlag_OnStart_Pre, CTFBotDeliverFlag_OnStart_Post );
 
     /*--------------------------------------------------------------------
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -682,10 +680,10 @@ public void OnPluginStart()
     g_CTFBot_squad_Offset                                     = hConf.GetOffset( "CTFBot::m_squad" );
     g_CObjectTeleporter_teleportWhereName_Offset              = hConf.GetOffset( "CObjectTeleporter::m_teleportWhereName" );
     g_CBaseObject_bForceQuickBuild_Offset                     = FindSendPropInfo( "CBaseObject", "m_bServerOverridePlacement" ) + hConf.GetOffset( "CBaseObject::m_bForceQuickBuild" );
-    // g_CTFBotDeliverFlag_upgradeLevel_Offset                   = hConf.GetOffset( "CTFBotDeliverFlag::m_upgradeLevel" );
     g_CPopulationManager_canBotsAttackWhileInSpawnRoom_Offset = hConf.GetOffset( "CPopulationManager::m_canBotsAttackWhileInSpawnRoom" );
     g_CTraceFilterSimple_pPassEnt_Offset                      = hConf.GetOffset( "CTraceFilterSimple::m_pPassEnt" );
     g_CTFBotSquad_leader_Offset                               = hConf.GetOffset( "CTFBotSquad::m_leader" );
+    g_CTFBotDeliverFlag_upgradeLevel_Offset                   = hConf.GetOffset( "CTFBotDeliverFlag::m_upgradeLevel" );
 
     delete hConf;
 
@@ -1695,7 +1693,12 @@ public void OnClientDisconnect( int iClient )
 F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
 public void OnActionCreated( BehaviorAction BotAction, int iClient, const char[] szName )
 {
-    if ( StrEqual( szName, "MissionSuicideBomber" ) )
+    if ( StrEqual( szName, "DeliverFlag" ) )
+    {
+        BotAction.OnStart     = CTFBotDeliverFlag_OnStart;
+        BotAction.OnStartPost = CTFBotDeliverFlag_OnStartPost;
+    }
+    else if ( StrEqual( szName, "MissionSuicideBomber" ) )
     {
         BotAction.Update = CTFBotMissionSuicideBomber_Update;
     }

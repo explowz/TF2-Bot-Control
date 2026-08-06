@@ -710,6 +710,7 @@ enum struct BOTATTRIBUTES
 {
     int  iPlayerSerial;
     bool bBlockFlagEvent;
+    bool bRestoredAsFlagCarrier;
 
     bool IsControlled()
     {
