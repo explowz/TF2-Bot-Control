@@ -90,4 +90,4 @@ The console variable `sm_botcontrol_mirror_name` controls whether the plugin wil
 - [Bovril](https://github.com/thisld) for his MvM bot control plugin from which the idea of restricting bots was taken.
 
 ## Special thanks
-Special thanks to [nosoop](https://forums.alliedmods.net/member.php?u=252787), [Bakugo](https://github.com/bakugo), [Anonymous Player](https://github.com/caxanga334), [Mikusch](https://github.com/Mikusch), [Kenzzer](https://github.com/Kenzzer), Deathreus, and everybody else from AlliedModders for always answering my questions.
+Special thanks to [nosoop](https://forums.alliedmods.net/member.php?u=252787), [Bakugo](https://github.com/bakugo), [Anonymous Player](https://github.com/caxanga334), [Mikusch](https://github.com/Mikusch), [Kenzzer](https://github.com/Kenzzer), Deathreus, and everybody else from AlliedModders for their help offered throughout the development of this plugin.
