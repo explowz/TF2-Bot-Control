@@ -48,7 +48,7 @@ public Plugin myinfo =
     name        = "[TF2] MvM Bot Control",
     author      = "Bintr",
     description = "Allows players to take control of a robot in the Mann vs. Machine gamemode.",
-    version     = "1.0",
+    version     = "1.1",
     url         = "https://github.com/explowz/TF2-Bot-Control"
 };
 
@@ -1238,6 +1238,32 @@ public void OnAllPluginsLoaded()
     if ( !g_hfnCTFPlayer_GrantOrRemoveAllUpgrades )
     {
         SetFailState( "%T", "SDKCall_Prep_Failed_VScript", LANG_SERVER, "CTFPlayer::GrantOrRemoveAllUpgrades" );
+    }
+
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+
+    fn = VScript_GetClassFunction( "CTFPlayer", "SetRageMeter" );
+
+    StartPrepSDKCall( SDKCall_Player );
+    SET_OFFSET_OR_ADDRESS( fn )
+    PrepSDKCall_AddParameter( SDKType_Float, SDKPass_Plain ); // float flValue
+    g_hfnCTFPlayerShared_SetRageMeter = EndPrepSDKCall();
+    if ( !g_hfnCTFPlayerShared_SetRageMeter )
+    {
+        SetFailState( "%T", "SDKCall_Prep_Failed_VScript", LANG_SERVER, "CTFPlayerShared::SetRageMeter" );
+    }
+
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+
+    fn = VScript_GetClassFunction( "CTFPlayer", "SetScoutHypeMeter" );
+
+    StartPrepSDKCall( SDKCall_Player );
+    SET_OFFSET_OR_ADDRESS( fn )
+    PrepSDKCall_AddParameter( SDKType_Float, SDKPass_Plain ); // float flValue
+    g_hfnCTFPlayerShared_SetScoutHypeMeter = EndPrepSDKCall();
+    if ( !g_hfnCTFPlayerShared_SetScoutHypeMeter )
+    {
+        SetFailState( "%T", "SDKCall_Prep_Failed_VScript", LANG_SERVER, "CTFPlayerShared::SetScoutHypeMeter" );
     }
 }
 
@@ -2596,9 +2622,6 @@ Action PlayerControlBot( int iClient, TFVoiceCommand eVoiceCommand )
     CopyEntProp( iObserverTarget, iClient, Prop_Data, "m_bloodColor" );
     ModifyMaxHealth( iClient, TF2Util_GetEntityMaxHealth( iObserverTarget ), false, false );
     CopyEntProp( iObserverTarget, iClient, Prop_Send, "m_iHealth" );
-    // TODO: Uncomment the line below when we've got a working squad implementation
-    // CopyEntProp( iObserverTarget, iClient, Prop_Send, "m_nNumHealers" );
-    CopyEntPropFloat( iObserverTarget, iClient, Prop_Send, "m_flRageMeter" );
 
     // Turn this off on the bot, so we don't end up with 2 health bars on the screen
     ClearAttribute( iObserverTarget, USE_BOSS_HEALTH_BAR ); // Prevents entity from always transmitting
@@ -2744,14 +2767,23 @@ Action PlayerControlBot( int iClient, TFVoiceCommand eVoiceCommand )
             continue;
         }
 
-        if ( TF2Util_GetWeaponID( iNewWeapon ) == TF_WEAPON_BUILDER )
+        int iWeaponId = TF2Util_GetWeaponID( iNewWeapon );
+        if ( iWeaponId == TF_WEAPON_BUILDER )
         {
             SetSubType( iNewWeapon, GetEntProp( iWeapon, Prop_Send, "m_aBuildableObjectTypes", 1, 0 ) );
         }
 
         EquipPlayerWeapon( iClient, iNewWeapon );
 
-        TF2_SetWeaponAmmo( iNewWeapon, TF2_GetWeaponAmmo( iWeapon ) );
+        if ( iWeaponId != TF_WEAPON_LUNCHBOX )
+        {
+            TF2_SetWeaponAmmo( iNewWeapon, TF2_GetWeaponAmmo( iWeapon ) );
+        }
+        else
+        {
+            // Lunchbox items always need 1 "grenade"
+            TF2_GiveWeaponAmmo( iNewWeapon, 1, true );
+        }
 
         /*--------------------------------------------------------------------
           Force the player to switch to this weapon if we mirrored the bot's
@@ -2763,6 +2795,11 @@ Action PlayerControlBot( int iClient, TFVoiceCommand eVoiceCommand )
         }
     }
 
+    // Copy meters
+    CopyEntPropFloat( iObserverTarget, iClient, Prop_Send, "m_flEnergyDrinkMeter" ); // FIXME: Does nothing?
+    SetScoutHypeMeter( iClient, GetScoutHypeMeter( iObserverTarget ) );              // FIXME: Does nothing?
+    SetRageMeter( iClient, GetRageMeter( iObserverTarget ) );
+
     if ( eBotClass == TFClass_Medic )
     {
         int iPlayerMedigun = GetPlayerWeaponSlot( iClient, TFWeaponSlot_Secondary );
@@ -2772,22 +2809,19 @@ Action PlayerControlBot( int iClient, TFVoiceCommand eVoiceCommand )
           for the bot's weapon entity to have been deleted since the for loop
           above.
         --------------------------------------------------------------------*/
-        if ( iPlayerMedigun != -1 )
+        if ( iPlayerMedigun != -1 && TF2Util_GetWeaponID( iPlayerMedigun ) == TF_WEAPON_MEDIGUN )
         {
-            if ( TF2Util_GetWeaponID( iPlayerMedigun ) == TF_WEAPON_MEDIGUN )
-            {
-                CopyEntPropFloat( iBotMedigun, iPlayerMedigun, Prop_Send, "m_flChargeLevel" );
-                CopyEntProp( iBotMedigun, iPlayerMedigun, Prop_Send, "m_nChargeResistType" );
-                CopyEntPropEnt( iBotMedigun, iPlayerMedigun, Prop_Send, "m_hHealingTarget" );
-                CopyEntProp( iBotMedigun, iPlayerMedigun, Prop_Send, "m_bAttacking" );
-                CopyEntProp( iBotMedigun, iPlayerMedigun, Prop_Send, "m_bHealing" );
-                CopyEntProp( iBotMedigun, iPlayerMedigun, Prop_Send, "m_bChargeRelease" );
+            CopyEntPropFloat( iBotMedigun, iPlayerMedigun, Prop_Send, "m_flChargeLevel" );
+            CopyEntProp( iBotMedigun, iPlayerMedigun, Prop_Send, "m_nChargeResistType" );
+            CopyEntPropEnt( iBotMedigun, iPlayerMedigun, Prop_Send, "m_hHealingTarget" );
+            CopyEntProp( iBotMedigun, iPlayerMedigun, Prop_Send, "m_bAttacking" );
+            CopyEntProp( iBotMedigun, iPlayerMedigun, Prop_Send, "m_bHealing" );
+            CopyEntProp( iBotMedigun, iPlayerMedigun, Prop_Send, "m_bChargeRelease" );
 
-                SetEntPropFloat( iBotMedigun, Prop_Send, "m_flChargeLevel", 0.0 ); // Hide the medigun effect
-                SetEntPropEnt( iBotMedigun, Prop_Send, "m_hHealingTarget", -1 );   // Remove the medigun beam
-                SetEntProp( iBotMedigun, Prop_Send, "m_bAttacking", false );
-                SetEntProp( iBotMedigun, Prop_Send, "m_bHealing", false );
-            }
+            SetEntPropFloat( iBotMedigun, Prop_Send, "m_flChargeLevel", 0.0 ); // Hide the medigun effect
+            SetEntPropEnt( iBotMedigun, Prop_Send, "m_hHealingTarget", -1 );   // Remove the medigun beam
+            SetEntProp( iBotMedigun, Prop_Send, "m_bAttacking", false );
+            SetEntProp( iBotMedigun, Prop_Send, "m_bHealing", false );
         }
     }
 
@@ -3266,6 +3300,13 @@ Action WeaponCanSwitchTo( int iClient, int iWeapon )
 {
     if ( !g_aPlayerAttribs[ iClient ].IsControlling() )
     {
+        return Plugin_Continue;
+    }
+
+    int iWeaponId = TF2Util_GetWeaponID( iWeapon );
+    if ( iWeaponId == TF_WEAPON_BUFF_ITEM || iWeaponId == TF_WEAPON_LUNCHBOX )
+    {
+        // Allow the player to use their buff banner or lunchbox
         return Plugin_Continue;
     }
 
@@ -4082,11 +4123,12 @@ void HandleAttack(
         return;
     }
 
-    if ( eClass == TFClass_Medic )
+    if ( iActiveWeapon != -1 )
     {
-        if ( iActiveWeapon != -1 && TF2Util_GetWeaponID( iActiveWeapon ) == TF_WEAPON_MEDIGUN )
+        int iWeaponId = TF2Util_GetWeaponID( iActiveWeapon );
+        if ( iWeaponId == TF_WEAPON_MEDIGUN || iWeaponId == TF_WEAPON_LUNCHBOX || iWeaponId == TF_WEAPON_BUFF_ITEM )
         {
-            // Don't interfere with medic healing
+            // Don't interfere with medic healing, lunchboxes, or buff items
             return;
         }
     }
