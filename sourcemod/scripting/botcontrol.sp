@@ -48,7 +48,7 @@ public Plugin myinfo =
     name        = "[TF2] MvM Bot Control",
     author      = "Bintr",
     description = "Allows players to take control of a robot in the Mann vs. Machine gamemode.",
-    version     = "1.1",
+    version     = "1.2",
     url         = "https://github.com/explowz/TF2-Bot-Control"
 };
 
@@ -661,8 +661,6 @@ public void OnPluginStart()
     PSM_AddDynamicDetourFromConf( "CTraceFilterObject::ShouldHitEntity", CTraceFilterObject_ShouldHitEntity_Pre, INVALID_FUNCTION );
     PSM_AddDynamicDetourFromConf( "CTFPlayerShared::OnConditionAdded", CTFPlayerShared_OnConditionAdded_Pre, CTFPlayerShared_OnConditionAdded_Post );
     PSM_AddDynamicDetourFromConf( "CTFBot::OnEventChangeAttributes", INVALID_FUNCTION, CTFBot_OnEventChangeAttributes_Post );
-    // FIXME: Use an extension to detour this because the return data type doesn't fit any presets
-    // PSM_AddDynamicDetourFromConf( "CTFBotDeliverFlag::OnStart", CTFBotDeliverFlag_OnStart_Pre, CTFBotDeliverFlag_OnStart_Post );
 
     /*--------------------------------------------------------------------
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
