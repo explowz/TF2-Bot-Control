@@ -198,11 +198,6 @@
               !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             --------------------------------------------------------------------*/
 
-            "CTFBotSquad::GetLeader"
-            {
-                "library"   "server"
-                "linux"     "@_ZNK11CTFBotSquad9GetLeaderEv"
-            }
             "CUtlStringList::CopyAndAddToTail"
             {
                 "library"   "server"

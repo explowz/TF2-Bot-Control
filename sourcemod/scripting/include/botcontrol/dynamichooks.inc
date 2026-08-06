@@ -376,13 +376,18 @@ MRESReturn CTFPlayer_IsAllowedToPickUpFlag_Post( int iThis, DHookReturn hReturn 
 
     if ( hReturn.Value == false )
     {
-        // Game already decided the player can't pick up the flag
+        // The game already decided the player can't pick up the flag
         return MRES_Ignored;
     }
 
     int iBot = GetClientFromSerial( g_aPlayerAttribs[ iThis ].iBotSerial );
 
-    // TODO: Add squad check once we've got a working squad implementation
+    // Only the leader of a squad can pick up the flag
+    if ( IsInASquad( iBot ) && GetLeader( GetSquad( iBot ) ) != iThis )
+    {
+        hReturn.Value = false;
+        return MRES_Supercede;
+    }
 
     // Mission bots can't pick up the flag
     hReturn.Value = !IsOnAnyMission( iBot );
