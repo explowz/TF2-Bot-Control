@@ -199,7 +199,7 @@ stock void RestoreBot( int iClient )
     CopyEntPropFloat( iClient, iBot, Prop_Send, "m_flChargeMeter" );
 
     // Rage (Soldier, Pyro, Sniper)
-    SetEntPropFloat( iClient, Prop_Send, "m_flNextRageEarnTime", 0.0 ); // Make sure `SetRageMeter` succeeds
+    SetEntPropFloat( iBot, Prop_Send, "m_flNextRageEarnTime", 0.0 ); // Make sure `SetRageMeter` succeeds
     SetRageMeter( iBot, GetRageMeter( iClient ) );
     CopyEntPropFloat( iClient, iBot, Prop_Send, "m_flNextRageEarnTime" ); // Must come after the `SetRageMeter` call
 
