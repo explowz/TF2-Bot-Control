@@ -632,6 +632,17 @@ public void OnPluginStart()
         SetFailState( "%T", "SDKCall_Prep_Failed", LANG_SERVER, "CTFPlayerShared::AddToSpyCloakMeter" );
     }
 
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+
+    StartPrepSDKCall( SDKCall_Raw );
+    PrepSDKCall_SetFromConf( hConf, SDKConf_Signature, "CTFPlayerShared::SetRevengeCrits" );
+    PrepSDKCall_AddParameter( SDKType_PlainOldData, SDKPass_Plain ); // int iVal
+    g_hfnCTFPlayerShared_SetRevengeCrits = EndPrepSDKCall();
+    if ( !g_hfnCTFPlayerShared_SetRevengeCrits )
+    {
+        SetFailState( "%T", "SDKCall_Prep_Failed", LANG_SERVER, "CTFPlayerShared::SetRevengeCrits" );
+    }
+
     /*--------------------------------------------------------------------
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!! DYNAMIC HOOKS !!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1869,19 +1880,12 @@ public void OnPlayerRunCmdPre(
         }
     }
 
-    if ( GetDeployingBombState( iClient ) == TF_BOMB_DEPLOYING_NONE )
+    if ( GetDeployingBombState( iClient ) == TF_BOMB_DEPLOYING_NONE && HasTheFlag( iClient ) )
     {
-        if ( HasTheFlag( iClient ) )
+        if ( UpgradeOverTime( iClient ) )
         {
-            /*--------------------------------------------------------------------
-              TODO: Maybe keep track of the flag carrier in
-              `HandleTeamplayFlagEvent_Pre` and move this logic to `OnGameFrame`?
-            --------------------------------------------------------------------*/
-            if ( UpgradeOverTime( iClient ) )
-            {
-                // Force the player to taunt
-                g_aPlayerAttribs[ iClient ].bPendingTaunt = true;
-            }
+            // Force the player to taunt
+            g_aPlayerAttribs[ iClient ].bPendingTaunt = true;
         }
     }
 
@@ -2246,13 +2250,11 @@ public void OnPlayerRunCmdPost(
         return;
     }
 
-    // TODO: Allow players to take control of stunned bots
     if ( TF2_IsPlayerInCondition( iObserverTarget, TFCond_MVMBotRadiowave ) )
     {
         /*--------------------------------------------------------------------
           For now just disallow taking control of stunned bots. Making this
-          work correctly is a bit of a hassle. We'll just do it sometime in
-          the future.
+          work correctly is a bit of a hassle.
         --------------------------------------------------------------------*/
         c_iPrevObserverTargetSerial = 0; // Force redraw
         ClearSyncHud( iClient, g_hSyncObj );
@@ -2470,13 +2472,11 @@ Action PlayerControlBot( int iClient, TFVoiceCommand eVoiceCommand )
         return Plugin_Continue;
     }
 
-    // TODO: Allow players to take control of stunned bots
     if ( TF2_IsPlayerInCondition( iObserverTarget, TFCond_MVMBotRadiowave ) )
     {
         /*--------------------------------------------------------------------
           For now just disallow taking control of stunned bots. Making this
-          work correctly is a bit of a hassle. We'll just do it sometime in
-          the future.
+          work correctly is a bit of a hassle.
         --------------------------------------------------------------------*/
         PrintHintText( iClient, "%t", "Cannot_Control_Stunned" );
         return Plugin_Continue;
@@ -2626,6 +2626,27 @@ Action PlayerControlBot( int iClient, TFVoiceCommand eVoiceCommand )
     ModifyMaxHealth( iClient, TF2Util_GetEntityMaxHealth( iObserverTarget ), false, false );
     CopyEntProp( iObserverTarget, iClient, Prop_Send, "m_iHealth" );
 
+    // Scout
+    CopyEntPropFloat( iObserverTarget, iClient, Prop_Send, "m_flEnergyDrinkMeter" );
+    SetScoutHypeMeter( iClient, GetScoutHypeMeter( iObserverTarget ) );
+
+    // Demoman
+    CopyEntPropFloat( iObserverTarget, iClient, Prop_Send, "m_flChargeMeter" );
+
+    // Rage (Soldier, Pyro, Sniper)
+    SetRageMeter( iClient, GetRageMeter( iObserverTarget ) );
+    CopyEntPropFloat( iObserverTarget, iClient, Prop_Send, "m_flNextRageEarnTime" ); // Must come after the `SetRageMeter` call
+
+    // Generic charge percentage for weapon to use
+    int n = GetEntPropArraySize( iClient, Prop_Send, "m_flItemChargeMeter" );
+    for ( int i = 0; i < n; i++ )
+    {
+        CopyEntPropFloat( iObserverTarget, iClient, Prop_Send, "m_flItemChargeMeter", i );
+    }
+
+    CopyEntProp( iObserverTarget, iClient, Prop_Send, "m_iDecapitations" );
+    SetRevengeCrits( GetPlayerShared( iClient ), GetRevengeCrits( iObserverTarget ) );
+
     // Turn this off on the bot, so we don't end up with 2 health bars on the screen
     ClearAttribute( iObserverTarget, USE_BOSS_HEALTH_BAR ); // Prevents entity from always transmitting
     SetUseBossHealthBar( iObserverTarget, false );
@@ -2645,8 +2666,11 @@ Action PlayerControlBot( int iClient, TFVoiceCommand eVoiceCommand )
     TFCond eLastCond = TF2Util_GetLastCondition();
     for ( TFCond eCond = TFCond_Slowed; eCond <= eLastCond; eCond++ )
     {
-        int   iProvider;
-        float flDuration;
+        if ( !TF2_IsPlayerInCondition( iObserverTarget, eCond ) )
+        {
+            continue;
+        }
+
         switch ( eCond )
         {
         /*--------------------------------------------------------------------
@@ -2664,13 +2688,12 @@ Action PlayerControlBot( int iClient, TFVoiceCommand eVoiceCommand )
         --------------------------------------------------------------------*/
         case TFCond_OnFire:
         {
-            iProvider  = TF2Util_GetPlayerConditionProvider( iObserverTarget, eCond );
-            flDuration = TF2Util_GetPlayerBurnDuration( iObserverTarget );
             // TODO: Find a way to get the weapon that ignited the player
-            if ( flDuration != 0.0 )
-            {
-                TF2Util_IgnitePlayer( iClient, iProvider, flDuration );
-            }
+            TF2Util_IgnitePlayer(
+                                 iClient,
+                                 TF2Util_GetPlayerConditionProvider( iObserverTarget, eCond ),
+                                 TF2Util_GetPlayerBurnDuration( iObserverTarget )
+                                );
         }
 
         case TFCond_Bleeding:
@@ -2678,23 +2701,25 @@ Action PlayerControlBot( int iClient, TFVoiceCommand eVoiceCommand )
             int nBleedCount = TF2Util_GetPlayerActiveBleedCount( iObserverTarget );
             for ( int i = 0; i < nBleedCount; i++ )
             {
-                iProvider         = TF2Util_GetPlayerBleedAttacker( iObserverTarget, i );
-                int iWeapon       = TF2Util_GetPlayerBleedWeapon( iObserverTarget, i );
-                flDuration        = TF2Util_GetPlayerBleedDuration( iObserverTarget, i );
-                int iDamage       = TF2Util_GetPlayerBleedDamage( iObserverTarget, i );
-                int iDamageCustom = TF2Util_GetPlayerBleedCustomDamageType( iObserverTarget, i );
-                TF2Util_MakePlayerBleed( iClient, iProvider, flDuration, iWeapon, iDamage, iDamageCustom );
+                TF2Util_MakePlayerBleed(
+                                        iClient,
+                                        TF2Util_GetPlayerBleedAttacker( iObserverTarget, i ),
+                                        TF2Util_GetPlayerBleedDuration( iObserverTarget, i ),
+                                        TF2Util_GetPlayerBleedWeapon( iObserverTarget, i ),
+                                        TF2Util_GetPlayerBleedDamage( iObserverTarget, i ),
+                                        TF2Util_GetPlayerBleedCustomDamageType( iObserverTarget, i )
+                                       );
             }
         }
 
         default:
         {
-            iProvider  = TF2Util_GetPlayerConditionProvider( iObserverTarget, eCond );
-            flDuration = TF2Util_GetPlayerConditionDuration( iObserverTarget, eCond );
-            if ( iProvider != INVALID_ENT_REFERENCE && flDuration != 0.0 )
-            {
-                TF2_AddCondition( iClient, eCond, flDuration, iProvider );
-            }
+            TF2_AddCondition(
+                             iClient,
+                             eCond,
+                             TF2Util_GetPlayerConditionDuration( iObserverTarget, eCond ),
+                             TF2Util_GetPlayerConditionProvider( iObserverTarget, eCond )
+                            );
         }
         }
     }
@@ -2720,7 +2745,6 @@ Action PlayerControlBot( int iClient, TFVoiceCommand eVoiceCommand )
         TF2Attrib_SetByName( iClient, "cannot pick up intelligence", 1.0 );
     }
 
-    // TODO: Allow invader engineers to pick up their buildings
     if ( TF2_GetPlayerClass( iObserverTarget ) == TFClass_Engineer )
     {
         /*--------------------------------------------------------------------
@@ -2778,15 +2802,10 @@ Action PlayerControlBot( int iClient, TFVoiceCommand eVoiceCommand )
 
         EquipPlayerWeapon( iClient, iNewWeapon );
 
-        if ( iWeaponId != TF_WEAPON_LUNCHBOX )
-        {
-            TF2_SetWeaponAmmo( iNewWeapon, TF2_GetWeaponAmmo( iWeapon ) );
-        }
-        else
-        {
-            // Lunchbox items always need 1 "grenade"
-            TF2_GiveWeaponAmmo( iNewWeapon, 1, true );
-        }
+        TF2_SetWeaponAmmo( iNewWeapon, TF2_GetWeaponAmmo( iWeapon ) );
+        CopyEntPropFloat( iWeapon, iNewWeapon, Prop_Send, "m_flEffectBarRegenTime" );
+        CopyEntPropFloat( iWeapon, iNewWeapon, Prop_Send, "m_flNextPrimaryAttack" );
+        CopyEntPropFloat( iWeapon, iNewWeapon, Prop_Send, "m_flNextSecondaryAttack" );
 
         /*--------------------------------------------------------------------
           Force the player to switch to this weapon if we mirrored the bot's
@@ -2797,11 +2816,6 @@ Action PlayerControlBot( int iClient, TFVoiceCommand eVoiceCommand )
             TF2Util_SetPlayerActiveWeapon( iClient, iNewWeapon );
         }
     }
-
-    // Copy meters
-    CopyEntPropFloat( iObserverTarget, iClient, Prop_Send, "m_flEnergyDrinkMeter" ); // FIXME: Does nothing?
-    SetScoutHypeMeter( iClient, GetScoutHypeMeter( iObserverTarget ) );              // FIXME: Does nothing?
-    SetRageMeter( iClient, GetRageMeter( iObserverTarget ) );
 
     if ( eBotClass == TFClass_Medic )
     {
@@ -3686,17 +3700,17 @@ void CaptureZone_StartTouchPost( int iCaptureZone, int iEntity )
         return;
     }
 
+    if ( IsDisabled( iCaptureZone ) )
+    {
+        return;
+    }
+
     if ( !IsPlayerIndex( iEntity ) )
     {
         return;
     }
 
     if ( !g_aPlayerAttribs[ iEntity ].IsControlling() )
-    {
-        return;
-    }
-
-    if ( IsDisabled( iCaptureZone ) )
     {
         return;
     }

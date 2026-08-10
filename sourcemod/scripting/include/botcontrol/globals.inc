@@ -141,6 +141,7 @@ Handle g_hfnCTFPlayerShared_IsStealthed;
 Handle g_hfnCTFPlayerShared_AddToSpyCloakMeter;
 Handle g_hfnCTFPlayerShared_SetRageMeter;
 Handle g_hfnCTFPlayerShared_SetScoutHypeMeter;
+Handle g_hfnCTFPlayerShared_SetRevengeCrits;
 
 Handle g_hfnCTFBot_ShouldQuickBuild;
 Handle g_hfnCTFBot_IsInASquad;
