@@ -48,7 +48,7 @@ public Plugin myinfo =
     name        = "[TF2] MvM Bot Control",
     author      = "Bintr",
     description = "Allows players to take control of a robot in the Mann vs. Machine gamemode.",
-    version     = "1.2",
+    version     = "1.3",
     url         = "https://github.com/explowz/TF2-Bot-Control"
 };
 
@@ -329,6 +329,16 @@ public void OnPluginStart()
     if ( !g_hfnDispatchParticleEffect )
     {
         SetFailState( "%T", "SDKCall_Prep_Failed", LANG_SERVER, "DispatchParticleEffect" );
+    }
+
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+
+    StartPrepSDKCall( SDKCall_Entity );
+    PrepSDKCall_SetFromConf( hConf, SDKConf_Virtual, "CTFSniperRifle::ZoomIn" );
+    g_hfnCTFSniperRifle_ZoomIn = EndPrepSDKCall();
+    if ( !g_hfnCTFSniperRifle_ZoomIn )
+    {
+        SetFailState( "%T", "SDKCall_Prep_Failed", LANG_SERVER, "CTFSniperRifle::ZoomIn" );
     }
 
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
@@ -630,6 +640,17 @@ public void OnPluginStart()
     if ( !g_hfnCTFPlayerShared_AddToSpyCloakMeter )
     {
         SetFailState( "%T", "SDKCall_Prep_Failed", LANG_SERVER, "CTFPlayerShared::AddToSpyCloakMeter" );
+    }
+
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+
+    StartPrepSDKCall( SDKCall_Raw );
+    PrepSDKCall_SetFromConf( hConf, SDKConf_Signature, "CTFPlayerShared::SetRevengeCrits" );
+    PrepSDKCall_AddParameter( SDKType_PlainOldData, SDKPass_Plain ); // int iVal
+    g_hfnCTFPlayerShared_SetRevengeCrits = EndPrepSDKCall();
+    if ( !g_hfnCTFPlayerShared_SetRevengeCrits )
+    {
+        SetFailState( "%T", "SDKCall_Prep_Failed", LANG_SERVER, "CTFPlayerShared::SetRevengeCrits" );
     }
 
     /*--------------------------------------------------------------------
@@ -1869,19 +1890,12 @@ public void OnPlayerRunCmdPre(
         }
     }
 
-    if ( GetDeployingBombState( iClient ) == TF_BOMB_DEPLOYING_NONE )
+    if ( GetDeployingBombState( iClient ) == TF_BOMB_DEPLOYING_NONE && HasTheFlag( iClient ) )
     {
-        if ( HasTheFlag( iClient ) )
+        if ( UpgradeOverTime( iClient ) )
         {
-            /*--------------------------------------------------------------------
-              TODO: Maybe keep track of the flag carrier in
-              `HandleTeamplayFlagEvent_Pre` and move this logic to `OnGameFrame`?
-            --------------------------------------------------------------------*/
-            if ( UpgradeOverTime( iClient ) )
-            {
-                // Force the player to taunt
-                g_aPlayerAttribs[ iClient ].bPendingTaunt = true;
-            }
+            // Force the player to taunt
+            g_aPlayerAttribs[ iClient ].bPendingTaunt = true;
         }
     }
 
@@ -2246,13 +2260,11 @@ public void OnPlayerRunCmdPost(
         return;
     }
 
-    // TODO: Allow players to take control of stunned bots
     if ( TF2_IsPlayerInCondition( iObserverTarget, TFCond_MVMBotRadiowave ) )
     {
         /*--------------------------------------------------------------------
           For now just disallow taking control of stunned bots. Making this
-          work correctly is a bit of a hassle. We'll just do it sometime in
-          the future.
+          work correctly is a bit of a hassle.
         --------------------------------------------------------------------*/
         c_iPrevObserverTargetSerial = 0; // Force redraw
         ClearSyncHud( iClient, g_hSyncObj );
@@ -2470,13 +2482,11 @@ Action PlayerControlBot( int iClient, TFVoiceCommand eVoiceCommand )
         return Plugin_Continue;
     }
 
-    // TODO: Allow players to take control of stunned bots
     if ( TF2_IsPlayerInCondition( iObserverTarget, TFCond_MVMBotRadiowave ) )
     {
         /*--------------------------------------------------------------------
           For now just disallow taking control of stunned bots. Making this
-          work correctly is a bit of a hassle. We'll just do it sometime in
-          the future.
+          work correctly is a bit of a hassle.
         --------------------------------------------------------------------*/
         PrintHintText( iClient, "%t", "Cannot_Control_Stunned" );
         return Plugin_Continue;
@@ -2558,17 +2568,6 @@ Action PlayerControlBot( int iClient, TFVoiceCommand eVoiceCommand )
     --------------------------------------------------------------------*/
     g_aPlayerAttribs[ iClient ].nInitialCurrency = GetCurrency( iClient );
 
-    /*--------------------------------------------------------------------
-      Only checking for the `TFCond_Zoomed` condition should not cause
-      a crash unless some other plugin applies this condition on a bot
-      that's not a Sniper for some reason.
-    --------------------------------------------------------------------*/
-    if ( TF2_IsPlayerInCondition( iObserverTarget, TFCond_Zoomed ) )
-    {
-        // Zoom out of the sniper rifle so the lazer disappears and doesn't cause problems
-        ZoomOut( TF2_GetClientActiveWeapon( iObserverTarget ) );
-    }
-
     // The `FL_FAKECLIENT` flag must be set for a client to join the invading team
     FakeBotStatus( iClient );
     TF2_ChangeClientTeam( iClient, TF_TEAM_PVE_INVADERS );
@@ -2626,6 +2625,28 @@ Action PlayerControlBot( int iClient, TFVoiceCommand eVoiceCommand )
     ModifyMaxHealth( iClient, TF2Util_GetEntityMaxHealth( iObserverTarget ), false, false );
     CopyEntProp( iObserverTarget, iClient, Prop_Send, "m_iHealth" );
 
+    // Scout
+    CopyEntPropFloat( iObserverTarget, iClient, Prop_Send, "m_flEnergyDrinkMeter" );
+    SetScoutHypeMeter( iClient, GetScoutHypeMeter( iObserverTarget ) );
+
+    // Demoman
+    CopyEntPropFloat( iObserverTarget, iClient, Prop_Send, "m_flChargeMeter" );
+
+    // Rage (Soldier, Pyro, Sniper)
+    SetEntPropFloat( iClient, Prop_Send, "m_flNextRageEarnTime", 0.0 ); // Make sure `SetRageMeter` succeeds
+    SetRageMeter( iClient, GetRageMeter( iObserverTarget ) );
+    CopyEntPropFloat( iObserverTarget, iClient, Prop_Send, "m_flNextRageEarnTime" ); // Must come after the `SetRageMeter` call
+
+    // Generic charge percentage for weapon to use
+    int n = GetEntPropArraySize( iClient, Prop_Send, "m_flItemChargeMeter" );
+    for ( int i = 0; i < n; i++ )
+    {
+        CopyEntPropFloat( iObserverTarget, iClient, Prop_Send, "m_flItemChargeMeter", i );
+    }
+
+    CopyEntProp( iObserverTarget, iClient, Prop_Send, "m_iDecapitations" );
+    SetRevengeCrits( GetPlayerShared( iClient ), GetRevengeCrits( iObserverTarget ) );
+
     // Turn this off on the bot, so we don't end up with 2 health bars on the screen
     ClearAttribute( iObserverTarget, USE_BOSS_HEALTH_BAR ); // Prevents entity from always transmitting
     SetUseBossHealthBar( iObserverTarget, false );
@@ -2645,15 +2666,20 @@ Action PlayerControlBot( int iClient, TFVoiceCommand eVoiceCommand )
     TFCond eLastCond = TF2Util_GetLastCondition();
     for ( TFCond eCond = TFCond_Slowed; eCond <= eLastCond; eCond++ )
     {
-        int   iProvider;
-        float flDuration;
+        if ( !TF2_IsPlayerInCondition( iObserverTarget, eCond ) )
+        {
+            continue;
+        }
+
         switch ( eCond )
         {
         /*--------------------------------------------------------------------
           Don't mirror spawn protection conditions, since we apply them in a
           different way compared to how the game does it.
         --------------------------------------------------------------------*/
-        case TFCond_Ubercharged, TFCond_CloakFlicker, TFCond_UberchargedHidden, TFCond_ImmuneToPushback:
+        case TFCond_Ubercharged, TFCond_CloakFlicker, TFCond_UberchargedHidden, TFCond_ImmuneToPushback,
+             // Don't mirror conditions applied by a weapon's state
+             TFCond_Zoomed:
         {
             continue;
         }
@@ -2664,13 +2690,12 @@ Action PlayerControlBot( int iClient, TFVoiceCommand eVoiceCommand )
         --------------------------------------------------------------------*/
         case TFCond_OnFire:
         {
-            iProvider  = TF2Util_GetPlayerConditionProvider( iObserverTarget, eCond );
-            flDuration = TF2Util_GetPlayerBurnDuration( iObserverTarget );
             // TODO: Find a way to get the weapon that ignited the player
-            if ( flDuration != 0.0 )
-            {
-                TF2Util_IgnitePlayer( iClient, iProvider, flDuration );
-            }
+            TF2Util_IgnitePlayer(
+                                 iClient,
+                                 TF2Util_GetPlayerConditionProvider( iObserverTarget, eCond ),
+                                 TF2Util_GetPlayerBurnDuration( iObserverTarget )
+                                );
         }
 
         case TFCond_Bleeding:
@@ -2678,23 +2703,25 @@ Action PlayerControlBot( int iClient, TFVoiceCommand eVoiceCommand )
             int nBleedCount = TF2Util_GetPlayerActiveBleedCount( iObserverTarget );
             for ( int i = 0; i < nBleedCount; i++ )
             {
-                iProvider         = TF2Util_GetPlayerBleedAttacker( iObserverTarget, i );
-                int iWeapon       = TF2Util_GetPlayerBleedWeapon( iObserverTarget, i );
-                flDuration        = TF2Util_GetPlayerBleedDuration( iObserverTarget, i );
-                int iDamage       = TF2Util_GetPlayerBleedDamage( iObserverTarget, i );
-                int iDamageCustom = TF2Util_GetPlayerBleedCustomDamageType( iObserverTarget, i );
-                TF2Util_MakePlayerBleed( iClient, iProvider, flDuration, iWeapon, iDamage, iDamageCustom );
+                TF2Util_MakePlayerBleed(
+                                        iClient,
+                                        TF2Util_GetPlayerBleedAttacker( iObserverTarget, i ),
+                                        TF2Util_GetPlayerBleedDuration( iObserverTarget, i ),
+                                        TF2Util_GetPlayerBleedWeapon( iObserverTarget, i ),
+                                        TF2Util_GetPlayerBleedDamage( iObserverTarget, i ),
+                                        TF2Util_GetPlayerBleedCustomDamageType( iObserverTarget, i )
+                                       );
             }
         }
 
         default:
         {
-            iProvider  = TF2Util_GetPlayerConditionProvider( iObserverTarget, eCond );
-            flDuration = TF2Util_GetPlayerConditionDuration( iObserverTarget, eCond );
-            if ( iProvider != INVALID_ENT_REFERENCE && flDuration != 0.0 )
-            {
-                TF2_AddCondition( iClient, eCond, flDuration, iProvider );
-            }
+            TF2_AddCondition(
+                             iClient,
+                             eCond,
+                             TF2Util_GetPlayerConditionDuration( iObserverTarget, eCond ),
+                             TF2Util_GetPlayerConditionProvider( iObserverTarget, eCond )
+                            );
         }
         }
     }
@@ -2720,7 +2747,6 @@ Action PlayerControlBot( int iClient, TFVoiceCommand eVoiceCommand )
         TF2Attrib_SetByName( iClient, "cannot pick up intelligence", 1.0 );
     }
 
-    // TODO: Allow invader engineers to pick up their buildings
     if ( TF2_GetPlayerClass( iObserverTarget ) == TFClass_Engineer )
     {
         /*--------------------------------------------------------------------
@@ -2778,14 +2804,14 @@ Action PlayerControlBot( int iClient, TFVoiceCommand eVoiceCommand )
 
         EquipPlayerWeapon( iClient, iNewWeapon );
 
-        if ( iWeaponId != TF_WEAPON_LUNCHBOX )
+        TF2_SetWeaponAmmo( iNewWeapon, TF2_GetWeaponAmmo( iWeapon ) );
+        CopyEntPropFloat( iWeapon, iNewWeapon, Prop_Send, "m_flEffectBarRegenTime" );
+        CopyEntPropFloat( iWeapon, iNewWeapon, Prop_Send, "m_flNextPrimaryAttack" );
+        CopyEntPropFloat( iWeapon, iNewWeapon, Prop_Send, "m_flNextSecondaryAttack" );
+
+        if ( WeaponID_IsSniperRifle( iWeaponId ) )
         {
-            TF2_SetWeaponAmmo( iNewWeapon, TF2_GetWeaponAmmo( iWeapon ) );
-        }
-        else
-        {
-            // Lunchbox items always need 1 "grenade"
-            TF2_GiveWeaponAmmo( iNewWeapon, 1, true );
+            CopyEntPropFloat( iWeapon, iNewWeapon, Prop_Send, "m_flChargedDamage" );
         }
 
         /*--------------------------------------------------------------------
@@ -2797,11 +2823,6 @@ Action PlayerControlBot( int iClient, TFVoiceCommand eVoiceCommand )
             TF2Util_SetPlayerActiveWeapon( iClient, iNewWeapon );
         }
     }
-
-    // Copy meters
-    CopyEntPropFloat( iObserverTarget, iClient, Prop_Send, "m_flEnergyDrinkMeter" ); // FIXME: Does nothing?
-    SetScoutHypeMeter( iClient, GetScoutHypeMeter( iObserverTarget ) );              // FIXME: Does nothing?
-    SetRageMeter( iClient, GetRageMeter( iObserverTarget ) );
 
     if ( eBotClass == TFClass_Medic )
     {
@@ -2825,6 +2846,29 @@ Action PlayerControlBot( int iClient, TFVoiceCommand eVoiceCommand )
             SetEntPropEnt( iBotMedigun, Prop_Send, "m_hHealingTarget", -1 );   // Remove the medigun beam
             SetEntProp( iBotMedigun, Prop_Send, "m_bAttacking", false );
             SetEntProp( iBotMedigun, Prop_Send, "m_bHealing", false );
+        }
+    }
+    else if ( eBotClass == TFClass_Sniper )
+    {
+        int iActiveWeapon = TF2_GetClientActiveWeapon( iObserverTarget );
+        if ( iActiveWeapon != -1 && WeaponID_IsSniperRifle( TF2Util_GetWeaponID( iActiveWeapon ) ) )
+        {
+            /*--------------------------------------------------------------------
+              The player could've taken control of the bot right after it fired
+              its sniper rifle and the game is still waiting for the reload
+              animation to finish so that it can automatically rezoom the weapon.
+              To make sure this doesn't happen, we set the bot's `cl_autorezoom`
+              to `0`.
+            --------------------------------------------------------------------*/
+            SetFakeClientConVar( iObserverTarget, "cl_autorezoom", "0" );
+
+            if ( IsZoomed( iActiveWeapon ) )
+            {
+                // Get rid of the sniper rifle lazer
+                ZoomOut( iActiveWeapon );
+                // Zoom in the player's sniper rifle
+                ZoomIn( TF2_GetClientActiveWeapon( iClient ) );
+            }
         }
     }
 
@@ -3686,17 +3730,17 @@ void CaptureZone_StartTouchPost( int iCaptureZone, int iEntity )
         return;
     }
 
+    if ( IsDisabled( iCaptureZone ) )
+    {
+        return;
+    }
+
     if ( !IsPlayerIndex( iEntity ) )
     {
         return;
     }
 
     if ( !g_aPlayerAttribs[ iEntity ].IsControlling() )
-    {
-        return;
-    }
-
-    if ( IsDisabled( iCaptureZone ) )
     {
         return;
     }

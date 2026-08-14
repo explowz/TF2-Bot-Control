@@ -113,12 +113,6 @@
                 "windows"   "\x55\x8B\xEC\x51\x57\x6A\x01\x6A\x00\x8B\xF9\x57"
                 "linux"     "@_ZN14CWeaponMedigun15CycleResistTypeEv"
             }
-            "CTFBotDeliverFlag::OnStart"
-            {
-                "library"   "server"
-                "windows"   "\x55\x8B\xEC\x83\xEC\x08\x8B\xC1\x53\x8B\x5D\x2A\x8B\xCB"
-                "linux"     "@_ZN17CTFBotDeliverFlag7OnStartEP6CTFBotP6ActionIS0_E"
-            }
             "CTFPlayer::HandleCommand_JoinTeam"
             {
                 "library"   "server"
@@ -179,6 +173,12 @@
                 "windows"   "\x53\x8B\xDC\x83\xEC\x08\x83\xE4\xF0\x83\xC4\x04\x55\x8B\x6B\x2A\x89\x6C\x24\x2A\x8B\xEC\x83\xEC\x28\x56\x57\x8B\xF9\x6A\x39"
                 "linux"     "@_ZN15CTFPlayerShared18AddToSpyCloakMeterEfb"
             }
+            "CTFPlayerShared::SetRevengeCrits"
+            {
+                "library"   "server"
+                "windows"   "\x55\x8B\xEC\x53\x56\x57\x8B\x7D\x2A\x8B\xF1\x85\xFF\x79"
+                "linux"     "@_ZN15CTFPlayerShared15SetRevengeCritsEi"
+            }
 
             /*--------------------------------------------------------------------
               !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -230,6 +230,11 @@
             {
                 "windows"   "232"
                 "linux"     "270"
+            }
+            "CTFSniperRifle::ZoomIn"
+            {
+                "windows"   "490"
+                "linux"     "497"
             }
             "CTFSniperRifle::ZoomOut"
             {
