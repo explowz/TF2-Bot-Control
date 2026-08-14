@@ -190,9 +190,28 @@ stock void RestoreBot( int iClient )
 
     // Copy back properties that could've changed
     CopyEntProp( iClient, iBot, Prop_Send, "m_iHealth" );
-    CopyEntPropFloat( iClient, iBot, Prop_Send, "m_flEnergyDrinkMeter" ); // FIXME: Does nothing?
-    SetScoutHypeMeter( iBot, GetScoutHypeMeter( iClient ) );              // FIXME: Does nothing?
+
+    // Scout
+    CopyEntPropFloat( iClient, iBot, Prop_Send, "m_flEnergyDrinkMeter" );
+    SetScoutHypeMeter( iBot, GetScoutHypeMeter( iClient ) );
+
+    // Demoman
+    CopyEntPropFloat( iClient, iBot, Prop_Send, "m_flChargeMeter" );
+
+    // Rage (Soldier, Pyro, Sniper)
+    SetEntPropFloat( iBot, Prop_Send, "m_flNextRageEarnTime", 0.0 ); // Make sure `SetRageMeter` succeeds
     SetRageMeter( iBot, GetRageMeter( iClient ) );
+    CopyEntPropFloat( iClient, iBot, Prop_Send, "m_flNextRageEarnTime" ); // Must come after the `SetRageMeter` call
+
+    // Generic charge percentage for weapon to use
+    int n = GetEntPropArraySize( iBot, Prop_Send, "m_flItemChargeMeter" );
+    for ( int i = 0; i < n; i++ )
+    {
+        CopyEntPropFloat( iClient, iBot, Prop_Send, "m_flItemChargeMeter", i );
+    }
+
+    CopyEntProp( iClient, iBot, Prop_Send, "m_iDecapitations" );
+    SetRevengeCrits( GetPlayerShared( iBot ), GetRevengeCrits( iClient ) );
 
     /*--------------------------------------------------------------------
       We specifically turn this off for the bot to avoid double health
@@ -216,15 +235,20 @@ stock void RestoreBot( int iClient )
     TFCond eLastCond = TF2Util_GetLastCondition();
     for ( TFCond eCond = TFCond_Slowed; eCond <= eLastCond; eCond++ )
     {
-        int   iProvider;
-        float flDuration;
+        if ( !TF2_IsPlayerInCondition( iClient, eCond ) )
+        {
+            continue;
+        }
+
         switch ( eCond )
         {
         /*--------------------------------------------------------------------
-          Don't mirror spawn protection conditions, since we apply them in a
-          different way compared to how the game does it.
+          Don't mirror spawn protection conditions, since the game applies
+          these to bots by itself.
         --------------------------------------------------------------------*/
-        case TFCond_Ubercharged, TFCond_CloakFlicker, TFCond_UberchargedHidden, TFCond_ImmuneToPushback:
+        case TFCond_Ubercharged, TFCond_CloakFlicker, TFCond_UberchargedHidden, TFCond_ImmuneToPushback,
+             // Don't mirror conditions applied by a weapon's state
+             TFCond_Zoomed:
         {
             continue;
         }
@@ -235,13 +259,12 @@ stock void RestoreBot( int iClient )
         --------------------------------------------------------------------*/
         case TFCond_OnFire:
         {
-            iProvider  = TF2Util_GetPlayerConditionProvider( iClient, eCond );
-            flDuration = TF2Util_GetPlayerBurnDuration( iClient );
             // TODO: Find a way to get the weapon that ignited the player
-            if ( flDuration != 0.0 )
-            {
-                TF2Util_IgnitePlayer( iBot, iProvider, flDuration );
-            }
+            TF2Util_IgnitePlayer(
+                                 iBot,
+                                 TF2Util_GetPlayerConditionProvider( iClient, eCond ),
+                                 TF2Util_GetPlayerBurnDuration( iClient )
+                                );
         }
 
         case TFCond_Bleeding:
@@ -249,28 +272,30 @@ stock void RestoreBot( int iClient )
             int nBleedCount = TF2Util_GetPlayerActiveBleedCount( iClient );
             for ( int i = 0; i < nBleedCount; i++ )
             {
-                iProvider         = TF2Util_GetPlayerBleedAttacker( iClient, i );
-                int iWeapon       = TF2Util_GetPlayerBleedWeapon( iClient, i );
-                flDuration        = TF2Util_GetPlayerBleedDuration( iClient, i );
-                int iDamage       = TF2Util_GetPlayerBleedDamage( iClient, i );
-                int iDamageCustom = TF2Util_GetPlayerBleedCustomDamageType( iClient, i );
-                TF2Util_MakePlayerBleed( iBot, iProvider, flDuration, iWeapon, iDamage, iDamageCustom );
+                TF2Util_MakePlayerBleed(
+                                        iBot,
+                                        TF2Util_GetPlayerBleedAttacker( iClient, i ),
+                                        TF2Util_GetPlayerBleedDuration( iClient, i ),
+                                        TF2Util_GetPlayerBleedWeapon( iClient, i ),
+                                        TF2Util_GetPlayerBleedDamage( iClient, i ),
+                                        TF2Util_GetPlayerBleedCustomDamageType( iClient, i )
+                                       );
             }
         }
 
         default:
         {
-            iProvider  = TF2Util_GetPlayerConditionProvider( iClient, eCond );
-            flDuration = TF2Util_GetPlayerConditionDuration( iClient, eCond );
-            if ( iProvider != INVALID_ENT_REFERENCE && flDuration != 0.0 )
-            {
-                TF2_AddCondition( iBot, eCond, flDuration, iProvider );
-            }
+            TF2_AddCondition(
+                             iBot,
+                             eCond,
+                             TF2Util_GetPlayerConditionDuration( iClient, eCond ),
+                             TF2Util_GetPlayerConditionProvider( iClient, eCond )
+                            );
         }
         }
     }
 
-    // Mirror the player's ammo and active weapon
+    // Mirror the player's weapons
     for ( int i = 0; i <= TFWeaponSlot_PDA; i++ )
     {
         int iWeapon = GetPlayerWeaponSlot( iClient, i );
@@ -286,7 +311,23 @@ stock void RestoreBot( int iClient )
             continue;
         }
 
+        int iBotWeaponId    = TF2Util_GetWeaponID( iBotWeapon );
+        int iPlayerWeaponId = TF2Util_GetWeaponID( iWeapon );
+        if ( iBotWeaponId != iPlayerWeaponId )
+        {
+            // Some other plugin most likely changed a client's weapons
+            continue;
+        }
+
         TF2_SetWeaponAmmo( iBotWeapon, TF2_GetWeaponAmmo( iWeapon ) );
+        CopyEntPropFloat( iWeapon, iBotWeapon, Prop_Send, "m_flEffectBarRegenTime" );
+        CopyEntPropFloat( iWeapon, iBotWeapon, Prop_Send, "m_flNextPrimaryAttack" );
+        CopyEntPropFloat( iWeapon, iBotWeapon, Prop_Send, "m_flNextSecondaryAttack" );
+
+        if ( WeaponID_IsSniperRifle( iPlayerWeaponId ) )
+        {
+            CopyEntPropFloat( iWeapon, iBotWeapon, Prop_Send, "m_flChargedDamage" );
+        }
 
         /*--------------------------------------------------------------------
           Force the bot to switch to this weapon if this is what the player
@@ -300,6 +341,26 @@ stock void RestoreBot( int iClient )
 
     switch ( TF2_GetPlayerClass( iClient ) )
     {
+    case TFClass_Sniper:
+    {
+        int iPlayerActiveWeapon = TF2_GetClientActiveWeapon( iClient );
+        int iBotActiveWeapon    = TF2_GetClientActiveWeapon( iBot );
+
+        if ( iPlayerActiveWeapon != -1 && iBotActiveWeapon != -1 )
+        {
+            // Make sure something didn't change the weapons
+            if ( WeaponID_IsSniperRifle( TF2Util_GetWeaponID( iPlayerActiveWeapon ) ) &&
+                 WeaponID_IsSniperRifle( TF2Util_GetWeaponID( iBotActiveWeapon ) ) )
+            {
+                if ( IsZoomed( iPlayerActiveWeapon ) )
+                {
+                    // Zoom in the bot's sniper rifle if that's how the player left it as
+                    ZoomIn( iBotActiveWeapon );
+                }
+            }
+        }
+    }
+
     case TFClass_Medic:
     {
         int iPlayerMedigun = GetPlayerWeaponSlot( iClient, TFWeaponSlot_Secondary );
@@ -1856,6 +1917,40 @@ stock void SetRageMeter( int iClient, float flValue )
 }
 
 /*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: GetRevengeCrits
+
+  Summary:  This function gets a client's number of available
+            revenge critical shots.
+
+  Args:     int iClient
+              Client index.
+
+  Returns:  int
+              Client's number of available revenge critical shots.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
+stock int GetRevengeCrits( int iClient )
+{
+    return GetEntProp( iClient, Prop_Send, "m_iRevengeCrits" );
+}
+
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: SetRevengeCrits
+
+  Summary:  This function sets a client's number of available
+            revenge critical shots.
+
+  Args:     int iClient
+              Client index.
+
+  Returns:  void
+              No return value.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
+stock void SetRevengeCrits( Address pShared, int iVal )
+{
+    SDKCall( g_hfnCTFPlayerShared_SetRevengeCrits, pShared, iVal );
+}
+
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
   Function: GetBuffType
 
   Summary:  This function gets a weapon's buff type.
@@ -2592,6 +2687,94 @@ F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
 stock int GetMaxHealthForCurrentLevel( int iObject )
 {
     return SDKCall( g_hfnCBaseObject_GetMaxHealthForCurrentLevel, iObject );
+}
+
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: WeaponID_IsSniperRifle
+
+  Summary:  This function determines a weapon ID belongs to a sniper
+            rifle.
+
+  Args:     int iWeaponId
+              Weapon ID.
+
+  Returns:  bool
+              If the weapon ID belongs to a sniper rifle, the return
+              value is `true`.
+
+              If the weapon ID does not belong to a sniper rifle,
+              the return value is `false`.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
+stock bool WeaponID_IsSniperRifle( int iWeaponId )
+{
+    return iWeaponId == TF_WEAPON_SNIPERRIFLE       ||
+           iWeaponId == TF_WEAPON_SNIPERRIFLE_DECAP ||
+           iWeaponId == TF_WEAPON_SNIPERRIFLE_CLASSIC;
+}
+
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: GetOwner
+
+  Summary:  This function returns a `CBaseCombatWeapon` entity's
+            owner.
+
+  Args:     int iWeapon
+              `CBaseCombatWeapon` entity index.
+
+  Returns:  int
+              If the weapon has an owner, the return value is the
+              client index of the weapon's owner.
+
+              If the weapon does not have an owner, the return value
+              is `-1`.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
+stock int GetOwner( int iWeapon )
+{
+    return GetEntPropEnt( iWeapon, Prop_Send, "m_hOwner" );
+}
+
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: IsZoomed
+
+  Summary:  This function determines whether a sniper rifle is
+            zoomed.
+
+  Args:     int iSniperRifle
+              `CTFSniperRifle` entity index.
+
+  Returns:  bool
+              If the sniper rifle is zoomed, the return value is
+              `true`.
+
+              If the sniper rifle is not zoomed, the return value
+              is `false`.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
+stock bool IsZoomed( int iSniperRifle )
+{
+    int iOwner = GetOwner( iSniperRifle );
+    if ( iOwner != -1 )
+    {
+        return TF2_IsPlayerInCondition( iOwner, TFCond_Zoomed );
+    }
+
+    return false;
+}
+
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: ZoomIn
+
+  Summary:  This function forces a `CTFSniperRifle` weapon entity
+            to zoom in.
+
+  Args:     int iSniperRifle
+              `CTFSniperRifle` entity index.
+
+  Returns:  void
+              No return value.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
+stock void ZoomIn( int iSniperRifle )
+{
+    SDKCall( g_hfnCTFSniperRifle_ZoomIn, iSniperRifle );
 }
 
 /*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F

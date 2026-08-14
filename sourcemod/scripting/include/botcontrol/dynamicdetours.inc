@@ -332,7 +332,7 @@ MRESReturn CTFBot_OnEventChangeAttributes_Post( int iThis, DHookParam hParams )
             if ( iWeaponId == TF_WEAPON_LUNCHBOX )
             {
                 // Lunchbox items always need 1 "grenade"
-                TF2_GiveWeaponAmmo( iNewWeapon, 1, true );
+                TF2_ResetWeaponAmmo( iNewWeapon );
             }
 
             /*--------------------------------------------------------------------

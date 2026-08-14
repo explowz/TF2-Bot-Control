@@ -112,7 +112,7 @@ Action CTFBotDeliverFlag_OnStartPost( BehaviorAction pThis, int iBot, BehaviorAc
     if ( g_aBotAttribs[ iBot ].bRestoredAsFlagCarrier && !IsMiniBoss( iBot ) )
     {
         // Copy over the upgrade level
-        StoreToAddress( view_as< Address >( pThis ) + view_as< Address >( g_CTFBotDeliverFlag_upgradeLevel_Offset ), GetFlagCarrierUpgradeLevel(), NumberType_Int32 );
+        pThis.Set( g_CTFBotDeliverFlag_upgradeLevel_Offset, GetFlagCarrierUpgradeLevel(), NumberType_Int32 );
 
         // Restore the value to whatever it was before we changed it
         tf_mvm_bot_flag_carrier_interval_to_1st_upgrade.SetFloat( g_flPrevIntervalTo1stUpgrade );

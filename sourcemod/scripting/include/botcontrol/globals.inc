@@ -109,6 +109,7 @@ Handle g_hfnCTFWeaponBase_Clip1;
 
 Handle g_hfnCTFWeaponBuilder_SetSubType;
 
+Handle g_hfnCTFSniperRifle_ZoomIn;
 Handle g_hfnCTFSniperRifle_ZoomOut;
 
 Handle g_hfnCWeaponMedigun_CycleResistType;
@@ -141,6 +142,7 @@ Handle g_hfnCTFPlayerShared_IsStealthed;
 Handle g_hfnCTFPlayerShared_AddToSpyCloakMeter;
 Handle g_hfnCTFPlayerShared_SetRageMeter;
 Handle g_hfnCTFPlayerShared_SetScoutHypeMeter;
+Handle g_hfnCTFPlayerShared_SetRevengeCrits;
 
 Handle g_hfnCTFBot_ShouldQuickBuild;
 Handle g_hfnCTFBot_IsInASquad;
