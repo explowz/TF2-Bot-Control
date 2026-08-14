@@ -334,6 +334,16 @@ public void OnPluginStart()
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
 
     StartPrepSDKCall( SDKCall_Entity );
+    PrepSDKCall_SetFromConf( hConf, SDKConf_Virtual, "CTFSniperRifle::ZoomIn" );
+    g_hfnCTFSniperRifle_ZoomIn = EndPrepSDKCall();
+    if ( !g_hfnCTFSniperRifle_ZoomIn )
+    {
+        SetFailState( "%T", "SDKCall_Prep_Failed", LANG_SERVER, "CTFSniperRifle::ZoomIn" );
+    }
+
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEW SETUP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+
+    StartPrepSDKCall( SDKCall_Entity );
     PrepSDKCall_SetFromConf( hConf, SDKConf_Virtual, "CTFSniperRifle::ZoomOut" );
     g_hfnCTFSniperRifle_ZoomOut = EndPrepSDKCall();
     if ( !g_hfnCTFSniperRifle_ZoomOut )
@@ -2558,17 +2568,6 @@ Action PlayerControlBot( int iClient, TFVoiceCommand eVoiceCommand )
     --------------------------------------------------------------------*/
     g_aPlayerAttribs[ iClient ].nInitialCurrency = GetCurrency( iClient );
 
-    /*--------------------------------------------------------------------
-      Only checking for the `TFCond_Zoomed` condition should not cause
-      a crash unless some other plugin applies this condition on a bot
-      that's not a Sniper for some reason.
-    --------------------------------------------------------------------*/
-    if ( TF2_IsPlayerInCondition( iObserverTarget, TFCond_Zoomed ) )
-    {
-        // Zoom out of the sniper rifle so the lazer disappears and doesn't cause problems
-        ZoomOut( TF2_GetClientActiveWeapon( iObserverTarget ) );
-    }
-
     // The `FL_FAKECLIENT` flag must be set for a client to join the invading team
     FakeBotStatus( iClient );
     TF2_ChangeClientTeam( iClient, TF_TEAM_PVE_INVADERS );
@@ -2678,7 +2677,9 @@ Action PlayerControlBot( int iClient, TFVoiceCommand eVoiceCommand )
           Don't mirror spawn protection conditions, since we apply them in a
           different way compared to how the game does it.
         --------------------------------------------------------------------*/
-        case TFCond_Ubercharged, TFCond_CloakFlicker, TFCond_UberchargedHidden, TFCond_ImmuneToPushback:
+        case TFCond_Ubercharged, TFCond_CloakFlicker, TFCond_UberchargedHidden, TFCond_ImmuneToPushback,
+             // Don't mirror conditions applied by a weapon's state
+             TFCond_Zoomed:
         {
             continue;
         }
@@ -2808,6 +2809,11 @@ Action PlayerControlBot( int iClient, TFVoiceCommand eVoiceCommand )
         CopyEntPropFloat( iWeapon, iNewWeapon, Prop_Send, "m_flNextPrimaryAttack" );
         CopyEntPropFloat( iWeapon, iNewWeapon, Prop_Send, "m_flNextSecondaryAttack" );
 
+        if ( WeaponID_IsSniperRifle( iWeaponId ) )
+        {
+            CopyEntPropFloat( iWeapon, iNewWeapon, Prop_Send, "m_flChargedDamage" );
+        }
+
         /*--------------------------------------------------------------------
           Force the player to switch to this weapon if we mirrored the bot's
           current active weapon.
@@ -2840,6 +2846,29 @@ Action PlayerControlBot( int iClient, TFVoiceCommand eVoiceCommand )
             SetEntPropEnt( iBotMedigun, Prop_Send, "m_hHealingTarget", -1 );   // Remove the medigun beam
             SetEntProp( iBotMedigun, Prop_Send, "m_bAttacking", false );
             SetEntProp( iBotMedigun, Prop_Send, "m_bHealing", false );
+        }
+    }
+    else if ( eBotClass == TFClass_Sniper )
+    {
+        int iActiveWeapon = TF2_GetClientActiveWeapon( iObserverTarget );
+        if ( iActiveWeapon != -1 && WeaponID_IsSniperRifle( TF2Util_GetWeaponID( iActiveWeapon ) ) )
+        {
+            /*--------------------------------------------------------------------
+              The player could've taken control of the bot right after it fired
+              its sniper rifle and the game is still waiting for the reload
+              animation to finish so that it can automatically rezoom the weapon.
+              To make sure this doesn't happen, we set the bot's `cl_autorezoom`
+              to `0`.
+            --------------------------------------------------------------------*/
+            SetFakeClientConVar( iObserverTarget, "cl_autorezoom", "0" );
+
+            if ( IsZoomed( iActiveWeapon ) )
+            {
+                // Get rid of the sniper rifle lazer
+                ZoomOut( iActiveWeapon );
+                // Zoom in the player's sniper rifle
+                ZoomIn( TF2_GetClientActiveWeapon( iClient ) );
+            }
         }
     }
 

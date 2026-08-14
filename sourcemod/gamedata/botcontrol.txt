@@ -113,12 +113,6 @@
                 "windows"   "\x55\x8B\xEC\x51\x57\x6A\x01\x6A\x00\x8B\xF9\x57"
                 "linux"     "@_ZN14CWeaponMedigun15CycleResistTypeEv"
             }
-            "CTFBotDeliverFlag::OnStart"
-            {
-                "library"   "server"
-                "windows"   "\x55\x8B\xEC\x83\xEC\x08\x8B\xC1\x53\x8B\x5D\x2A\x8B\xCB"
-                "linux"     "@_ZN17CTFBotDeliverFlag7OnStartEP6CTFBotP6ActionIS0_E"
-            }
             "CTFPlayer::HandleCommand_JoinTeam"
             {
                 "library"   "server"
@@ -236,6 +230,11 @@
             {
                 "windows"   "232"
                 "linux"     "270"
+            }
+            "CTFSniperRifle::ZoomIn"
+            {
+                "windows"   "490"
+                "linux"     "497"
             }
             "CTFSniperRifle::ZoomOut"
             {
