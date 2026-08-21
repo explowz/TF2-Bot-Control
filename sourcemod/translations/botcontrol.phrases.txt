@@ -38,12 +38,6 @@
         "en"    "Could not initiate a group status update. The server is not connected to Steam."
     }
 
-    "Group_Status_Request_Failed"
-    {
-        "#format"   "{1:s}"
-        "en"        "Failed to request group status for user {1}. Please make sure the group ID is valid."
-    }
-
     "Bot_Block"
     {
         "en"    "This bot is blocked"
