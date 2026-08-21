@@ -54,7 +54,6 @@ Cookie g_hShowInstrctions;
 
 ConVar sm_botcontrol_enabled;
 ConVar sm_botcontrol_premium_flags;
-ConVar sm_botcontrol_groupid;
 ConVar sm_botcontrol_min_defenders;
 ConVar sm_botcontrol_max_invaders;
 ConVar sm_botcontrol_instruction_interval;
@@ -64,6 +63,7 @@ ConVar spec_freeze_traveltime;
 ConVar spec_freeze_time;
 
 ConVar sv_tags;
+ConVar sv_steamgroup;
 
 ConVar tf_bot_fire_weapon_allowed;
 ConVar tf_bot_always_full_reload;
