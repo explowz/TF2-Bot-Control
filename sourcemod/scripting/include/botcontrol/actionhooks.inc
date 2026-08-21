@@ -16,6 +16,7 @@
 #include <actions>
 
 #include "globals"
+#include "stocks"
 
 /*F+F+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   Function: CTFBotMissionSuicideBomber_Update

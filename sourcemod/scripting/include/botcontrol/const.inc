@@ -18,6 +18,9 @@
 #pragma newdecls required
 #pragma semicolon 1
 
+// Our plugin's game tag
+#define GAMETAG "botcontrol"
+
 #define FLT_MAX 3.402823466e38
 
 #define PTRSIZ              4

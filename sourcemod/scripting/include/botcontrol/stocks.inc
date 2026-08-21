@@ -477,6 +477,40 @@ stock void RestoreBot( int iClient )
 }
 
 /*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: ApplyPreviousUpgrades
+
+  Summary:  This function applies all previous (aka missed) MvM bomb
+            upgrades to a client based on the current flag carrier
+            upgrade level.
+
+  Args:     int iClient
+              Client index of bomb carrier.
+
+  Returns:  void
+              No return value.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
+void ApplyPreviousUpgrades( int iClient )
+{
+    if ( IsMiniBoss( iClient ) )
+    {
+        // Mini-bosses don't upgrade
+        return;
+    }
+
+    int iUpgradeLevel = GetFlagCarrierUpgradeLevel();
+    if ( iUpgradeLevel >= 2 )
+    {
+        TF2Attrib_SetByName( iClient, "health regen", tf_mvm_bot_flag_carrier_health_regen.FloatValue );
+
+        if ( iUpgradeLevel == 3 )
+        {
+            // Add critz
+            TF2_AddCondition( iClient, TFCond_Kritzkrieged );
+        }
+    }
+}
+
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
   Function: ResetGlobals
 
   Summary:  This function resets a client's global variables.
