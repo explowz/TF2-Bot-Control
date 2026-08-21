@@ -63,6 +63,8 @@ ConVar sm_botcontrol_mirror_name;
 ConVar spec_freeze_traveltime;
 ConVar spec_freeze_time;
 
+ConVar sv_tags;
+
 ConVar tf_bot_fire_weapon_allowed;
 ConVar tf_bot_always_full_reload;
 ConVar tf_bot_force_jump;
