@@ -356,8 +356,8 @@
             "CTFPlayer::m_pWaveSpawnPopulator"
             {
                 // Relative to `CTFPlayer::m_bMatchSafeToLeave`
-                "windows"   "1"
-                "linux"     "1"
+                "windows"   "4"
+                "linux"     "4"
             }
             "CTFBot::m_squad"
             {

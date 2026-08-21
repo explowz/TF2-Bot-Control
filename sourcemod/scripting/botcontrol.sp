@@ -132,7 +132,7 @@ public void OnPluginStart()
                                          "sm_botcontrol_enabled",
                                          "1",
                                          "Enables the plugin and allows players to control invader bots.",
-                                         FCVAR_ARCHIVE | FCVAR_NOTIFY | FCVAR_NEVER_AS_STRING,
+                                         FCVAR_ARCHIVE | FCVAR_NOTIFY,
                                          true,
                                          0.0,
                                          true,
@@ -145,7 +145,9 @@ public void OnPluginStart()
     PSM_Init( szName, hConf );
     PSM_AddShouldEnableCallback( IsMannVsMachineMode );
     PSM_AddPluginStateChangedHook( SetGameDescription );
+    PSM_AddPluginStateChangedHook( SetGameTags );
     PSM_AddPluginStateChangedHook( RestoreAllBots );
+    PSM_AddPluginStateChangedHook( RemoveRemainingHudText );
     PSM_AddPluginStateChangedHook( ProcessAllEntities );
 
     char szMaxPlayers[ 4 ];
@@ -198,16 +200,17 @@ public void OnPluginStart()
                                                       "sm_botcontrol_mirror_name",
                                                       "0",
                                                       "Enables changing the controlling player's name to that of the bot for the duration the player controls the bot.",
-                                                      FCVAR_ARCHIVE | FCVAR_NOTIFY | FCVAR_NEVER_AS_STRING,
+                                                      FCVAR_ARCHIVE | FCVAR_NOTIFY,
                                                       true,
                                                       0.0,
                                                       true,
                                                       1.0
                                                      );
-    sm_botcontrol_mirror_name.AddChangeHook( RestoreOriginalNames );
+    PSM_AddConVarChangeHook( sm_botcontrol_mirror_name, RestoreOriginalNames );
 
     spec_freeze_traveltime                          = FindConVar( "spec_freeze_traveltime" );
     spec_freeze_time                                = FindConVar( "spec_freeze_time" );
+    sv_tags                                         = FindConVar( "sv_tags" );
     tf_bot_fire_weapon_allowed                      = FindConVar( "tf_bot_fire_weapon_allowed" );
     tf_bot_always_full_reload                       = FindConVar( "tf_bot_always_full_reload" );
     tf_bot_force_jump                               = FindConVar( "tf_bot_force_jump" );
@@ -219,6 +222,9 @@ public void OnPluginStart()
     tf_mvm_bot_flag_carrier_health_regen            = FindConVar( "tf_mvm_bot_flag_carrier_health_regen" );
     tf_deploying_bomb_delay_time                    = FindConVar( "tf_deploying_bomb_delay_time" );
     tf_deploying_bomb_time                          = FindConVar( "tf_deploying_bomb_time" );
+
+    // Prevent the plugin's tag from being removed while the plugin is enabled
+    PSM_AddConVarChangeHook( sv_tags, MaintainPluginTag );
 
     /*--------------------------------------------------------------------
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -745,7 +751,7 @@ public void OnPluginStart()
     // NOTE: PSM takes care of late-loading through its state change hooks
 
     // Request our clients' group affiliation status every 30 seconds
-    CreateTimer( 30.0, UpdateUsersGroupStatus, _, TIMER_REPEAT );
+    PSM_CreateTimer( 30.0, UpdateUsersGroupStatus, _, TIMER_REPEAT );
 }
 
 /*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
@@ -1318,13 +1324,35 @@ F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
 public void OnPluginEnd()
 {
     PSM_SetPluginState( false );
+}
 
-    // Make sure we don't leave any HUD text on clients' screens
-    for ( int i = 1; i <= MaxClients; i++ )
+/*F+F+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+  Function: RemoveRemainingHudText
+
+  Summary:  This function is called every time the plugin's state
+            is changed. If the plugin has been turned off, this
+            function will remove all HUD text from players' screens.
+
+  Args:     bool bEnabled
+              If the plugin has been enabled, this variable will be
+              `true`.
+
+              If the plugin has been disabled, this variable will be
+              `false`.
+
+  Returns:  void
+              No return value.
+-----------------------------------------------------------------F-F*/
+void RemoveRemainingHudText( bool bEnabled )
+{
+    if ( !bEnabled )
     {
-        if ( IsClientInGame( i ) && !IsFakeClient( i ) )
+        for ( int i = 1; i <= MaxClients; i++ )
         {
-            ClearSyncHud( i, g_hSyncObj );
+            if ( IsClientInGame( i ) && !IsFakeClient( i ) )
+            {
+                ClearSyncHud( i, g_hSyncObj );
+            }
         }
     }
 }
@@ -1339,7 +1367,7 @@ public void OnPluginEnd()
             controlling a bot.
 
   Args:     ConVar hMirrorName
-              Handle to the sm_botcontrol_mirror_name console
+              Handle to the `sm_botcontrol_mirror_name` console
               variable.
             const char[] szOldValue
               A string representing the console variable's old
@@ -1442,11 +1470,6 @@ public void SteamWorks_OnClientGroupStatus( int iAuthId, int iGroupId, bool bIsM
 -----------------------------------------------------------------F-F*/
 void UpdateUsersGroupStatus( Handle hTimer )
 {
-    if ( !PSM_IsEnabled() )
-    {
-        return;
-    }
-
     if ( !IsServerProcessing() )
     {
         return;
@@ -3901,40 +3924,6 @@ bool UpgradeOverTime( int iClient )
 }
 
 /*F+F+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  Function: ApplyPreviousUpgrades
-
-  Summary:  This function applies all previous (aka missed) MvM bomb
-            upgrades to a client based on the current flag carrier
-            upgrade level.
-
-  Args:     int iClient
-              Client index of bomb carrier.
-
-  Returns:  void
-              No return value.
------------------------------------------------------------------F-F*/
-void ApplyPreviousUpgrades( int iClient )
-{
-    if ( IsMiniBoss( iClient ) )
-    {
-        // Mini-bosses don't upgrade
-        return;
-    }
-
-    int iUpgradeLevel = GetFlagCarrierUpgradeLevel();
-    if ( iUpgradeLevel >= 2 )
-    {
-        TF2Attrib_SetByName( iClient, "health regen", tf_mvm_bot_flag_carrier_health_regen.FloatValue );
-
-        if ( iUpgradeLevel == 3 )
-        {
-            // Add critz
-            TF2_AddCondition( iClient, TFCond_Kritzkrieged );
-        }
-    }
-}
-
-/*F+F+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   Function: HandleMovement
 
   Summary:  This function handles the movement of controlling
@@ -4333,6 +4322,71 @@ void SetGameDescription( bool bEnabled )
         GetGameDescription( szDescription, sizeof( szDescription ), true );
         SteamWorks_SetGameDescription( szDescription );
     }
+}
+
+/*F+F+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+  Function: SetGameTags
+
+  Summary:  This function is called every time the plugin's state
+            is changed. Based on `bEnabled`, it either appends
+            our tag to the current tags, or removes it.
+
+  Args:     bool bEnabled
+              If the plugin has been enabled, this variable will be
+              `true`.
+
+              If the plugin has been disabled, this variable will be
+              `false`.
+
+  Returns:  void
+              No return value.
+-----------------------------------------------------------------F-F*/
+void SetGameTags( bool bEnabled )
+{
+    char szTags[ k_cbMaxGameServerTags ];
+    sv_tags.GetString( szTags, sizeof( szTags ) );
+
+    if ( bEnabled )
+    {
+        Format( szTags, sizeof( szTags ), GAMETAG ... ",%s", szTags );
+    }
+    else
+    {
+        ReplaceString( szTags, sizeof( szTags ), GAMETAG, "" );
+    }
+
+    // The engine cleans up the tags automatically
+    sv_tags.SetString( szTags );
+}
+
+/*F+F+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+  Function: MaintainPluginTag
+
+  Summary:  This function is called every time the value of the
+            `sv_tags` console variable is changed and prevents
+            our plugin's tag from being removed while the plugin
+            is enabled.
+
+  Args:     ConVar hTags
+              Handle to the `sv_tags` console variable.
+            const char[] szOldValue
+              Old value.
+            const char[] szNewValue
+              New value.
+
+  Returns:  void
+              No return value.
+-----------------------------------------------------------------F-F*/
+void MaintainPluginTag( ConVar hTags, const char[] szOldValue, const char[] szNewValue )
+{
+    if ( StrContains( szNewValue, GAMETAG ) != -1 )
+    {
+        return;
+    }
+
+    char szTags[ k_cbMaxGameServerTags ];
+    FormatEx( szTags, sizeof( szTags ), GAMETAG ... ",%s", szNewValue );
+    hTags.SetString( szTags );
 }
 
 /*F+F+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
