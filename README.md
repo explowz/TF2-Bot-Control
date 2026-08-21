@@ -36,7 +36,7 @@ This plugins supports limiting the minimum amount of players on the defending te
 This plugin supports three types of bot restrictions:
 1. "block": This restriction prevents all players from controlling this bot.
 2. "premium": This restriction only allows players with the flags defined by `sm_botcontrol_premium_flags` to control this bot.
-3. "group": This restriction only allows players that are members of the group with groupID32 defined by `sm_botcontrol_groupid` to control this bot.
+3. "group": This restriction only allows players that are members of the group with groupID32 defined by `sv_steamgroup` to control this bot.
 
 These restrictions must be applied using the "custom desc attr" attribute placed inside the `CharacterAttributes` block.
 ```

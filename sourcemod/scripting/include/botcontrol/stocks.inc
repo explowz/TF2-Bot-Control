@@ -3931,26 +3931,26 @@ stock void StartIdleSound( int iClient )
             switch ( TF2_GetPlayerClass( iClient ) )
             {
             case TFClass_Heavy:
-                strcopy( g_aPlayerAttribs[ iClient ].szIdleSound, sizeof( g_aPlayerAttribs[ iClient ].szIdleSound ), "MVM.GiantHeavyLoop" );
+                strcopy( g_aPlayerAttribs[ iClient ].szIdleSound, sizeof( PLAYERATTRIBUTES::szIdleSound ), "MVM.GiantHeavyLoop" );
 
             case TFClass_Soldier:
-                strcopy( g_aPlayerAttribs[ iClient ].szIdleSound, sizeof( g_aPlayerAttribs[ iClient ].szIdleSound ), "MVM.GiantSoldierLoop" );
+                strcopy( g_aPlayerAttribs[ iClient ].szIdleSound, sizeof( PLAYERATTRIBUTES::szIdleSound ), "MVM.GiantSoldierLoop" );
 
             case TFClass_DemoMan:
                 if ( HasMission( iBot, MISSION_DESTROY_SENTRIES ) )
                 {
-                    strcopy( g_aPlayerAttribs[ iClient ].szIdleSound, sizeof( g_aPlayerAttribs[ iClient ].szIdleSound ), "MVM.SentryBusterLoop" );
+                    strcopy( g_aPlayerAttribs[ iClient ].szIdleSound, sizeof( PLAYERATTRIBUTES::szIdleSound ), "MVM.SentryBusterLoop" );
                 }
                 else
                 {
-                    strcopy( g_aPlayerAttribs[ iClient ].szIdleSound, sizeof( g_aPlayerAttribs[ iClient ].szIdleSound ), "MVM.GiantDemomanLoop" );
+                    strcopy( g_aPlayerAttribs[ iClient ].szIdleSound, sizeof( PLAYERATTRIBUTES::szIdleSound ), "MVM.GiantDemomanLoop" );
                 }
 
             case TFClass_Scout:
-                strcopy( g_aPlayerAttribs[ iClient ].szIdleSound, sizeof( g_aPlayerAttribs[ iClient ].szIdleSound ), "MVM.GiantScoutLoop" );
+                strcopy( g_aPlayerAttribs[ iClient ].szIdleSound, sizeof( PLAYERATTRIBUTES::szIdleSound ), "MVM.GiantScoutLoop" );
 
             case TFClass_Pyro:
-                strcopy( g_aPlayerAttribs[ iClient ].szIdleSound, sizeof( g_aPlayerAttribs[ iClient ].szIdleSound ), "MVM.GiantPyroLoop" );
+                strcopy( g_aPlayerAttribs[ iClient ].szIdleSound, sizeof( PLAYERATTRIBUTES::szIdleSound ), "MVM.GiantPyroLoop" );
             }
 
             if ( !StrEmpty( g_aPlayerAttribs[ iClient ].szIdleSound ) )

@@ -48,7 +48,7 @@ public Plugin myinfo =
     name        = "[TF2] MvM Bot Control",
     author      = "Bintr",
     description = "Allows players to take control of a robot in the Mann vs. Machine gamemode.",
-    version     = "1.4",
+    version     = "1.5",
     url         = "https://github.com/explowz/TF2-Bot-Control"
 };
 
@@ -160,14 +160,6 @@ public void OnPluginStart()
                                                           "For more information, please refer to admin_levels.cfg.",
                                                       FCVAR_ARCHIVE
                                                      );
-    sm_botcontrol_groupid              = CreateConVar(
-                                                      "sm_botcontrol_groupid",
-                                                      "571",
-                                                      "The groupID32 of the group the user must be a member of to control bots with the \"group\" attribute.",
-                                                      FCVAR_ARCHIVE | FCVAR_NEVER_AS_STRING,
-                                                      true,
-                                                      0.0
-                                                     );
     sm_botcontrol_min_defenders        = CreateConVar(
                                                       "sm_botcontrol_min_defenders",
                                                       "0",
@@ -211,6 +203,7 @@ public void OnPluginStart()
     spec_freeze_traveltime                          = FindConVar( "spec_freeze_traveltime" );
     spec_freeze_time                                = FindConVar( "spec_freeze_time" );
     sv_tags                                         = FindConVar( "sv_tags" );
+    sv_steamgroup                                   = FindConVar( "sv_steamgroup" );
     tf_bot_fire_weapon_allowed                      = FindConVar( "tf_bot_fire_weapon_allowed" );
     tf_bot_always_full_reload                       = FindConVar( "tf_bot_always_full_reload" );
     tf_bot_force_jump                               = FindConVar( "tf_bot_force_jump" );
@@ -749,9 +742,6 @@ public void OnPluginStart()
     g_hShowInstrctions.SetPrefabMenu( CookieMenu_OnOff_Int, "Bot Control Instructions" );
 
     // NOTE: PSM takes care of late-loading through its state change hooks
-
-    // Request our clients' group affiliation status every 30 seconds
-    PSM_CreateTimer( 30.0, UpdateUsersGroupStatus, _, TIMER_REPEAT );
 }
 
 /*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
@@ -1306,6 +1296,13 @@ F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
 public void OnConfigsExecuted()
 {
     PSM_TogglePluginState();
+
+    /*--------------------------------------------------------------------
+      Request our clients' group affiliation status every 30 seconds.
+      This needs to be here because the function does nothing if the
+      plugin is not enabled.
+    --------------------------------------------------------------------*/
+    PSM_CreateTimer( 30.0, UpdateUsersGroupStatus, _, TIMER_REPEAT );
 }
 
 /*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
@@ -1432,7 +1429,7 @@ public void SteamWorks_OnClientGroupStatus( int iAuthId, int iGroupId, bool bIsM
         return;
     }
 
-    if ( iGroupId != sm_botcontrol_groupid.IntValue )
+    if ( iGroupId != sv_steamgroup.IntValue )
     {
         // Not the group we care about
         return;
@@ -1485,11 +1482,15 @@ void UpdateUsersGroupStatus( Handle hTimer )
     {
         if ( IsClientAuthorized( i ) && !IsFakeClient( i ) )
         {
-            if ( !SteamWorks_GetUserGroupStatus( i, sm_botcontrol_groupid.IntValue ) )
+            if ( !SteamWorks_GetUserGroupStatus( i, sv_steamgroup.IntValue ) )
             {
-                char szUserInfo[ 256 ];
-                FormatEx( szUserInfo, sizeof( szUserInfo ), "%L", i );
-                LogError( "%T", "Group_Status_Request_Failed", LANG_SERVER, szUserInfo );
+                /*--------------------------------------------------------------------
+                  Invalid group IDs don't end up in the callback function, so we
+                  need to set this value here. Otherwise, if `sv_steamgroup` held a
+                  valid group ID, players that were marked as group members of that
+                  group will not be reset.
+                --------------------------------------------------------------------*/
+                g_aPlayerAttribs[ i ].bIsGroupMember = false;
             }
         }
     }
@@ -2626,7 +2627,7 @@ Action PlayerControlBot( int iClient, TFVoiceCommand eVoiceCommand )
     if ( sm_botcontrol_mirror_name.BoolValue )
     {
         // Save the name so we can restore it after the player is done controlling the bot
-        strcopy( g_aPlayerAttribs[ iClient ].szOriginalName, sizeof( g_aPlayerAttribs[ iClient ].szOriginalName ), GetPlayerName( iClient ) );
+        strcopy( g_aPlayerAttribs[ iClient ].szOriginalName, sizeof( PLAYERATTRIBUTES::szOriginalName ), GetPlayerName( iClient ) );
 
         SetPlayerName( iClient, GetPlayerName( iObserverTarget ) );
     }
