@@ -359,6 +359,11 @@
                 "windows"   "4"
                 "linux"     "4"
             }
+            "CTFPlayerShared::m_hBurnWeapon"
+            {
+                "windows"   "508"
+                "linux"     "508"
+            }
             "CTFBot::m_squad"
             {
                 "windows"	"10192"

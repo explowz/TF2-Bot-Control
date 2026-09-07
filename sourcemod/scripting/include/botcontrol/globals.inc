@@ -205,6 +205,7 @@ int g_CTFPlayer_aObjects_Offset;
 int g_CTFPlayer_pWaveSpawnPopulator_Offset;
 
 int g_CTFPlayerShared_flInvisibility_Offset;
+int g_CTFPlayerShared_hBurnWeapon_Offset;
 
 int g_CTFBot_teleportWhereName_Offset;
 int g_CTFBot_squad_Offset;

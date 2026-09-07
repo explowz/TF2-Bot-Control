@@ -696,6 +696,7 @@ public void OnPluginStart()
     g_CTFPlayer_bIsLimitedSupportEnemy_Offset                 = g_CTFPlayer_bIsSupportEnemy_Offset + hConf.GetOffset( "CTFPlayer::m_bIsLimitedSupportEnemy" );
     g_CTFPlayer_pWaveSpawnPopulator_Offset                    = FindSendPropInfo( "CTFPlayer", "m_bMatchSafeToLeave" ) + hConf.GetOffset( "CTFPlayer::m_pWaveSpawnPopulator" );
     g_CTFPlayerShared_flInvisibility_Offset                   = FindSendPropInfo( "CTFPlayer", "m_flInvisChangeCompleteTime" ) + hConf.GetOffset( "CTFPlayerShared::m_flInvisibility" );
+    g_CTFPlayerShared_hBurnWeapon_Offset                      = hConf.GetOffset( "CTFPlayerShared::m_hBurnWeapon" );
     g_CTFBot_teleportWhereName_Offset                         = hConf.GetOffset( "CTFBot::m_teleportWhereName" );
     g_CTFBot_squad_Offset                                     = hConf.GetOffset( "CTFBot::m_squad" );
     g_CObjectTeleporter_teleportWhereName_Offset              = hConf.GetOffset( "CObjectTeleporter::m_teleportWhereName" );
@@ -2714,11 +2715,11 @@ Action PlayerControlBot( int iClient, TFVoiceCommand eVoiceCommand )
         --------------------------------------------------------------------*/
         case TFCond_OnFire:
         {
-            // TODO: Find a way to get the weapon that ignited the player
             TF2Util_IgnitePlayer(
                                  iClient,
                                  TF2Util_GetPlayerConditionProvider( iObserverTarget, eCond ),
-                                 TF2Util_GetPlayerBurnDuration( iObserverTarget )
+                                 TF2Util_GetPlayerBurnDuration( iObserverTarget ),
+                                 GetBurnWeapon( iObserverTarget )
                                 );
         }
 

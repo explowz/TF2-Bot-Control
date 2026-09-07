@@ -259,11 +259,11 @@ stock void RestoreBot( int iClient )
         --------------------------------------------------------------------*/
         case TFCond_OnFire:
         {
-            // TODO: Find a way to get the weapon that ignited the player
             TF2Util_IgnitePlayer(
                                  iBot,
                                  TF2Util_GetPlayerConditionProvider( iClient, eCond ),
-                                 TF2Util_GetPlayerBurnDuration( iClient )
+                                 TF2Util_GetPlayerBurnDuration( iClient ),
+                                 GetBurnWeapon( iClient )
                                 );
         }
 
@@ -3990,6 +3990,24 @@ stock void StopIdleSound( int iClient )
             g_aPlayerAttribs[ iClient ].szIdleSound[ 0 ] = EOS;
         }
     }
+}
+
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: GetBurnWeapon
+
+  Summary:  This function retrieves the weapon entity that ignited
+            the player, if any.
+
+  Args:     int iClient
+              Client index.
+
+  Returns:  int
+              Entity index of the weapon that ignited the client.
+              This can be `-1`.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
+stock int GetBurnWeapon( int iClient )
+{
+    return LoadEntityFromHandleAddress( GetPlayerShared( iClient ) + view_as< Address >( g_CTFPlayerShared_hBurnWeapon_Offset ) );
 }
 
 /*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
