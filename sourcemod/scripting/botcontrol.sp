@@ -669,6 +669,7 @@ public void OnPluginStart()
     PSM_AddDynamicHookFromConf( "CTFPlayer::IsAllowedToPickUpFlag" );
     PSM_AddDynamicHookFromConf( "CCaptureFlag::PickUp" );
     PSM_AddDynamicHookFromConf( "CTFPlayer::Event_Killed" );
+    PSM_AddDynamicHookFromConf( "CTFStunBall::ApplyBallImpactEffectOnVictim" );
 
     /*--------------------------------------------------------------------
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -681,6 +682,15 @@ public void OnPluginStart()
     PSM_AddDynamicDetourFromConf( "CTraceFilterObject::ShouldHitEntity", CTraceFilterObject_ShouldHitEntity_Pre, INVALID_FUNCTION );
     PSM_AddDynamicDetourFromConf( "CTFPlayerShared::OnConditionAdded", CTFPlayerShared_OnConditionAdded_Pre, CTFPlayerShared_OnConditionAdded_Post );
     PSM_AddDynamicDetourFromConf( "CTFBot::OnEventChangeAttributes", INVALID_FUNCTION, CTFBot_OnEventChangeAttributes_Post );
+    PSM_AddDynamicDetourFromConf( "CTFPlayer::CanBeForcedToLaugh", CTFPlayer_CanBeForcedToLaugh_Pre, INVALID_FUNCTION );
+
+    /*--------------------------------------------------------------------
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !!!!!!!!!!!!!!!!!!!!!!!!! MEMORY PATCHES !!!!!!!!!!!!!!!!!!!!!!!!!
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    --------------------------------------------------------------------*/
+
+    PSM_AddMemoryPatchFromConf( "CTFWeaponBase::ApplyOnHitAttributes()::IsBot()" );
 
     /*--------------------------------------------------------------------
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1555,6 +1565,16 @@ public void OnEntityCreated( int iEntity, const char[] szClassname )
     if ( StrContains( szClassname, "tf_projectile" ) == 0 )
     {
         PSM_SDKHook( iEntity, SDKHook_SetTransmit, SetTransmit );
+    }
+    else if ( StrEqual( szClassname, "tf_weapon_knife" ) )
+    {
+        PSM_DHookEntityByName( "CTFKnife::PrimaryAttack", Hook_Pre, iEntity, CTFKnife_PrimaryAttack_Pre );
+        PSM_DHookEntityByName( "CTFKnife::PrimaryAttack", Hook_Post, iEntity, CTFKnife_PrimaryAttack_Post );
+    }
+    else if ( StrEqual( szClassname, "tf_projectile_stun_ball" ) )
+    {
+        PSM_DHookEntityByName( "CTFStunBall::ApplyBallImpactEffectOnVictim", Hook_Pre, iEntity, CTFStunBall_ApplyBallImpactEffectOnVictim_Pre );
+        PSM_DHookEntityByName( "CTFStunBall::ApplyBallImpactEffectOnVictim", Hook_Post, iEntity, CTFStunBall_ApplyBallImpactEffectOnVictim_Post );
     }
     else if ( StrEqual( szClassname, "obj_sentrygun" ) )
     {

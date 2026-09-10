@@ -179,6 +179,18 @@
                 "windows"   "\x55\x8B\xEC\x53\x56\x57\x8B\x7D\x2A\x8B\xF1\x85\xFF\x79"
                 "linux"     "@_ZN15CTFPlayerShared15SetRevengeCritsEi"
             }
+            "CTFPlayer::CanBeForcedToLaugh"
+            {
+                "library"   "server"
+                "windows"   "\xA1\x2A\x2A\x2A\x2A\x56\x8B\xF1\x85\xC0\x74\x2A\x80\xB8\x2A\x2A\x2A\x2A\x00\x74\x2A\x8B\x06"
+                "linux"     "@_ZN9CTFPlayer18CanBeForcedToLaughEv"
+            }
+            "CTFWeaponBase::ApplyOnHitAttributes"
+            {
+                "library"   "server"
+                "windows"   "\x55\x8B\xEC\x81\xEC\x10\x01\x00\x00\x53\x56\x57\x8B\x7D\x2A\x8B\xF1"
+                "linux"     "@"
+            }
 
             /*--------------------------------------------------------------------
               !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -310,6 +322,16 @@
             {
                 "windows"   "9"
                 "linux"     "10"
+            }
+            "CTFStunBall::ApplyBallImpactEffectOnVictim"
+            {
+                "windows"   "267"
+                "linux"     "268"
+            }
+            "CTFKnife::PrimaryAttack"
+            {
+                "windows"   "287"
+                "linux"     "293"
             }
             "CTFPlayerShared::m_flInvisibility"
             {
@@ -507,27 +529,15 @@
                     }
                 }
             }
-            // "CTFBotDeliverFlag::OnStart"
-            // {
-            //     "signature" "CTFBotDeliverFlag::OnStart"
+            "CTFPlayer::CanBeForcedToLaugh"
+            {
+                "signature" "CTFPlayer::CanBeForcedToLaugh"
 
-            //     "callconv"  "thiscall"
+                "callconv"  "thiscall"
 
-            //     "return"    "none fit... :("
-            //     "this"      "address"
-
-            //     "arguments"
-            //     {
-            //         me
-            //         {
-            //             "type"  "cbaseentity"
-            //         }
-            //         priorAction
-            //         {
-            //             "type"  "objectptr"
-            //         }
-            //     }
-            // }
+                "return"    "bool"
+                "this"      "entity"
+            }
 
             /*--------------------------------------------------------------------
               !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -706,6 +716,52 @@
                         "type"  "objectptr"
                         "flags" "byref"
                     }
+                }
+            }
+            "CTFStunBall::ApplyBallImpactEffectOnVictim"
+            {
+                "offset"    "CTFStunBall::ApplyBallImpactEffectOnVictim"
+
+                "hooktype"  "entity"
+
+                "return"    "void"
+                "this"      "entity"
+
+                "arguments"
+                {
+                    pOther
+                    {
+                        "type"  "cbaseentity"
+                    }
+                }
+            }
+            "CTFKnife::PrimaryAttack"
+            {
+                "offset"    "CTFKnife::PrimaryAttack"
+
+                "hooktype"  "entity"
+
+                "return"    "void"
+                "this"      "entity"
+            }
+        }
+        "MemPatches"
+        {
+            // This patch makes AOE blast also apply to non-bot clients
+            "CTFWeaponBase::ApplyOnHitAttributes()::IsBot()"
+            {
+                "signature" "CTFWeaponBase::ApplyOnHitAttributes"
+                "windows"
+                {
+                    "offset"    "B50h"
+                    "verify"    "\xFF\xD0\x84\xC0\x0F\x84\xA4\x01\x00\x00"
+                    "patch"     "\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90"
+                }
+                "linux"
+                {
+                    "offset"    "E6Ch"
+                    "verify"    "\x84\xC0\x0F\x84\x14\x02\x00\x00"
+                    "patch"     "\x90\x90\x90\x90\x90\x90\x90\x90"
                 }
             }
         }

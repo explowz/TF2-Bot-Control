@@ -560,3 +560,142 @@ MRESReturn CTFPlayer_Event_Killed_Post( int iThis, DHookParam hParams )
 
     return MRES_Ignored;
 }
+
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: CTFStunBall_ApplyBallImpactEffectOnVictim_Pre
+
+  Summary:  This function is called before every
+            `CTFStunBall::ApplyBallImpactEffectOnVictim` call on a
+            hooked entity and its purpose is fake a human invader's
+            bot status so that the function's logic mimics that of
+            a bot.
+
+            Original function signature:
+            `void CTFStunBall::ApplyBallImpactEffectOnVictim( CBaseEntity *pOther )`
+
+  Args:     int iThis
+              Calling entity index.
+            DHookParam hParams
+              Handle to the function's parameters.
+
+  Returns:  MRESReturn
+              Tells SourceMod what action to take.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
+MRESReturn CTFStunBall_ApplyBallImpactEffectOnVictim_Pre( int iThis, DHookParam hParams )
+{
+    if ( !hParams.IsNull( 1 ) )
+    {
+        int iOther = hParams.Get( 1 );
+        if ( IsPlayerIndex( iOther ) && g_aPlayerAttribs[ iOther ].IsControlling() )
+        {
+            FakeBotStatus( iOther );
+        }
+    }
+
+    return MRES_Ignored;
+}
+
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: CTFStunBall_ApplyBallImpactEffectOnVictim_Post
+
+  Summary:  This function is called after every
+            `CTFStunBall::ApplyBallImpactEffectOnVictim` call on a
+            hooked entity and its purpose is restore a human player's
+            player status.
+
+            Original function signature:
+            `void CTFStunBall::ApplyBallImpactEffectOnVictim( CBaseEntity *pOther )`
+
+  Args:     int iThis
+              Calling entity index.
+            DHookParam hParams
+              Handle to the function's parameters.
+
+  Returns:  MRESReturn
+              Tells SourceMod what action to take.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
+MRESReturn CTFStunBall_ApplyBallImpactEffectOnVictim_Post( int iThis, DHookParam hParams )
+{
+    if ( !hParams.IsNull( 1 ) )
+    {
+        int iOther = hParams.Get( 1 );
+        if ( IsPlayerIndex( iOther ) && g_aPlayerAttribs[ iOther ].IsControlling() )
+        {
+            RestorePlayerStatus( iOther );
+        }
+    }
+
+    return MRES_Ignored;
+}
+
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: CTFKnife_PrimaryAttack_Pre
+
+  Summary:  This function is called before every
+            `CTFKnife::PrimaryAttack` call on a hooked entity and
+            its purpose is fake all human invaders' bot status so
+            that the function's logic mimics that of an MvM bot being
+            backstabbed.
+
+            Original function signature:
+            `void CTFKnife::PrimaryAttack( void )`
+
+  Args:     int iThis
+              Calling entity index.
+
+  Returns:  MRESReturn
+              Tells SourceMod what action to take.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
+MRESReturn CTFKnife_PrimaryAttack_Pre( int iThis )
+{
+    int iOwner = GetOwner( iThis );
+    if ( iOwner != -1 && TF2_GetClientTeam( iOwner ) == TF_TEAM_PVE_DEFENDERS )
+    {
+        for ( int i = 1; i <= MaxClients; i++ )
+        {
+            if ( g_aPlayerAttribs[ i ].IsControlling() )
+            {
+                FakeBotStatus( i );
+            }
+        }
+    }
+
+    return MRES_Ignored;
+}
+
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: CTFKnife_PrimaryAttack_Post
+
+  Summary:  This function is called after every
+            `CTFKnife::PrimaryAttack` call on a hooked entity and
+            its purpose is restore all human players' player status.
+
+            Original function signature:
+            `void CTFKnife::PrimaryAttack( void )`
+
+  Args:     int iThis
+              Calling entity index.
+
+  Returns:  MRESReturn
+              Tells SourceMod what action to take.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
+MRESReturn CTFKnife_PrimaryAttack_Post( int iThis )
+{
+    int iOwner = GetOwner( iThis );
+    if ( iOwner != -1 && TF2_GetClientTeam( iOwner ) == TF_TEAM_PVE_DEFENDERS )
+    {
+        for ( int i = 1; i <= MaxClients; i++ )
+        {
+            /*--------------------------------------------------------------------
+              Victim is already dead and therefore not controlling anymore, so
+              we check by `iGetBotTypeHookId`.
+            --------------------------------------------------------------------*/
+            if ( g_aPlayerAttribs[ i ].iGetBotTypeHookId != INVALID_HOOK_ID )
+            {
+                RestorePlayerStatus( i );
+            }
+        }
+    }
+
+    return MRES_Ignored;
+}
