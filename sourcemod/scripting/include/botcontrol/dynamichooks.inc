@@ -543,6 +543,22 @@ MRESReturn CTFPlayer_Event_Killed_Post( int iThis, DHookParam hParams )
             SetPlayerName( iThis, g_aPlayerAttribs[ iThis ].szOriginalName );
         }
 
+        if ( TF2_GetPlayerClass( iThis ) == TFClass_Engineer )
+        {
+            // Decouple the player's objects so they stay alive
+            while ( GetObjectCount( iThis ) > 0 )
+            {
+                // Set to have no owner
+                int iObject = GetObject( iThis, 0 );
+                if ( iObject != -1 )
+                {
+                    SetEntityOwner( iObject, INVALID_ENT_REFERENCE );
+                    SetBuilder( iObject, -1 );
+                }
+                RemoveObject( iThis, iObject );
+            }
+        }
+
         ResetGlobals( iThis );
 
         // The controlling player died, so also kill the bot

@@ -271,7 +271,7 @@ public void OnPluginStart()
 
     StartPrepSDKCall( SDKCall_Player );
     PrepSDKCall_SetFromConf( hConf, SDKConf_Signature, "CTFPlayer::RemoveObject" );
-    PrepSDKCall_AddParameter( SDKType_CBaseEntity, SDKPass_Plain ); // CBaseObject *pObject
+    PrepSDKCall_AddParameter( SDKType_CBaseEntity, SDKPass_Pointer, VDECODE_FLAG_ALLOWNULL ); // CBaseObject *pObject
     g_hfnCTFPlayer_RemoveObject = EndPrepSDKCall();
     if ( !g_hfnCTFPlayer_RemoveObject )
     {

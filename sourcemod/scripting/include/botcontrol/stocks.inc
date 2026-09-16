@@ -1132,6 +1132,28 @@ stock void RemoveObject( int iClient, int iObject )
 }
 
 /*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: SetBuilder
+
+  Summary:  This function sets a building's builder property.
+            Unlike `TransferObject`, this function does not also
+            change the object's team to that of the new builder and
+            add the object to the array of objects of the new
+            builder.
+
+  Args:     int iObject
+              Object entity index.
+            int iBuilder
+              Client index.
+
+  Returns:  void
+              No return value.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
+stock void SetBuilder( int iObject, int iBuilder )
+{
+    SetEntPropEnt( iObject, Prop_Send, "m_hBuilder", iBuilder );
+}
+
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
   Function: TransferObject
 
   Summary:  This function transfers a built object from one player
@@ -1156,11 +1178,12 @@ stock void TransferObject( int iObject, int iNewBuilder )
 
     if ( iOldBuilder != -1 )
     {
-        SetEntPropEnt( iObject, Prop_Send, "m_hBuilder", -1 );
+        SetBuilder( iObject, -1 );
         RemoveObject( iOldBuilder, iObject );
     }
 
     AcceptEntityInput( iObject, "SetBuilder", iNewBuilder );
+    SetEntityOwner( iObject, iNewBuilder );
 }
 
 /*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
