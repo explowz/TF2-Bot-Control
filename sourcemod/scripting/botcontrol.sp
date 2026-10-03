@@ -48,7 +48,7 @@ public Plugin myinfo =
     name        = "[TF2] MvM Bot Control",
     author      = "Bintr",
     description = "Allows players to take control of a robot in the Mann vs. Machine gamemode.",
-    version     = "1.5",
+    version     = "1.6",
     url         = "https://github.com/explowz/TF2-Bot-Control"
 };
 
@@ -271,7 +271,7 @@ public void OnPluginStart()
 
     StartPrepSDKCall( SDKCall_Player );
     PrepSDKCall_SetFromConf( hConf, SDKConf_Signature, "CTFPlayer::RemoveObject" );
-    PrepSDKCall_AddParameter( SDKType_CBaseEntity, SDKPass_Plain ); // CBaseObject *pObject
+    PrepSDKCall_AddParameter( SDKType_CBaseEntity, SDKPass_Pointer, VDECODE_FLAG_ALLOWNULL ); // CBaseObject *pObject
     g_hfnCTFPlayer_RemoveObject = EndPrepSDKCall();
     if ( !g_hfnCTFPlayer_RemoveObject )
     {
@@ -669,6 +669,7 @@ public void OnPluginStart()
     PSM_AddDynamicHookFromConf( "CTFPlayer::IsAllowedToPickUpFlag" );
     PSM_AddDynamicHookFromConf( "CCaptureFlag::PickUp" );
     PSM_AddDynamicHookFromConf( "CTFPlayer::Event_Killed" );
+    PSM_AddDynamicHookFromConf( "CTFStunBall::ApplyBallImpactEffectOnVictim" );
 
     /*--------------------------------------------------------------------
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -681,6 +682,15 @@ public void OnPluginStart()
     PSM_AddDynamicDetourFromConf( "CTraceFilterObject::ShouldHitEntity", CTraceFilterObject_ShouldHitEntity_Pre, INVALID_FUNCTION );
     PSM_AddDynamicDetourFromConf( "CTFPlayerShared::OnConditionAdded", CTFPlayerShared_OnConditionAdded_Pre, CTFPlayerShared_OnConditionAdded_Post );
     PSM_AddDynamicDetourFromConf( "CTFBot::OnEventChangeAttributes", INVALID_FUNCTION, CTFBot_OnEventChangeAttributes_Post );
+    PSM_AddDynamicDetourFromConf( "CTFPlayer::CanBeForcedToLaugh", CTFPlayer_CanBeForcedToLaugh_Pre, INVALID_FUNCTION );
+
+    /*--------------------------------------------------------------------
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !!!!!!!!!!!!!!!!!!!!!!!!! MEMORY PATCHES !!!!!!!!!!!!!!!!!!!!!!!!!
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    --------------------------------------------------------------------*/
+
+    PSM_AddMemoryPatchFromConf( "CTFWeaponBase::ApplyOnHitAttributes()::IsBot()" );
 
     /*--------------------------------------------------------------------
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -696,6 +706,7 @@ public void OnPluginStart()
     g_CTFPlayer_bIsLimitedSupportEnemy_Offset                 = g_CTFPlayer_bIsSupportEnemy_Offset + hConf.GetOffset( "CTFPlayer::m_bIsLimitedSupportEnemy" );
     g_CTFPlayer_pWaveSpawnPopulator_Offset                    = FindSendPropInfo( "CTFPlayer", "m_bMatchSafeToLeave" ) + hConf.GetOffset( "CTFPlayer::m_pWaveSpawnPopulator" );
     g_CTFPlayerShared_flInvisibility_Offset                   = FindSendPropInfo( "CTFPlayer", "m_flInvisChangeCompleteTime" ) + hConf.GetOffset( "CTFPlayerShared::m_flInvisibility" );
+    g_CTFPlayerShared_hBurnWeapon_Offset                      = hConf.GetOffset( "CTFPlayerShared::m_hBurnWeapon" );
     g_CTFBot_teleportWhereName_Offset                         = hConf.GetOffset( "CTFBot::m_teleportWhereName" );
     g_CTFBot_squad_Offset                                     = hConf.GetOffset( "CTFBot::m_squad" );
     g_CObjectTeleporter_teleportWhereName_Offset              = hConf.GetOffset( "CObjectTeleporter::m_teleportWhereName" );
@@ -1554,6 +1565,16 @@ public void OnEntityCreated( int iEntity, const char[] szClassname )
     if ( StrContains( szClassname, "tf_projectile" ) == 0 )
     {
         PSM_SDKHook( iEntity, SDKHook_SetTransmit, SetTransmit );
+    }
+    else if ( StrEqual( szClassname, "tf_weapon_knife" ) )
+    {
+        PSM_DHookEntityByName( "CTFKnife::PrimaryAttack", Hook_Pre, iEntity, CTFKnife_PrimaryAttack_Pre );
+        PSM_DHookEntityByName( "CTFKnife::PrimaryAttack", Hook_Post, iEntity, CTFKnife_PrimaryAttack_Post );
+    }
+    else if ( StrEqual( szClassname, "tf_projectile_stun_ball" ) )
+    {
+        PSM_DHookEntityByName( "CTFStunBall::ApplyBallImpactEffectOnVictim", Hook_Pre, iEntity, CTFStunBall_ApplyBallImpactEffectOnVictim_Pre );
+        PSM_DHookEntityByName( "CTFStunBall::ApplyBallImpactEffectOnVictim", Hook_Post, iEntity, CTFStunBall_ApplyBallImpactEffectOnVictim_Post );
     }
     else if ( StrEqual( szClassname, "obj_sentrygun" ) )
     {
@@ -2714,11 +2735,11 @@ Action PlayerControlBot( int iClient, TFVoiceCommand eVoiceCommand )
         --------------------------------------------------------------------*/
         case TFCond_OnFire:
         {
-            // TODO: Find a way to get the weapon that ignited the player
             TF2Util_IgnitePlayer(
                                  iClient,
                                  TF2Util_GetPlayerConditionProvider( iObserverTarget, eCond ),
-                                 TF2Util_GetPlayerBurnDuration( iObserverTarget )
+                                 TF2Util_GetPlayerBurnDuration( iObserverTarget ),
+                                 GetBurnWeapon( iObserverTarget )
                                 );
         }
 

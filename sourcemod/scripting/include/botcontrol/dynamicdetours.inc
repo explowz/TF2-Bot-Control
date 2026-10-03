@@ -407,3 +407,34 @@ MRESReturn CTFBot_OnEventChangeAttributes_Post( int iThis, DHookParam hParams )
 
     return MRES_Ignored;
 }
+
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: CTFPlayer_CanBeForcedToLaugh_Pre
+
+  Summary:  This function is called before every
+            `CTFPlayer::CanBeForcedToLaugh` call and its purpose is
+            to not force controlling players to laugh (since robot
+            models don't have such an animation). This mirrors the
+            game's own MvM robot behavior.
+
+            Original function signature:
+            `bool CTFPlayer::CanBeForcedToLaugh( void )`
+
+  Args:     int iThis
+              Calling client index.
+            DHookReturn hReturn
+              Handle to the return value.
+
+  Returns:  MRESReturn
+              Tells SourceMod what action to take.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
+MRESReturn CTFPlayer_CanBeForcedToLaugh_Pre( int iThis, DHookReturn hReturn )
+{
+    if ( g_aPlayerAttribs[ iThis ].IsControlling() )
+    {
+        hReturn.Value = false;
+        return MRES_Supercede;
+    }
+
+    return MRES_Ignored;
+}
