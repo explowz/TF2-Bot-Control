@@ -86,6 +86,9 @@ TFBot
 ### Name mirroring
 The console variable `sm_botcontrol_mirror_name` controls whether the plugin will also mirror the controlled bot's name. (Currently this only mirrors the networked name used by chat)
 
+### Instructions
+The console variable `sm_botcontrol_instruction_interval` controls the interval at which the plugin will try to instruct a controlling player. Instructions are turned on by defualt for F2P players and off for P2P players. Players can manually change whether they'd like to see instructions using `sm_settings`.
+
 ## Credits
 - [Pelipoika](https://forums.alliedmods.net/member.php?u=181730) for the MvM bot control plugin after which this plugin was inspired.
 - [Bovril](https://github.com/thisld) for his MvM bot control plugin from which the idea of restricting bots was taken.
