@@ -11,6 +11,7 @@ A Team Fortress 2 plugin that allows players to take control of a robot in Mann 
 - [SM-TFAttributeSupport](https://github.com/nosoop/SM-TFAttributeSupport)
 - [PluginStateManager](https://github.com/Mikusch/PluginStateManager)
 - [Actions](https://forums.alliedmods.net/showthread.php?t=336374)
+- [Source Scramble](https://forums.alliedmods.net/showthread.php?p=2657347)
 
 ## Building
 1. [Install SourceMod](https://wiki.alliedmods.net/Installing_SourceMod).

@@ -259,11 +259,11 @@ stock void RestoreBot( int iClient )
         --------------------------------------------------------------------*/
         case TFCond_OnFire:
         {
-            // TODO: Find a way to get the weapon that ignited the player
             TF2Util_IgnitePlayer(
                                  iBot,
                                  TF2Util_GetPlayerConditionProvider( iClient, eCond ),
-                                 TF2Util_GetPlayerBurnDuration( iClient )
+                                 TF2Util_GetPlayerBurnDuration( iClient ),
+                                 GetBurnWeapon( iClient )
                                 );
         }
 
@@ -1132,6 +1132,28 @@ stock void RemoveObject( int iClient, int iObject )
 }
 
 /*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: SetBuilder
+
+  Summary:  This function sets a building's builder property.
+            Unlike `TransferObject`, this function does not also
+            change the object's team to that of the new builder and
+            add the object to the array of objects of the new
+            builder.
+
+  Args:     int iObject
+              Object entity index.
+            int iBuilder
+              Client index.
+
+  Returns:  void
+              No return value.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
+stock void SetBuilder( int iObject, int iBuilder )
+{
+    SetEntPropEnt( iObject, Prop_Send, "m_hBuilder", iBuilder );
+}
+
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
   Function: TransferObject
 
   Summary:  This function transfers a built object from one player
@@ -1156,11 +1178,12 @@ stock void TransferObject( int iObject, int iNewBuilder )
 
     if ( iOldBuilder != -1 )
     {
-        SetEntPropEnt( iObject, Prop_Send, "m_hBuilder", -1 );
+        SetBuilder( iObject, -1 );
         RemoveObject( iOldBuilder, iObject );
     }
 
     AcceptEntityInput( iObject, "SetBuilder", iNewBuilder );
+    SetEntityOwner( iObject, iNewBuilder );
 }
 
 /*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
@@ -3990,6 +4013,24 @@ stock void StopIdleSound( int iClient )
             g_aPlayerAttribs[ iClient ].szIdleSound[ 0 ] = EOS;
         }
     }
+}
+
+/*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
+  Function: GetBurnWeapon
+
+  Summary:  This function retrieves the weapon entity that ignited
+            the player, if any.
+
+  Args:     int iClient
+              Client index.
+
+  Returns:  int
+              Entity index of the weapon that ignited the client.
+              This can be `-1`.
+F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
+stock int GetBurnWeapon( int iClient )
+{
+    return LoadEntityFromHandleAddress( GetPlayerShared( iClient ) + view_as< Address >( g_CTFPlayerShared_hBurnWeapon_Offset ) );
 }
 
 /*F+F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F+++F
